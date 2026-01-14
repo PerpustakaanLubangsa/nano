@@ -1,0 +1,21 @@
+{
+  "name": "Perpustakaan Lubangsa",
+  "short_name": "PerpusLubangsa",
+  "description": "Sistem Informasi Perpustakaan Lubangsa",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2ecc71",
+  "icons": [
+    {
+      "src": "logo.ico",
+      "sizes": "256x256",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
