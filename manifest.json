@@ -1,19 +1,20 @@
 {
   "name": "Perpustakaan Lubangsa",
-  "short_name": "PerpusLubangsa",
+  "short_name": "Lubangsa",
   "description": "Sistem Informasi Perpustakaan Lubangsa",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2ecc71",
+  "orientation": "portrait",
+  "background_color": "#05070a",
+  "theme_color": "#05070a",
   "icons": [
     {
       "src": "logo.ico",
-      "sizes": "256x256",
+      "sizes": "16x16 32x32 48x48",
       "type": "image/x-icon"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
