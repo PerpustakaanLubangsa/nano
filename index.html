@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perpustakaan Lubangsa</title>
-    
     <link rel="manifest" href="manifest.json">
-    <link rel="shortcut icon" href="logo.ico">
+    <link rel="icon" type="image/png" href="logo.png">
     <meta name="theme-color" content="#05070a">
-
     <style>
         body {
             background-color: #05070a;
             margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -23,26 +22,15 @@
             color: #ffffff;
         }
 
-        /* Salju Lebat */
-        .snow {
+        /* Canvas Salju: Super Ringan */
+        #snowCanvas {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
             z-index: 1;
         }
-        .snowflake {
-            position: absolute;
-            background-color: #fff;
-            border-radius: 50%;
-            opacity: 0.7;
-            animation: fall linear infinite;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-10vh) translateX(0); }
-            100% { transform: translateY(110vh) translateX(30px); }
-        }
 
-        /* Konten Utama */
         .container { text-align: center; z-index: 2; }
         h1 {
             font-size: 3.2rem;
@@ -51,48 +39,41 @@
             margin: 0;
             text-transform: uppercase;
         }
-        h1 span { color: #a5f3fc; text-shadow: 0 0 30px rgba(165, 243, 252, 0.5); }
+        h1 span { color: #a5f3fc; text-shadow: 0 0 25px rgba(165, 243, 252, 0.4); }
 
-        /* Loading Bar Mewah */
         .loader-box {
             position: absolute;
             bottom: 15%;
-            width: 300px;
+            width: 260px;
             z-index: 3;
         }
         .bar {
             width: 100%;
-            height: 6px;
+            height: 4px;
             background: rgba(255,255,255,0.05);
-            border-radius: 20px;
+            border-radius: 10px;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
         }
         .fill {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, #2b6cb0, #a5f3fc, #ffffff);
-            background-size: 200% 100%;
-            box-shadow: 0 0 20px #a5f3fc;
-            animation: move-gradient 2s linear infinite;
-        }
-        @keyframes move-gradient {
-            0% { background-position: 100% 0%; }
-            100% { background-position: -100% 0%; }
+            background: #a5f3fc;
+            box-shadow: 0 0 15px #a5f3fc;
+            /* Loading lebih cepat dengan transition singkat */
+            transition: width 0.1s linear;
         }
         .perc {
-            font-size: 11px;
+            font-size: 10px;
             font-family: monospace;
             color: #a5f3fc;
-            margin-top: 12px;
+            margin-top: 8px;
             text-align: center;
-            letter-spacing: 3px;
-            opacity: 0.7;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
-    <div class="snow" id="snow"></div>
+    <canvas id="snowCanvas"></canvas>
 
     <div class="container">
         <h1>PERPUS <span>LUBANGSA</span></h1>
@@ -104,36 +85,64 @@
     </div>
 
     <script>
-        // Generator Salju
-        const s = document.getElementById('snow');
-        for (let i = 0; i < 120; i++) {
-            const div = document.createElement('div');
-            div.className = 'snowflake';
-            const size = Math.random() * 4 + 1;
-            div.style.width = div.style.height = size + 'px';
-            div.style.left = Math.random() * 100 + '%';
-            div.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            div.style.animationDelay = Math.random() * 5 + 's';
-            s.appendChild(div);
+        // --- LOGIKA SALJU CANVAS (ANTI-LAG) ---
+        const canvas = document.getElementById('snowCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, snowflakes = [];
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            snowflakes = [];
+            for (let i = 0; i < 150; i++) {
+                snowflakes.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height, // Langsung hujan di seluruh layar
+                    r: Math.random() * 3 + 1,
+                    d: Math.random() * 1,
+                    v: Math.random() * 2 + 1 // Kecepatan jatuh
+                });
+            }
         }
 
-        // Registrasi PWA
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.beginPath();
+            for (let s of snowflakes) {
+                ctx.moveTo(s.x, s.y);
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2, true);
+                s.y += s.v;
+                s.x += Math.sin(s.d) * 0.5;
+                if (s.y > height) s.y = -10;
+            }
+            ctx.fill();
+            requestAnimationFrame(draw);
+        }
 
-        // Loading Progress Alami
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        draw();
+
+        // --- LOGIKA LOADING (DIPERCEPAT) ---
         let p = 0;
         const f = document.getElementById('fill');
         const tx = document.getElementById('perc');
+        
+        // Interval dipercepat (lebih agresif)
         const load = setInterval(() => {
-            p += Math.random() * 2;
+            p += Math.random() * 5; // Lompatan persentase lebih besar
             if (p >= 100) {
                 p = 100;
                 clearInterval(load);
-                setTimeout(() => window.location.href = "opac.html", 1000);
+                // Langsung pindah tanpa delay lama
+                window.location.href = "opac.html";
             }
             f.style.width = p + '%';
             tx.innerText = Math.floor(p) + '%';
-        }, 100);
+        }, 50); // Kecepatan update 50ms (2x lebih cepat)
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
 </body>
 </html>
