@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel | Perpustakaan Lubangsa</title>
+    <title>Staff Panel | Perpustakaan Lubangsa</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -76,7 +76,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -84,7 +83,7 @@
     <aside class="w-72 h-full sidebar-gradient flex flex-col z-50">
         <div class="p-6 flex items-center gap-4 shrink-0">
             <div class="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                <i class="fa-solid fa-book-bookmark text-lg"></i>
+                <i class="fa-solid fa-book-open-reader text-lg"></i>
             </div>
             <div>
                 <h1 class="brand-font text-[8px] tracking-[0.4em] text-blue-400 font-bold leading-none uppercase mb-1">Perpustakaan</h1>
@@ -142,13 +141,13 @@
                         <i class="fa-solid fa-user-shield text-base"></i>
                     </div>
                     <div class="overflow-hidden">
-                        <p id="adminNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter">Administrator</p>
+                        <p id="staffNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter">Pustakawan</p>
                         <div class="flex items-center gap-1.5">
                             <span class="relative flex h-1.5 w-1.5">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                             </span>
-                            <p class="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">Online</p>
+                            <p id="roleDisplay" class="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">Role</p>
                         </div>
                     </div>
                 </div>
@@ -184,15 +183,21 @@
     </div>
 
     <script>
+        const userRole = sessionStorage.getItem('userRole');
+        if (sessionStorage.getItem('isLoggedIn') !== 'true' || (userRole !== 'pustakawan' && userRole !== 'admin')) {
+            window.location.replace('login.html');
+        }
+
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
         const client = supabase.createClient(SB_URL, SB_KEY);
         const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
         let timeLeft = 30;
         let monitorInterval;
 
-        document.getElementById('adminNameDisplay').textContent = localStorage.getItem('adminName') || 'Lubangsa Admin';
+        document.getElementById('staffNameDisplay').textContent = sessionStorage.getItem('userName') || 'User';
+        document.getElementById('roleDisplay').textContent = sessionStorage.getItem('userRole') || 'Staff';
 
         function loadPage(page, element) {
             const frame = document.getElementById('contentFrame');
@@ -230,9 +235,6 @@
         }
 
         async function monitorAttendance() {
-            const circle = document.getElementById('countdownCircle');
-            if (circle) circle.style.opacity = "0.3";
-            
             try {
                 const now = new Date();
                 const hariIni = HARI_MAP[now.getDay()];
@@ -245,10 +247,7 @@
                     return jamMenit >= mulai && jamMenit <= selesai;
                 });
 
-                if (!currentShift) {
-                    resumeMonitoring();
-                    return;
-                }
+                if (!currentShift) { resumeMonitoring(); return; }
 
                 const { data: jadwal } = await client.from('jadwal_detail').select('nama').eq('hari', hariIni).eq('shift', currentShift.waktu);
                 const { data: rekap } = await client.from('rekap_absensi').select('nama').eq('tanggal', tglSekarang).eq('shift', currentShift.label);
@@ -284,7 +283,7 @@
 
         function logout() {
             if(confirm('Apakah Anda yakin ingin keluar?')) {
-                localStorage.clear();
+                sessionStorage.clear();
                 window.location.replace('login.html');
             }
         }
