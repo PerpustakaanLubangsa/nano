@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perpustakaan Lubangsa</title>
+    
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#05070a">
+
     <style>
         body {
             background-color: #05070a;
             margin: 0;
-            padding: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -22,7 +24,7 @@
             color: #ffffff;
         }
 
-        /* Canvas Salju: Super Ringan */
+        /* Canvas Salju: Anti-Lag */
         #snowCanvas {
             position: absolute;
             top: 0; left: 0;
@@ -59,8 +61,7 @@
             height: 100%;
             background: #a5f3fc;
             box-shadow: 0 0 15px #a5f3fc;
-            /* Loading lebih cepat dengan transition singkat */
-            transition: width 0.1s linear;
+            transition: width 0.05s linear;
         }
         .perc {
             font-size: 10px;
@@ -85,62 +86,56 @@
     </div>
 
     <script>
-        // --- LOGIKA SALJU CANVAS (ANTI-LAG) ---
+        // --- SALJU CANVAS (INSTAN & MULUS) ---
         const canvas = document.getElementById('snowCanvas');
         const ctx = canvas.getContext('2d');
-        let width, height, snowflakes = [];
+        let w, h, particles = [];
 
-        function initCanvas() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            snowflakes = [];
-            for (let i = 0; i < 150; i++) {
-                snowflakes.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height, // Langsung hujan di seluruh layar
+        function init() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            particles = [];
+            for(let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h, // Langsung tersebar di seluruh layar
                     r: Math.random() * 3 + 1,
-                    d: Math.random() * 1,
-                    v: Math.random() * 2 + 1 // Kecepatan jatuh
+                    v: Math.random() * 2 + 0.5
                 });
             }
         }
 
         function draw() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#fff';
             ctx.beginPath();
-            for (let s of snowflakes) {
-                ctx.moveTo(s.x, s.y);
-                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2, true);
-                s.y += s.v;
-                s.x += Math.sin(s.d) * 0.5;
-                if (s.y > height) s.y = -10;
+            for(let p of particles) {
+                ctx.moveTo(p.x, p.y);
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                p.y += p.v;
+                if(p.y > h) p.y = -10;
             }
             ctx.fill();
             requestAnimationFrame(draw);
         }
+        window.addEventListener('resize', init);
+        init(); draw();
 
-        window.addEventListener('resize', initCanvas);
-        initCanvas();
-        draw();
-
-        // --- LOGIKA LOADING (DIPERCEPAT) ---
-        let p = 0;
-        const f = document.getElementById('fill');
-        const tx = document.getElementById('perc');
+        // --- LOADING SUPER CEPAT ---
+        let progress = 0;
+        const fill = document.getElementById('fill');
+        const txt = document.getElementById('perc');
         
-        // Interval dipercepat (lebih agresif)
-        const load = setInterval(() => {
-            p += Math.random() * 5; // Lompatan persentase lebih besar
-            if (p >= 100) {
-                p = 100;
-                clearInterval(load);
-                // Langsung pindah tanpa delay lama
+        const interval = setInterval(() => {
+            progress += Math.random() * 8; // Lompatan lebih besar
+            if(progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
                 window.location.href = "opac.html";
             }
-            f.style.width = p + '%';
-            tx.innerText = Math.floor(p) + '%';
-        }, 50); // Kecepatan update 50ms (2x lebih cepat)
+            fill.style.width = progress + '%';
+            txt.innerText = Math.floor(progress) + '%';
+        }, 40); // Durasi per step lebih singkat
 
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
