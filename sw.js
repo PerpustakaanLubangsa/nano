@@ -1,6 +1,4 @@
-const CACHE_NAME = 'perpus-minimalis-v1';
-
-// Hanya mendaftarkan file inti sesuai permintaan
+const CACHE_NAME = 'perpus-v1';
 const assets = [
   './',
   './index.html',
@@ -11,17 +9,9 @@ const assets = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(assets);
-    })
-  );
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(assets)));
 });
 
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request);
-    })
-  );
+  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
 });
