@@ -1,11 +1,15 @@
-const CACHE_NAME = 'perpus-v1';
+const CACHE_NAME = 'perpus-minimalis-v1';
+
+// Hanya mendaftarkan file inti sesuai permintaan
 const assets = [
-  'index.html',
-  'manifest.json',
-  'logo.ico'
+  './',
+  './index.html',
+  './opac.html',
+  './manifest.json',
+  './logo.ico',
+  './logo.png'
 ];
 
-// Tahap Install: Menyimpan file ke cache
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -14,7 +18,6 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Tahap Fetch: Mengambil data dari cache saat offline
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((res) => {
