@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gudang Arsip - Snowy Edition Full</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --snow-color: #ffffff; --accent-color: #8bbef9; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(147, 197, 253, 0.3); border-radius: 20px; transition: 0.3s; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(147, 197, 253, 0.4) transparent; }
+
+        body { 
+            background: linear-gradient(to bottom, #f0f9ff, #ffffff); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #334155; padding: 15px; min-height: 100vh; 
+            overflow-x: hidden; position: relative; 
+        }
+        
+        .snow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .snowflake { position: absolute; top: -10px; color: white; user-select: none; z-index: 0; animation: fall linear infinite; opacity: 0.8; }
+        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
+
+        .btn-hover { transition: all 0.2s ease; cursor: pointer; }
+        .btn-hover:hover { transform: scale(1.03); filter: brightness(1.05); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05); }
+        .btn-hover:active { transform: scale(0.97); }
+
+        .folder-card { 
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; 
+            padding: 30px; text-align: center; transition: all 0.3s ease; 
+            display: flex; flex-direction: column; align-items: center; gap: 12px; 
+        }
+        .folder-card:hover { background: white; border-color: var(--accent-color); transform: translateY(-8px); }
+        .folder-card i { font-size: 40px; color: var(--accent-color); }
+
+        .table-container { 
+            background: rgba(255, 255, 255, 0.9); border-radius: 24px; 
+            border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); 
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1000px; }
+        th { background: #f8fafc; color: #64748b; padding: 18px 15px; font-weight: 800; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; font-size: 10px; }
+        td { padding: 14px 15px; border-bottom: 1px solid #f1f5f9; }
+
+        .modal-overlay { 
+            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8); 
+            display: none; align-items: center; justify-content: center; 
+            z-index: 9999; backdrop-filter: blur(10px); padding: 15px; 
+        }
+        .modal-box { 
+            background: white; border-radius: 32px; width: 100%; max-width: 700px; 
+            max-height: 85vh; overflow-y: auto; padding: 30px; border: 1px solid #e2e8f0; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); 
+        }
+        
+        .stat-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; }
+        .stat-label { font-weight: 600; color: #475569; font-size: 12px; }
+        .stat-val { font-weight: 800; color: #3b82f6; background: #f0f9ff; padding: 2px 10px; border-radius: 8px; font-size: 11px; }
+        .chart-wrapper { background: #fcfcfd; border-radius: 24px; padding: 25px; border: 1px solid #f1f5f9; margin-bottom: 25px; }
+    </style>
+</head>
+<body onload="initView()">
+
+    <div id="snow" class="snow-container"></div>
+
+    <div id="statModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 550px;">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="font-black text-slate-800 uppercase tracking-widest text-xs">Rekapitulasi Angka</h3>
+                <button onclick="closeModal('statModal')" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-circle-xmark text-2xl"></i></button>
+            </div>
+            <div id="statContent" class="space-y-6"></div>
+            <div class="mt-8 pt-6 border-t-2 border-slate-900 flex justify-between items-center">
+                <span class="text-xs font-black uppercase tracking-tighter">Grand Total</span>
+                <span id="statGrandTotal" class="text-3xl font-black text-slate-900">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="chartModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <h3 class="font-black text-slate-800 uppercase tracking-widest text-xs">Visualisasi Diagram Lengkap</h3>
+                <button onclick="closeModal('chartModal')" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-circle-xmark text-2xl"></i></button>
+            </div>
+            <div id="allChartsContainer" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto pt-10 relative z-10">
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Arsip Digital</h1>
+                <p class="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Sistem Informasi Perpustakaan</p>
+            </div>
+            <a href="beranda.html" class="btn-hover px-6 py-3 rounded-2xl bg-white text-slate-900 border border-slate-200 text-xs font-extrabold shadow-sm">KEMBALI</a>
+        </header>
+
+        <nav id="navBar" class="hidden mb-8 flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <b onclick="initView()" class="btn-hover text-blue-500">UTAMA</b>
+            <span id="navYear" class="hidden"><i class="fa-solid fa-chevron-right text-[10px] mx-2 text-slate-300"></i><b onclick="goBackToYear()" id="txtNavYear" class="text-blue-500"></b></span>
+            <span id="navMonth" class="hidden"><i class="fa-solid fa-chevron-right text-[10px] mx-2 text-slate-300"></i><span id="txtNavMonth" class="text-slate-900"></span></span>
+        </nav>
+
+        <div id="folderGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+
+        <div id="tableArea" class="hidden">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
+                <div class="flex gap-3">
+                    <button onclick="copyTable()" class="btn-hover text-[11px] font-black text-slate-600 border border-slate-200 bg-white px-5 py-3 rounded-2xl uppercase tracking-tighter">Salin Data</button>
+                    <button onclick="showSummary()" class="btn-hover text-[11px] font-black text-slate-600 border border-slate-200 bg-white px-5 py-3 rounded-2xl uppercase tracking-tighter">Total Ringkasan</button>
+                    <button onclick="showCharts()" class="btn-hover text-[11px] font-black text-white bg-blue-500 px-6 py-3 rounded-2xl shadow-lg shadow-blue-100 uppercase tracking-tighter">Buka Diagram</button>
+                </div>
+                <span id="rowCount" class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-5 py-2.5 rounded-2xl border border-slate-100 shadow-sm">0 Data Terload</span>
+            </div>
+            <div class="table-container">
+                <table id="archiveTable">
+                    <thead><tr><th>Tgl</th><th>Pemustaka</th><th>Kamar</th><th>Jenjang</th><th>Buku</th><th>Kategori</th><th>Aksi</th></tr></thead>
+                    <tbody id="archiveBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createSnow() {
+            const container = document.getElementById('snow');
+            for (let i = 0; i < 40; i++) {
+                let flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerHTML = '❄';
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.animationDuration = (Math.random() * 3 + 5) + 's';
+                flake.style.opacity = Math.random();
+                flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                container.appendChild(flake);
+            }
+        }
+        createSnow();
+
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+        const blnFull = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        let selectedYear = null, currentDetailData = [], charts = {};
+
+        async function initView() {
+            resetAll();
+            const { data } = await client.from('data_pengunjung').select('created_at');
+            if (data) {
+                const years = [...new Set(data.map(i => new Date(i.created_at).getFullYear()))].sort((a,b) => b-a);
+                document.getElementById('folderGrid').innerHTML = years.map(y => `<div class="folder-card btn-hover" onclick="openYear('${y}')"><i class="fa-solid fa-folder"></i><span class="font-extrabold text-slate-800 text-lg">${y}</span></div>`).join('');
+            }
+        }
+
+        async function openYear(year) {
+            selectedYear = year;
+            document.getElementById('navBar').classList.remove('hidden');
+            document.getElementById('navYear').classList.remove('hidden');
+            document.getElementById('txtNavYear').innerText = year;
+            const { data } = await client.from('data_pengunjung').select('created_at').gte('created_at', `${year}-01-01`).lte('created_at', `${year}-12-31T23:59:59`);
+            if (data) {
+                const months = [...new Set(data.map(i => new Date(i.created_at).getMonth()))].sort((a,b) => a-b);
+                document.getElementById('folderGrid').innerHTML = months.map(m => `<div class="folder-card btn-hover" onclick="openDetail('${m+1}')"><i class="fa-solid fa-folder-closed"></i><span class="font-extrabold text-slate-800 text-lg">${blnFull[m]}</span></div>`).join('');
+            }
+        }
+
+        async function openDetail(month) {
+            document.getElementById('navMonth').classList.remove('hidden');
+            document.getElementById('txtNavMonth').innerText = blnFull[month-1];
+            document.getElementById('folderGrid').classList.add('hidden');
+            document.getElementById('tableArea').classList.remove('hidden');
+            const start = `${selectedYear}-${month.toString().padStart(2, '0')}-01`, end = new Date(selectedYear, month, 0).toISOString().split('T')[0];
+            const { data } = await client.from('data_pengunjung').select('*').gte('created_at', `${start}T00:00:00`).lte('created_at', `${end}T23:59:59`).order('created_at', { ascending: false });
+            if (data) { currentDetailData = data; document.getElementById('rowCount').innerText = `${data.length} DATA TERLOAD`; renderTable(); }
+        }
+
+        function renderTable() {
+            document.getElementById('archiveBody').innerHTML = currentDetailData.map(log => `<tr><td class="text-slate-400 font-bold">${new Date(log.created_at).toLocaleDateString('id-ID')}</td><td class="font-extrabold text-slate-700">${log.nama}</td><td class="text-blue-500 font-bold">${log.kamar}</td><td class="font-bold">${log.jenjang || '-'}</td><td class="text-slate-600 italic font-medium">${log.judul_buku}</td><td>${log.kategori || '-'}</td><td class="font-black text-[10px] text-blue-400 uppercase tracking-tighter">${log.aktivitas}</td></tr>`).join('');
+        }
+
+        function countData(key) {
+            const counts = {};
+            currentDetailData.forEach(item => { const val = item[key] || 'Lainnya'; counts[val] = (counts[val] || 0) + 1; });
+            return Object.entries(counts).sort((a,b) => b[1] - a[1]);
+        }
+
+        function showSummary() {
+            const configs = [
+                { label: "1. Nama Pemustaka (Top 10)", key: 'nama', limit: 10 },
+                { label: "2. Kamar (Top 10)", key: 'kamar', limit: 10 },
+                { label: "3. Jenjang Pendidikan", key: 'jenjang' },
+                { label: "4. Judul Buku (Top 10)", key: 'judul_buku', limit: 10 },
+                { label: "5. Kategori Buku", key: 'kategori' },
+                { label: "6. Aktivitas (Aksi)", key: 'aktivitas' }
+            ];
+            document.getElementById('statContent').innerHTML = configs.map(c => {
+                const items = countData(c.key).slice(0, c.limit || 99).map(([k,v]) => `<div class="stat-item"><span class="stat-label">${k}</span><span class="stat-val">${v}</span></div>`).join('');
+                return `<div><span style="font-size:10px; font-weight:900; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">${c.label}</span>${items}</div>`;
+            }).join('');
+            document.getElementById('statGrandTotal').innerText = currentDetailData.length;
+            document.getElementById('statModal').style.display = 'flex';
+        }
+
+        function showCharts() {
+            document.getElementById('chartModal').style.display = 'flex';
+            const container = document.getElementById('allChartsContainer');
+            container.innerHTML = "";
+            const configs = [
+                { id: 'ch_nama', label: 'Top 10 Pemustaka', key: 'nama', color: '#60a5fa', limit: 10, axis: 'y' },
+                { id: 'ch_kamar', label: 'Top 10 Kamar', key: 'kamar', color: '#93c5fd', limit: 10, axis: 'y' },
+                { id: 'ch_jenjang', label: 'Jenjang Pendidikan', key: 'jenjang', color: '#bfdbfe', axis: 'x' },
+                { id: 'ch_buku', label: 'Top 10 Judul Buku', key: 'judul_buku', color: '#60a5fa', limit: 10, axis: 'y' },
+                { id: 'ch_kategori', label: 'Kategori Buku', key: 'kategori', color: '#93c5fd', axis: 'x' },
+                { id: 'ch_aksi', label: 'Aktivitas (Aksi)', key: 'aktivitas', color: '#bfdbfe', axis: 'x' }
+            ];
+            configs.forEach(conf => {
+                const wrap = document.createElement('div');
+                wrap.className = "chart-wrapper";
+                wrap.innerHTML = `<div style="font-size:10px; font-weight:900; color:#94a3b8; text-transform:uppercase; margin-bottom:20px;">${conf.label}</div><div style="height:280px;"><canvas id="${conf.id}"></canvas></div>`;
+                container.appendChild(wrap);
+                const rawData = countData(conf.key).slice(0, conf.limit || 99);
+                if (charts[conf.id]) charts[conf.id].destroy();
+                charts[conf.id] = new Chart(document.getElementById(conf.id).getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: rawData.map(d => d[0]), datasets: [{ data: rawData.map(d => d[1]), backgroundColor: conf.color, borderRadius: 10 }] },
+                    options: { indexAxis: conf.axis, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f8fafc' } }, x: { grid: { display: false } } } }
+                });
+            });
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function goBackToYear() { document.getElementById('navMonth').classList.add('hidden'); document.getElementById('tableArea').classList.add('hidden'); document.getElementById('folderGrid').classList.remove('hidden'); openYear(selectedYear); }
+        function resetAll() { document.getElementById('folderGrid').classList.remove('hidden'); document.getElementById('tableArea').classList.add('hidden'); document.getElementById('navBar').classList.add('hidden'); }
+        function copyTable() { const range = document.createRange(); range.selectNode(document.getElementById("archiveTable")); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); document.execCommand("copy"); alert("Berhasil Salin!"); window.getSelection().removeAllRanges(); }
+    </script>
+</body>
+</html>

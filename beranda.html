@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Intel - Sync Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --dark-bg: #0f172a; --dark-card: rgba(30, 41, 59, 0.7); --accent: #3b82f6; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        body { background: radial-gradient(circle at top right, #1e293b, #0f172a); font-family: 'Plus Jakarta Sans', sans-serif; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
+        
+        .glass-card { background: var(--dark-card); backdrop-filter: blur(12px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .stat-bar-card { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+        #snow-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
+        .chart-label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1em; margin-bottom: 10px; text-align: center; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <canvas id="snow-canvas"></canvas>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        <header class="mb-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-snowflake"></i></div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight">Library Intel</h1>
+                    <p id="currentDateDisplay" class="text-slate-500 font-bold uppercase text-[8px] tracking-[0.2em]"></p>
+                </div>
+            </div>
+            <button onclick="location.href='arsip-pengunjung.html'" class="bg-white/5 hover:bg-blue-600 border border-white/10 px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all">Buka Arsip</button>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <div class="glass-card stat-bar-card"><i class="fa-solid fa-users text-blue-400"></i><div><p class="text-[7px] text-slate-500 font-black uppercase">Hari Ini</p><h2 id="todayVisit" class="text-lg font-black">0</h2></div></div>
+            <div class="glass-card stat-bar-card"><i class="fa-solid fa-user-check text-indigo-400"></i><div><p class="text-[7px] text-slate-500 font-black uppercase">Pinjam Aktif</p><h2 id="activeSirkulasi" class="text-lg font-black">0</h2></div></div>
+            <div class="glass-card stat-bar-card"><i class="fa-solid fa-calendar-check text-emerald-400"></i><div><p class="text-[7px] text-slate-500 font-black uppercase">Bulan Ini</p><h2 id="monthVisit" class="text-lg font-black">0</h2></div></div>
+            <div class="glass-card stat-bar-card"><i class="fa-solid fa-chart-line text-amber-400"></i><div><p class="text-[7px] text-slate-500 font-black uppercase">Tahun Ini</p><h2 id="yearVisit" class="text-lg font-black">0</h2></div></div>
+            <div class="glass-card stat-bar-card"><i class="fa-solid fa-book text-rose-400"></i><div><p class="text-[7px] text-slate-500 font-black uppercase">Total Koleksi</p><h2 id="totalKoleksi" class="text-lg font-black">0</h2></div></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass-card p-5 h-[260px]">
+                    <h3 class="chart-label">Tren Aktivitas Pengunjung Tahunan</h3>
+                    <div class="relative h-[200px]"><canvas id="annualChart"></canvas></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="glass-card p-4 h-[220px]">
+                        <h3 class="chart-label">Aktivitas Bulan Ini</h3>
+                        <div class="relative h-[160px]"><canvas id="donutChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-4 h-[220px]">
+                        <h3 class="chart-label">Aktivitas per Jenjang</h3>
+                        <div class="relative h-[160px]"><canvas id="stackedBarChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-4 h-[220px]">
+                        <h3 class="chart-label">Top Kategori Buku</h3>
+                        <div class="relative h-[160px]"><canvas id="categoryBarChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-5">
+                <h3 class="chart-label border-b border-white/5 pb-2">Top 10 Pemustaka</h3>
+                <div id="topRank" class="space-y-2 mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+        const now = new Date();
+
+        document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+        // Light Snow Effect
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, snowflakes = [];
+        function initSnow() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+            snowflakes = Array.from({ length: 30 }, () => ({ x: Math.random() * width, y: Math.random() * height, r: Math.random() * 2 + 1, d: Math.random() * 0.2 + 0.05 }));
+        }
+        function drawSnow() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+            snowflakes.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill(); f.y += f.d; if (f.y > height) f.y = -10; });
+            requestAnimationFrame(drawSnow);
+        }
+        window.addEventListener('resize', initSnow); initSnow(); drawSnow();
+
+        async function initDashboard() {
+            const todayStr = now.toISOString().split('T')[0];
+            const monthStr = todayStr.substring(0, 7);
+            const yearStr = todayStr.substring(0, 4);
+
+            try {
+                const [p, s, b] = await Promise.all([
+                    client.from('data_pengunjung').select('*'),
+                    client.from('sirkulasi').select('id').eq('status', 'DIPINJAM'),
+                    client.from('biblio').select('id', { count: 'exact' })
+                ]);
+
+                const logs = p.data || [];
+                const monthLogs = logs.filter(i => i.created_at.startsWith(monthStr));
+
+                document.getElementById('todayVisit').innerText = logs.filter(i => i.created_at.startsWith(todayStr)).length;
+                document.getElementById('activeSirkulasi').innerText = s.data?.length || 0;
+                document.getElementById('monthVisit').innerText = monthLogs.length;
+                document.getElementById('yearVisit').innerText = logs.filter(i => i.created_at.startsWith(yearStr)).length;
+                document.getElementById('totalKoleksi').innerText = b.count || 0;
+
+                renderCharts(logs, monthLogs, yearStr);
+                renderTopTen(logs, yearStr);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderCharts(allData, monthData, year) {
+            // Helper untuk standarisasi teks
+            const clean = (val) => (val || "Lainnya").toString().toUpperCase().trim();
+
+            // 1. Annual Line Chart
+            const monthlyCounts = new Array(12).fill(0);
+            allData.filter(i => i.created_at.startsWith(year)).forEach(i => monthlyCounts[new Date(i.created_at).getMonth()]++);
+            new Chart(document.getElementById('annualChart'), {
+                type: 'line',
+                data: { labels: ["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"], datasets: [{ data: monthlyCounts, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b', font: { size: 9 } } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } } } }
+            });
+
+            // 2. Donut Chart (Bulan Ini: Berdasarkan Aktivitas)
+            const actCounts = {}; monthData.forEach(i => { const a = clean(i.aktivitas); actCounts[a] = (actCounts[a] || 0) + 1; });
+            new Chart(document.getElementById('donutChart'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(actCounts), datasets: [{ data: Object.values(actCounts), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'], borderWeight: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 8 }, boxWidth: 10 } } } }
+            });
+
+            // 3. Stacked Bar Chart (Bulan Ini: Aktivitas per Jenjang)
+            const jenjangs = [...new Set(monthData.map(i => clean(i.jenjang)))].slice(0, 5);
+            const aktivitasKeys = Object.keys(actCounts);
+            new Chart(document.getElementById('stackedBarChart'), {
+                type: 'bar',
+                data: { 
+                    labels: jenjangs, 
+                    datasets: aktivitasKeys.map((act, idx) => ({
+                        label: act,
+                        data: jenjangs.map(j => monthData.filter(i => clean(i.jenjang) === j && clean(i.aktivitas) === act).length),
+                        backgroundColor: idx === 0 ? '#3b82f6' : (idx === 1 ? '#6366f1' : '#a855f7')
+                    }))
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { stacked: true, grid: { display: false }, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+            });
+
+            // 4. Category Bar Chart (Bulan Ini: Berdasarkan Kategori Buku)
+            const catCounts = {}; monthData.forEach(i => { const c = clean(i.kategori); catCounts[c] = (catCounts[c] || 0) + 1; });
+            const topCats = Object.entries(catCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            new Chart(document.getElementById('categoryBarChart'), {
+                type: 'bar',
+                data: { labels: topCats.map(d => d[0]), datasets: [{ data: topCats.map(d => d[1]), backgroundColor: '#f59e0b', borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { grid: { display: false }, ticks: { display: false } } } }
+            });
+        }
+
+        function renderTopTen(data, year) {
+            const counts = {};
+            data.filter(i => i.created_at.startsWith(year)).forEach(i => { const n = (i.nama || "User").toUpperCase().trim(); counts[n] = (counts[n] || 0) + 1; });
+            const sorted = Object.entries(counts).sort(([,a], [,b]) => b - a).slice(0, 10);
+            document.getElementById('topRank').innerHTML = sorted.map(([name, count], idx) => `
+                <div class="flex items-center justify-between text-[10px] p-2 bg-white/5 rounded-lg border border-transparent hover:border-blue-500/30 transition-all">
+                    <div class="flex items-center gap-2 overflow-hidden w-4/5">
+                        <span class="font-black ${idx < 3 ? 'text-blue-400' : 'text-slate-600'} w-4">${idx + 1}</span>
+                        <p class="font-bold text-slate-300 truncate">${name}</p>
+                    </div>
+                    <span class="font-black text-blue-500">${count}</span>
+                </div>
+            `).join('');
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

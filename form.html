@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Tamu - Digital Library</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --border: #334155;
+            --accent: #3b82f6;
+            --text-main: #f1f5f9;
+            --input-bg: #1e293b;
+        }
+
+        * { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }
+        *::-webkit-scrollbar { display: none; }
+
+        body { 
+            background: var(--bg); color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh;
+            margin: 0; padding: 15px; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        header { margin-bottom: 15px; flex-shrink: 0; }
+        form { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+
+        .input-formal { 
+            background: var(--input-bg) !important; border: 1px solid var(--border) !important; 
+            border-radius: 10px !important; padding: 10px 12px !important; font-weight: 600; 
+            width: 100%; font-size: 14px; color: #fff !important; outline: none;
+        }
+        .input-formal:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        
+        label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: block; }
+        
+        .drop-box {
+            position: absolute; width: 100%; max-height: 280px; overflow-y: auto;
+            background: #1e293b; border-radius: 10px; border: 1px solid var(--border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; margin-top: 5px; display: none;
+        }
+        .drop-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; transition: all 0.2s; }
+        .drop-item:last-child { border-bottom: none; }
+        .drop-item.selected { background: #3b82f6; color: white; }
+        .drop-item.selected .sub-text { color: #dbeafe; }
+
+        .btn-submit { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white; padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; border: none; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        #customModal {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); 
+            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px);
+        }
+        .sub-text { font-size: 10px; opacity: 0.6; display: block; margin-top: 2px; }
+        
+        .room-badge { 
+            background: rgba(59, 130, 246, 0.2); color: #60a5fa; 
+            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700;
+        }
+    </style>
+</head>
+<body onload="initData()">
+
+    <div id="customModal">
+        <div class="modal-content bg-[#1e293b] p-8 rounded-3xl text-center max-w-[320px] w-full border border-[#334155] shadow-2xl">
+            <div id="modalIcon" class="text-6xl mb-4 text-green-400"><i class="fa-solid fa-circle-check fa-bounce"></i></div>
+            <h2 id="modalTitle" class="text-white font-extrabold text-2xl mb-2">Berhasil!</h2>
+            <p id="modalDesc" class="text-slate-400 text-sm mb-6 leading-relaxed"></p>
+            <button id="modalAction" class="btn-submit">Selesai</button>
+        </div>
+    </div>
+
+    <header class="flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-extrabold text-white tracking-tighter">BUKU TAMU</h1>
+            <p class="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em]">Digital Library Sync</p>
+        </div>
+        <i class="fa-solid fa-database text-slate-700"></i>
+    </header>
+
+    <form id="guestForm" autocomplete="off">
+        <div class="relative">
+            <label><i class="fa-solid fa-user-tag mr-1"></i> Nama / NIS</label>
+            <input type="text" id="inputNama" placeholder="Cari nama atau NIS..." required class="input-formal">
+            <div id="dropNama" class="drop-box"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label><i class="fa-solid fa-door-open mr-1"></i> Kamar</label>
+                <input type="text" id="inputKamar" required placeholder="A-01" class="input-formal uppercase">
+            </div>
+            <div>
+                <label><i class="fa-solid fa-graduation-cap mr-1"></i> Jenjang</label>
+                <select id="inputJenjang" required class="input-formal">
+                    <option value="" disabled selected>- Pilih -</option>
+                    <option value="SLTP">SLTP</option>
+                    <option value="SLTA">SLTA</option>
+                    <option value="PT">PT</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="relative">
+            <label><i class="fa-solid fa-book mr-1"></i> Judul Koleksi</label>
+            <input type="text" id="inputBuku" placeholder="Cari judul buku..." required class="input-formal">
+            <div id="dropBuku" class="drop-box"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label><i class="fa-solid fa-tags mr-1"></i> Kategori</label>
+                <select id="inputKategori" required class="input-formal text-xs">
+                    <option value="" disabled selected>- Pilih -</option>
+                    <option value="Kesusastraan">Kesusastraan</option>
+                    <option value="Komik">Komik</option>
+                    <option value="Filsafat dan Psikologi">Filsafat dan Psikologi</option>
+                    <option value="Agama">Agama</option>
+                    <option value="Ilmu Sosial">Ilmu Sosial</option>
+                    <option value="Sejarah dan Geografi">Sejarah dan Geografi</option>
+                    <option value="Ilmu Murni">Ilmu Murni</option>
+                    <option value="Ilmu Bahasa">Ilmu Bahasa</option>
+                    <option value="Managemen">Managemen</option>
+                    <option value="Majalah">Majalah</option>
+                </select>
+            </div>
+            <div>
+                <label><i class="fa-solid fa-person-walking mr-1"></i> Aktivitas</label>
+                <select id="inputAktivitas" required class="input-formal">
+                    <option value="" disabled selected>- Pilih -</option>
+                    <option value="Baca">Baca</option>
+                    <option value="Pinjam">Pinjam</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-auto pb-2">
+            <button type="submit" id="btnSubmit" class="btn-submit">
+                <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron
+            </button>
+        </div>
+    </form>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let dataAnggota = [], dataBiblio = [], activeIdx = -1;
+
+        async function initData() {
+            try {
+                const [resA, resB] = await Promise.all([
+                    client.from('anggota').select('nama, nis, kamar, jenjang'),
+                    client.from('biblio').select('judul, kategori')
+                ]);
+                dataAnggota = resA.data || [];
+                dataBiblio = resB.data || [];
+
+                bindSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
+                bindSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
+            } catch (err) { console.error(err); }
+        }
+
+        function showToast(msg) {
+            Toastify({
+                text: msg, duration: 3000, gravity: "top", position: "center",
+                style: { background: "#ef4444", borderRadius: "10px", fontWeight: "bold" }
+            }).showToast();
+        }
+
+        function handleExactEnter(inputId, val, source, keys) {
+            const found = source.find(item => 
+                keys.some(k => item[k] && item[k].toString().toLowerCase() === val.toLowerCase())
+            );
+            if (found) {
+                const dropId = inputId === 'inputNama' ? 'dropNama' : 'dropBuku';
+                document.getElementById(dropId).dataset.currentMatches = JSON.stringify([found]);
+                pick(inputId, dropId, 0);
+                return true;
+            }
+            return false;
+        }
+
+        function bindSearch(inputId, dropId, source, keys) {
+            const input = document.getElementById(inputId);
+            const drop = document.getElementById(dropId);
+
+            input.addEventListener('keydown', (e) => {
+                const items = drop.querySelectorAll('.drop-item');
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeIdx > -1) {
+                        items[activeIdx].click();
+                    } else {
+                        const val = input.value.trim();
+                        if (val && !handleExactEnter(inputId, val, source, keys)) {
+                            showToast("Data tidak ditemukan!");
+                            input.value = "";
+                        }
+                    }
+                    drop.style.display = 'none';
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlightItem(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlightItem(items);
+                }
+            });
+
+            input.addEventListener('input', () => {
+                const val = input.value.toLowerCase().trim();
+                activeIdx = -1;
+                if (val.length < 1) { drop.style.display = 'none'; return; }
+
+                const matches = source.filter(i => 
+                    keys.some(k => i[k] && i[k].toString().toLowerCase().includes(val))
+                ).slice(0, 10);
+
+                if (matches.length > 0) {
+                    drop.innerHTML = matches.map((item, i) => {
+                        const title = inputId === 'inputNama' ? item.nama : item.judul;
+                        const sub = inputId === 'inputNama' 
+                            ? `<div class="flex justify-between items-center w-full mt-1">
+                                <span class="sub-text">NIS: ${item.nis || '-'}</span>
+                                <span class="room-badge">Kamar: ${item.kamar || '-'}</span>
+                               </div>` 
+                            : `<span class="sub-text">${item.kategori || '-'}</span>`;
+                        
+                        return `<div class="drop-item" onclick="pick('${inputId}', '${dropId}', ${i})">
+                            <div class="text-sm font-bold truncate">${title}</div>
+                            ${sub}
+                        </div>`;
+                    }).join('');
+                    drop.style.display = 'block';
+                    drop.dataset.currentMatches = JSON.stringify(matches);
+                } else { drop.style.display = 'none'; }
+            });
+        }
+
+        function highlightItem(items) {
+            items.forEach((it, i) => it.classList.toggle('selected', i === activeIdx));
+            if (activeIdx > -1) items[activeIdx].scrollIntoView({ block: 'nearest' });
+        }
+
+        function pick(inputId, dropId, index) {
+            const drop = document.getElementById(dropId);
+            const matches = JSON.parse(drop.dataset.currentMatches);
+            const data = matches[index];
+
+            if (inputId === 'inputNama') {
+                document.getElementById('inputNama').value = data.nama;
+                document.getElementById('inputKamar').value = data.kamar || '';
+                document.getElementById('inputJenjang').value = data.jenjang || '';
+            } else {
+                document.getElementById('inputBuku').value = data.judul;
+                document.getElementById('inputKategori').value = data.kategori || '';
+            }
+            drop.style.display = 'none';
+            activeIdx = -1;
+        }
+
+        document.getElementById('guestForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sinkronisasi...';
+
+            const payload = {
+                nama: document.getElementById('inputNama').value,
+                kamar: document.getElementById('inputKamar').value,
+                jenjang: document.getElementById('inputJenjang').value,
+                judul_buku: document.getElementById('inputBuku').value,
+                kategori: document.getElementById('inputKategori').value,
+                aktivitas: document.getElementById('inputAktivitas').value,
+                created_at: new Date().toISOString()
+            };
+
+            const results = await Promise.all([
+                client.from('log_aktivitas').insert([payload]),
+                client.from('anggota').update({ kamar: payload.kamar, jenjang: payload.jenjang }).eq('nama', payload.nama),
+                client.from('biblio').update({ kategori: payload.kategori }).eq('judul', payload.judul_buku)
+            ]);
+
+            if (!results[0].error) {
+                document.getElementById('modalDesc').innerHTML = `Log <b>${payload.nama}</b> berhasil disimpan.`;
+                document.getElementById('customModal').style.display = 'flex';
+                document.getElementById('modalAction').onclick = () => location.reload();
+            } else {
+                showToast("Simpan gagal!");
+                btn.disabled = false; btn.innerText = "Simpan & Sinkron";
+            }
+        };
+
+        window.onclick = (e) => { if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); };
+    </script>
+</body>
+</html>

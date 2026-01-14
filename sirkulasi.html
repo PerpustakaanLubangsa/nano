@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIRKULASI LIGHT SNOW</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --snow-bg: #fdfeff; 
+            --snow-card: #ffffff; 
+            --snow-input: #f0f4f8; 
+            --snow-primary: #3b82f6; 
+            --snow-border: #e2e8f0;
+            --snow-text: #1e293b;
+        }
+        body { 
+            background-color: var(--snow-bg); 
+            color: var(--snow-text); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            display: flex; justify-content: center; padding-top: 20px; height: 100vh; overflow: hidden; 
+        }
+        .glass { 
+            background: var(--snow-card); 
+            border: 1px solid var(--snow-border); 
+            box-shadow: 0 10px 25px rgba(148, 163, 184, 0.1); 
+            border-radius: 24px; 
+        }
+        input { 
+            background: var(--snow-input) !important; 
+            color: var(--snow-text) !important; 
+            border: 2px solid transparent !important; 
+            transition: all 0.2s;
+        }
+        input:focus { 
+            border-color: #bfdbfe !important; 
+            background: #fff !important; 
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+        }
+        .autocomplete-list { 
+            position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 1000; 
+            background: #fff; border: 1px solid var(--snow-border); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05); border-radius: 18px; 
+            max-height: 280px; overflow-y: auto; padding: 6px; 
+        }
+        .autocomplete-item { padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-radius: 14px; margin-bottom: 2px; }
+        .autocomplete-item:hover, .autocomplete-item.selected { background: #f8fafc; }
+        .autocomplete-item.selected { background: #eff6ff !important; color: #1d4ed8; }
+        
+        .has-loan { background: #fffbeb !important; border: 1px solid #fde68a; }
+        .has-loan b { color: #b45309 !important; }
+        
+        .modal-container { 
+            position: fixed; inset: 0; z-index: 100; display: none; 
+            align-items: center; justify-content: center; background: rgba(241, 245, 249, 0.8); 
+            backdrop-filter: blur(4px);
+        }
+        .hidden { display: none !important; }
+        .toast-msg { 
+            background: #0f172a; color: white; padding: 12px 24px; 
+            border-radius: 16px; font-size: 11px; font-weight: 700; 
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; 
+        }
+        .btn-snow-primary { background: #3b82f6; color: white; transition: transform 0.1s; }
+        .btn-snow-primary:active { transform: scale(0.98); }
+        .badge-kamar {
+            padding: 2px 8px; background: #f1f5f9; color: #64748b; 
+            border-radius: 6px; font-size: 9px; font-weight: 800; text-transform: uppercase;
+        }
+        .kb-shortcut {
+            font-size: 8px; opacity: 0.6; border: 1px solid currentColor; padding: 0px 4px; border-radius: 4px; margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="modal-confirm" class="modal-container">
+    <div class="glass w-full max-w-[280px] p-7 text-center">
+        <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl"><i class="fas fa-question-circle"></i></div>
+        <h4 class="text-sm font-extrabold mb-2 text-slate-800">Konfirmasi</h4>
+        <p id="modal-text" class="text-[11px] text-slate-500 mb-6"></p>
+        <div class="flex gap-2">
+            <button onclick="closeModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button id="modal-confirm-btn" class="flex-1 py-3 btn-snow-primary rounded-xl font-bold text-[10px]">YA, PROSES</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-date" class="modal-container">
+    <div class="glass w-full max-w-[280px] p-7">
+        <h4 class="text-sm font-extrabold mb-4 text-center">Jatuh Tempo Baru</h4>
+        <input type="date" id="customDatePicker" class="w-full p-3 rounded-xl outline-none text-xs font-bold mb-4">
+        <div class="flex gap-2">
+            <button onclick="closeDateModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button id="saveDateBtn" class="flex-1 py-3 btn-snow-primary rounded-xl font-bold text-[10px]">SIMPAN</button>
+        </div>
+    </div>
+</div>
+
+<div class="w-full max-w-[340px] px-4">
+    <div id="main-input-area" class="glass p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200"><i class="fas fa-snowflake"></i></div>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-blue-600">Sirkulasi Perpustakaan</h3>
+        </div>
+        <div class="relative">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+            <input type="text" id="inputMain" autocomplete="off" placeholder="Nama, NIS, Kamar, atau Buku..." class="w-full pl-10 pr-4 py-4 rounded-2xl outline-none text-xs font-bold">
+            <div id="listMain" class="autocomplete-list hidden"></div>
+        </div>
+    </div>
+
+    <div id="summary-detail" class="glass p-6 hidden">
+        <div class="flex justify-between items-start mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-slate-50 border border-slate-100 text-blue-500 rounded-2xl flex items-center justify-center text-sm"><i class="fas fa-user-check"></i></div>
+                <div><h4 id="displayNis" class="text-slate-400 text-[10px] font-bold"></h4><p id="displayNama" class="text-xs font-extrabold text-slate-800 uppercase"></p></div>
+            </div>
+            <button onclick="resetKeAwal()" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-400"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="relative mb-4">
+            <input type="text" id="inputBuku" autocomplete="off" placeholder="Cari Judul atau Kode Eks..." class="w-full p-4 rounded-2xl outline-none text-xs font-bold">
+            <div id="listBuku" class="autocomplete-list hidden"></div>
+        </div>
+        <div id="bukuTerpilihBox" class="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 hidden mb-4">
+            <p id="resJudul" class="font-bold text-[11px] text-blue-800"></p>
+            <p id="resKode" class="text-[9px] font-black text-blue-400 uppercase mt-1"></p>
+        </div>
+        <button id="btnProses" onclick="handleSimpan()" class="w-full py-4 btn-snow-primary shadow-xl shadow-blue-100 rounded-2xl font-bold text-[10px] disabled:opacity-30" disabled>KONFIRMASI PINJAMAN</button>
+    </div>
+
+    <div id="success-card" class="glass overflow-hidden hidden">
+        <div class="p-6 flex items-center gap-4 border-b border-slate-50">
+            <div id="iconStatus" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white"></div>
+            <div class="flex-1"><h3 id="statusTitle" class="text-[9px] font-black uppercase text-slate-400"></h3><p id="finalNama" class="text-sm font-extrabold text-slate-800"></p></div>
+            <button onclick="resetKeAwal()" class="text-slate-300"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6">
+            <div class="p-5 bg-slate-50/50 rounded-3xl border border-slate-100 mb-6">
+                <p id="finalBuku" class="font-bold text-[12px] text-slate-800 leading-snug mb-1"></p>
+                <p id="finalKode" class="text-[9px] font-black text-slate-400 uppercase mb-4"></p>
+                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 border-dashed">
+                    <div class="cursor-pointer" onclick="openDateModal()">
+                        <span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Batas Kembali</span>
+                        <p id="finalTgl" class="text-[10px] font-bold text-blue-600 flex items-center gap-1"><i class="fas fa-calendar-day"></i> <span></span></p>
+                    </div>
+                    <div><span class="text-[8px] font-black text-slate-400 uppercase block mb-1">Denda Terlambat</span><p id="finalDenda" class="text-[10px] font-bold text-red-500"></p></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <button id="btnPerpanjang" class="py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold text-[9px] border border-blue-100">PERPANJANG <span class="kb-shortcut">1</span></button>
+                <button id="btnKembali" class="py-4 bg-rose-50 text-rose-600 rounded-2xl font-bold text-[9px] border border-rose-100">KEMBALIKAN <span class="kb-shortcut">3</span></button>
+            </div>
+            <button onclick="resetKeAwal()" id="btnSelesai" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold text-[9px]">TRANSAKSI BARU <span class="kb-shortcut">2</span></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const S_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+    const client = supabase.createClient(S_URL, S_KEY);
+
+    let selectedAnggota = null, selectedBuku = null, currentLoanId = null, currentFocus = -1, debounceTimer;
+    let mainResults = [], bukuResults = [];
+
+    window.onload = () => document.getElementById("inputMain").focus();
+
+    function showToast(m) {
+        const t = document.createElement('div'); t.className = 'toast-msg shadow-2xl'; t.textContent = m;
+        document.getElementById('toast-container').innerHTML = '';
+        document.getElementById('toast-container').appendChild(t);
+        setTimeout(() => t.remove(), 2500);
+    }
+
+    function debounce(func, timeout = 300) {
+        return (...args) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func.apply(this, args), timeout);
+        };
+    }
+
+    window.addEventListener('keydown', (e) => {
+        const mC = document.getElementById('modal-confirm'), mD = document.getElementById('modal-date');
+        if (mC.style.display === 'flex') {
+            if (e.key === 'Enter') document.getElementById('modal-confirm-btn').click();
+            if (e.key === 'Escape') closeModal();
+        } else if (mD.style.display === 'flex') {
+            if (e.key === 'Enter') document.getElementById('saveDateBtn').click();
+            if (e.key === 'Escape') closeDateModal();
+        } else {
+            if (["INPUT", "SELECT"].includes(document.activeElement.tagName)) return;
+            const card = document.getElementById('success-card');
+            if (!card.classList.contains('hidden')) {
+                if (e.key === '1') document.getElementById('btnPerpanjang').click();
+                if (e.key === '2') resetKeAwal();
+                if (e.key === '3') document.getElementById('btnKembali').click();
+            }
+        }
+    });
+
+    const inM = document.getElementById("inputMain"), lsM = document.getElementById("listMain");
+    inM.addEventListener('input', debounce(async () => {
+        const q = inM.value.trim(); lsM.innerHTML = ''; currentFocus = -1; mainResults = [];
+        if(q.length < 2) return lsM.classList.add('hidden');
+        
+        const { data: members } = await client.from('anggota').select('nis, nama, kamar').or(`nama.ilike.%${q}%,nis.ilike.%${q}%,kamar.ilike.%${q}%`).limit(15);
+        const { data: activeLoans } = await client.from('sirkulasi').select('*').or(`judul_buku.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).eq('status', 'DIPINJAM').limit(10);
+        
+        const nises = members?.map(m => m.nis) || [];
+        const { data: loansByNis } = await client.from('sirkulasi').select('nis').in('nis', nises).eq('status', 'DIPINJAM');
+        const nisBorrowingSet = new Set(loansByNis?.map(l => l.nis));
+
+        let results = [];
+        if(activeLoans) {
+            activeLoans.forEach(loan => {
+                results.push({
+                    type: 'LOAN',
+                    matchPriority: (loan.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2,
+                    data: loan,
+                    html: `
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <b class="text-xs text-amber-700">${loan.kode_eksemplar}</b>
+                                <span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">SEDANG DIPINJAM</span>
+                            </div>
+                            <div class="uppercase text-slate-800 font-extrabold text-[10px] truncate">${loan.nama_anggota}</div>
+                            <div class="text-[9px] text-slate-400 font-medium truncate italic">${loan.judul_buku}</div>
+                        </div>`
+                });
+            });
+        }
+        if(members) {
+            members.forEach(a => {
+                if(activeLoans?.some(al => al.nis === a.nis)) return;
+                const isBorrowing = nisBorrowingSet.has(a.nis);
+                results.push({
+                    type: 'MEMBER',
+                    matchPriority: (a.nis.toLowerCase() === q.toLowerCase()) ? 1 : 2,
+                    data: a,
+                    html: `
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <b class="text-xs">${a.nis}</b>
+                                <div class="flex gap-1">
+                                    ${isBorrowing ? '<span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">PINJAM</span>' : ''}
+                                    ${a.kamar ? `<span class="badge-kamar">KM: ${a.kamar}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="uppercase text-slate-400 font-bold text-[10px] tracking-tight">${a.nama}</div>
+                        </div>`
+                });
+            });
+        }
+        results.sort((a, b) => a.matchPriority - b.matchPriority);
+        mainResults = results;
+        if(results.length) {
+            results.forEach((res) => {
+                const d = document.createElement('div');
+                d.className = 'autocomplete-item' + (res.type === 'LOAN' || nisBorrowingSet.has(res.data.nis) ? ' has-loan' : '');
+                d.innerHTML = res.html;
+                d.onclick = () => {
+                    if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar });
+                    else checkActiveLoan(res.data);
+                };
+                lsM.appendChild(d);
+            });
+            lsM.classList.remove('hidden');
+        }
+    }));
+
+    const inB = document.getElementById("inputBuku"), lsB = document.getElementById("listBuku");
+    inB.addEventListener('input', debounce(async () => {
+        const q = inB.value.trim(); lsB.innerHTML = ''; currentFocus = -1; bukuResults = [];
+        if(q.length < 1) return lsB.classList.add('hidden');
+        
+        const { data } = await client.from('cari_buku_view').select('*').or(`judul.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).limit(20);
+        
+        if(data?.length) {
+            let results = data.map(b => ({
+                data: b,
+                matchPriority: (b.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2
+            }));
+            results.sort((a, b) => a.matchPriority - b.matchPriority);
+            bukuResults = results;
+            results.forEach(res => {
+                const b = res.data;
+                const isExact = res.matchPriority === 1;
+                const d = document.createElement('div'); 
+                d.className = 'autocomplete-item';
+                d.innerHTML = `
+                    <div>
+                        <b class="text-xs ${isExact ? 'text-emerald-600 bg-emerald-50 px-1 rounded' : 'text-blue-600'}">${b.kode_eksemplar}</b><br>
+                        <div class="uppercase text-slate-700 font-bold text-[11px] leading-tight">${b.judul}</div>
+                        <div class="text-[9px] text-slate-400 font-medium italic">${b.penulis || '-'}</div>
+                    </div>`;
+                d.onclick = () => { 
+                    selectedBuku = { kode: b.kode_eksemplar, judul: b.judul, penulis: b.penulis }; 
+                    tampilkanBuku(); 
+                    lsB.classList.add('hidden'); 
+                };
+                lsB.appendChild(d);
+            });
+            lsB.classList.remove('hidden');
+        }
+    }));
+
+    async function checkActiveLoan(a) {
+        selectedAnggota = a; lsM.classList.add('hidden');
+        const { data: s } = await client.from('sirkulasi').select('*').eq('nis', a.nis).eq('status', 'DIPINJAM').maybeSingle();
+        if(s) { 
+            currentLoanId = s.id; 
+            showSuccessCard(a.nama, s.judul_buku, s.kode_eksemplar, s.tgl_kembali, true, s.penulis); 
+        }
+        else { tampilkanInputDetail(); }
+    }
+
+    function tampilkanInputDetail() {
+        document.getElementById("main-input-area").classList.add('hidden');
+        document.getElementById("displayNis").textContent = selectedAnggota.nis + (selectedAnggota.kamar ? ` • KAMAR ${selectedAnggota.kamar}` : '');
+        document.getElementById("displayNama").textContent = selectedAnggota.nama;
+        document.getElementById("summary-detail").classList.remove('hidden');
+        setTimeout(() => inB.focus(), 100);
+    }
+
+    function tampilkanBuku() {
+        document.getElementById("resJudul").innerHTML = `${selectedBuku.judul}<span class="block text-[9px] text-blue-400 font-medium italic mt-0.5">${selectedBuku.penulis || ''}</span>`;
+        document.getElementById("resKode").textContent = selectedBuku.kode;
+        document.getElementById("bukuTerpilihBox").classList.remove('hidden');
+        const btn = document.getElementById("btnProses"); btn.disabled = false;
+        setTimeout(() => btn.focus(), 50);
+    }
+
+    async function handleSimpan() {
+        const btn = document.getElementById("btnProses"); 
+        btn.disabled = true;
+
+        const { data: checkStok } = await client.from('sirkulasi')
+            .select('id')
+            .eq('kode_eksemplar', selectedBuku.kode)
+            .eq('status', 'DIPINJAM')
+            .maybeSingle();
+
+        if(checkStok) {
+            showToast("Gagal: Buku sedang dipinjam!");
+            btn.disabled = false;
+            return;
+        }
+
+        const tp = new Date().toISOString().split('T')[0];
+        const tkDate = new Date(); 
+        tkDate.setDate(tkDate.getDate() + 4); 
+        const tk = tkDate.toISOString().split('T')[0];
+
+        const { data, error } = await client.from('sirkulasi').insert([{
+            nis: selectedAnggota.nis, 
+            nama_anggota: selectedAnggota.nama,
+            kamar: selectedAnggota.kamar,
+            kode_eksemplar: selectedBuku.kode, 
+            judul_buku: selectedBuku.judul,
+            penulis: selectedBuku.penulis,
+            status: 'DIPINJAM', 
+            tgl_pinjam: tp, 
+            tgl_kembali: tk
+        }]).select();
+        
+        if(!error) { 
+            currentLoanId = data[0].id; 
+            showToast("Berhasil Disimpan"); 
+            showSuccessCard(selectedAnggota.nama, selectedBuku.judul, selectedBuku.kode, tk, false, selectedBuku.penulis); 
+        } else {
+            alert("Error: " + error.message);
+            btn.disabled = false;
+        }
+    }
+
+    function showSuccessCard(nama, judul, kode, tglKembali, isActive, penulis) {
+        document.getElementById("main-input-area").classList.add('hidden');
+        document.getElementById("summary-detail").classList.add('hidden');
+        document.getElementById("success-card").classList.remove('hidden');
+        document.getElementById("statusTitle").textContent = isActive ? "Pinjaman Aktif" : "Peminjaman Berhasil";
+        document.getElementById("iconStatus").className = `w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center ${isActive ? 'bg-amber-500 shadow-amber-100':'bg-emerald-500 shadow-emerald-100'}`;
+        document.getElementById("iconStatus").innerHTML = `<i class="fas ${isActive ? 'fa-clock':'fa-check-double'}"></i>`;
+        document.getElementById("finalNama").textContent = nama;
+        document.getElementById("finalBuku").innerHTML = `${judul}<span class="block text-[10px] text-slate-400 font-normal italic mt-1">${penulis || '-'}</span>`;
+        document.getElementById("finalKode").textContent = kode;
+        renderDenda(tglKembali);
+        document.getElementById("btnPerpanjang").onclick = () => openConfirm("Tambah durasi pinjam 4 hari?", handlePerpanjang);
+        document.getElementById("btnKembali").onclick = () => openConfirm("Hapus data pinjaman ini?", handleKembali);
+        setTimeout(() => document.getElementById("btnSelesai").focus(), 100);
+    }
+
+    function renderDenda(t) {
+        const target = new Date(t); const now = new Date(); now.setHours(0,0,0,0);
+        const diff = Math.ceil((now - target) / (1000 * 60 * 60 * 24));
+        document.getElementById("finalTgl").querySelector('span').textContent = target.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+        document.getElementById("finalDenda").textContent = diff > 0 ? "Rp " + (diff * 1000).toLocaleString() : "Rp 0";
+    }
+
+    function openConfirm(txt, cb) {
+        const modal = document.getElementById("modal-confirm"); const btn = document.getElementById("modal-confirm-btn");
+        document.getElementById("modal-text").textContent = txt;
+        modal.style.display = 'flex'; setTimeout(() => btn.focus(), 50);
+        btn.onclick = async () => { btn.disabled = true; await cb(); btn.disabled = false; closeModal(); };
+    }
+
+    function openDateModal() {
+        const modal = document.getElementById("modal-date"); modal.style.display = 'flex';
+        setTimeout(() => document.getElementById("customDatePicker").focus(), 50);
+        document.getElementById("saveDateBtn").onclick = async () => {
+            const nd = document.getElementById("customDatePicker").value; if(!nd) return;
+            const { error } = await client.from('sirkulasi').update({ tgl_kembali: nd }).eq('id', currentLoanId);
+            if(!error) { showToast("Tanggal Diperbarui"); renderDenda(nd); closeDateModal(); }
+        };
+    }
+
+    async function handlePerpanjang() {
+        const dDate = new Date(); 
+        dDate.setDate(dDate.getDate() + 4); 
+        const d = dDate.toISOString().split('T')[0];
+        const { error } = await client.from('sirkulasi').update({ tgl_kembali: d }).eq('id', currentLoanId);
+        if(!error) { showToast("Perpanjangan Berhasil"); renderDenda(d); }
+    }
+
+    async function handleKembali() {
+        const { error } = await client.from('sirkulasi').delete().eq('id', currentLoanId);
+        if(!error) { 
+            showToast("Memproses.."); 
+            setTimeout(resetKeAwal, 800); 
+        }
+    }
+
+    function closeModal() { document.getElementById("modal-confirm").style.display = 'none'; }
+    function closeDateModal() { document.getElementById("modal-date").style.display = 'none'; }
+    function resetKeAwal() { location.reload(); }
+
+    [inM, inB].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+            const listId = inp.id === 'inputMain' ? 'listMain' : 'listBuku';
+            const results = inp.id === 'inputMain' ? mainResults : bukuResults;
+            const items = document.getElementById(listId).getElementsByClassName('autocomplete-item');
+            
+            if(e.key === 'ArrowDown') { currentFocus++; highlight(items); }
+            else if(e.key === 'ArrowUp') { currentFocus--; highlight(items); }
+            else if(e.key === 'Enter') {
+                e.preventDefault();
+                if(currentFocus > -1) {
+                    items[currentFocus].click();
+                } else if(results.length > 0) {
+                    const topMatch = results[0];
+                    const q = inp.value.trim().toLowerCase();
+                    if(inp.id === 'inputMain') {
+                        let matches = results.filter(r => 
+                            (r.type === 'LOAN' && r.data.kode_eksemplar.toLowerCase() === q) || 
+                            (r.type === 'MEMBER' && r.data.nis.toLowerCase() === q)
+                        );
+                        if(matches.length > 1) {
+                            showToast("Pilih Salah Satu");
+                            lsM.classList.remove('hidden');
+                        } else if(matches.length === 1) {
+                            const res = matches[0];
+                            if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar });
+                            else checkActiveLoan(res.data);
+                        } else {
+                            showToast("Data tidak ditemukan");
+                        }
+                    } else {
+                        if(topMatch.data.kode_eksemplar.toLowerCase() === q) {
+                            selectedBuku = { kode: topMatch.data.kode_eksemplar, judul: topMatch.data.judul, penulis: topMatch.data.penulis };
+                            tampilkanBuku();
+                            lsB.classList.add('hidden');
+                        } else {
+                            showToast("Data tidak ditemukan");
+                        }
+                    }
+                } else {
+                    showToast("Data tidak ditemukan");
+                }
+            }
+        });
+    });
+
+    function highlight(items) {
+        for(let x of items) x.classList.remove('selected');
+        if(currentFocus >= items.length) currentFocus = 0;
+        if(currentFocus < 0) currentFocus = items.length - 1;
+        if(items[currentFocus]) { items[currentFocus].classList.add('selected'); items[currentFocus].scrollIntoView({block:'nearest'}); }
+    }
+</script>
+</body>
+</html>

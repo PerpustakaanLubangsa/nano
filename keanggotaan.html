@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pemustaka - Snow Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --snow-bg: #f8fafc;
+            --snow-card: #ffffff;
+            --ice-blue: #3b82f6;
+            --ice-light: #e0f2fe;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-soft: #e2e8f0;
+        }
+
+        body { 
+            background-color: var(--snow-bg); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-size: 14px; 
+            margin: 0; 
+        }
+        
+        h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+
+        .search-container { 
+            background: var(--snow-card); 
+            border: 1px solid var(--border-soft); 
+            border-radius: 16px;
+            transition: all 0.3s ease; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .search-container:focus-within { 
+            border-color: var(--ice-blue); 
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1); 
+        }
+
+        .list-row {
+            display: grid;
+            grid-template-columns: 60px 140px 1fr 100px 140px 80px;
+            align-items: center; 
+            padding: 16px 20px; 
+            border-bottom: 1px solid var(--border-soft);
+            transition: all 0.2s; 
+            cursor: pointer; 
+            background: var(--snow-card);
+        }
+        .list-row:hover { 
+            background: var(--ice-light); 
+            transform: scale(1.005);
+            z-index: 10;
+        }
+
+        .list-header {
+            display: grid; 
+            grid-template-columns: 60px 140px 1fr 100px 140px 80px;
+            padding: 15px 20px; 
+            color: var(--text-muted); 
+            font-weight: 700; 
+            font-size: 11px;
+            text-transform: uppercase; 
+            letter-spacing: 0.1em; 
+            border-bottom: 2px solid var(--border-soft);
+            background: rgba(248, 250, 252, 0.9); 
+            backdrop-filter: blur(10px);
+            position: sticky; 
+            top: 0; 
+            z-index: 40;
+        }
+
+        .profile-icon { 
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: var(--ice-light); 
+            border-radius: 12px;
+            color: var(--ice-blue); 
+        }
+
+        .jenjang-badge { 
+            font-size: 10px; 
+            padding: 4px 10px; 
+            background: white;
+            border: 1px solid var(--ice-blue); 
+            border-radius: 6px;
+            font-weight: 700; 
+            color: var(--ice-blue); 
+        }
+
+        .browser-input, .browser-select { 
+            background: #f1f5f9 !important; 
+            border: 1px solid var(--border-soft) !important; 
+            padding: 12px 16px !important; 
+            width: 100%; 
+            color: var(--text-main) !important; 
+            border-radius: 8px !important;
+        }
+        .browser-input:focus { border-color: var(--ice-blue) !important; outline: none; }
+
+        .bottom-sheet { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(20px);
+            transform: translateY(100%); 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 100; 
+            visibility: hidden; 
+        }
+        .bottom-sheet.active { transform: translateY(0); visibility: visible; }
+
+        .icon-btn { 
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
+            background: white; border: 1px solid var(--border-soft); color: var(--text-muted); 
+            border-radius: 12px; transition: 0.2s; 
+        }
+        .icon-btn:hover { border-color: var(--ice-blue); color: var(--ice-blue); transform: translateY(-2px); }
+
+        #toast { 
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150%); 
+            background: var(--text-main); color: white; padding: 12px 24px; 
+            border-radius: 12px; font-weight: 600; font-size: 13px; z-index: 2000; 
+            transition: transform 0.3s; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        .system-modal { 
+            position: fixed; inset: 0; z-index: 2000; 
+            background: rgba(15, 23, 42, 0.3); 
+            backdrop-filter: blur(8px); 
+            display: flex; align-items: center; justify-content: center; 
+            opacity: 0; visibility: hidden; transition: 0.3s; 
+        }
+        .system-modal.active { opacity: 1; visibility: visible; }
+        .system-modal-box { 
+            background: white; border-radius: 24px; 
+            width: 90%; max-width: 400px; padding: 40px; 
+            text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); 
+        }
+
+        .paging-btn { 
+            padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-soft); 
+            background: white; color: var(--text-main); font-weight: 700; font-size: 12px;
+        }
+        .paging-btn:hover:not(:disabled) { background: var(--ice-light); border-color: var(--ice-blue); }
+
+        .btn-blue-action {
+            background-color: var(--ice-blue) !important;
+            color: white !important;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="systemModal" class="system-modal" tabindex="-1">
+        <div class="system-modal-box">
+            <i id="sysModalIcon" class="fa-solid fa-snowflake text-blue-400 text-4xl mb-6"></i>
+            <h3 id="sysModalTitle" class="text-slate-800 font-extrabold tracking-tight text-xl mb-3">Konfirmasi</h3>
+            <p id="sysModalMsg" class="text-slate-500 text-sm mb-10 font-medium"></p>
+            <div class="flex flex-col gap-3">
+                <button id="sysConfirmBtn" class="bg-blue-600 text-white py-4 rounded-xl font-bold text-sm uppercase tracking-wider">Lanjutkan</button>
+                <button id="sysCancelBtn" class="text-slate-400 font-bold text-xs uppercase py-2">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"><span id="toastText">Memproses...</span></div>
+
+    <div class="max-w-6xl mx-auto px-6 py-10 md:py-16">
+        <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-8">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">Pemustaka<span class="text-blue-500">.</span></h1>
+                <p class="text-slate-400 text-xs mt-2 font-bold uppercase tracking-widest">Database Anggota Perpustakaan</p>
+            </div>
+            <button onclick="openMemberModal('NEW')" class="btn-blue-action px-8 py-4 text-xs uppercase tracking-widest transition-all">
+                <i class="fa-solid fa-plus mr-2"></i> Anggota Baru
+            </button>
+        </header>
+
+        <div class="mb-8">
+            <div class="search-container flex items-center px-6 py-1">
+                <i class="fa-solid fa-search text-slate-300 mr-4 text-lg"></i>
+                <input type="text" id="memberSearch" placeholder="Cari nama atau nomor identitas..." autocomplete="off"
+                    class="w-full py-5 text-lg font-medium outline-none bg-transparent text-slate-800 placeholder:text-slate-300"
+                    onkeyup="if(event.key==='Enter') { currentPage=0; loadMembers(); }">
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[400px] mb-8">
+            <div class="overflow-x-auto">
+                <div class="min-w-[900px]">
+                    <div class="list-header">
+                        <span class="text-center">Profil</span>
+                        <span>Identitas</span>
+                        <span>Nama Lengkap</span>
+                        <span>Jenjang</span>
+                        <span>Organisasi</span>
+                        <span>Kamar</span>
+                    </div>
+                    <div id="memberList" class="divide-y divide-slate-100"></div>
+                    
+                    <div id="loadingState" class="hidden p-32 text-center">
+                        <i class="fa-solid fa-snowflake fa-spin text-blue-200 text-4xl"></i>
+                        <p class="text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">Memuat Data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center px-2">
+            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                Hal. <span id="pageNumber" class="text-blue-600">1</span>
+            </div>
+            <div class="flex gap-2">
+                <button id="prevBtn" onclick="changePage(-1)" class="paging-btn disabled:opacity-30">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="nextBtn" onclick="changePage(1)" class="paging-btn disabled:opacity-30">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="memberModal" class="bottom-sheet overflow-y-auto">
+        <div class="max-w-2xl mx-auto px-8 py-12">
+            <div class="flex justify-between items-center mb-12 pb-6 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-50">
+                <h2 class="text-2xl font-extrabold text-slate-900">Profil Anggota</h2>
+                <div class="flex gap-3">
+                    <button type="button" id="btnDeleteMember" onclick="askDelete()" class="hidden icon-btn hover:!bg-red-50 hover:!text-red-500"><i class="fa-solid fa-trash"></i></button>
+                    <button type="submit" form="memberForm" class="icon-btn !bg-blue-600 !text-white !border-none"><i class="fa-solid fa-check"></i></button>
+                    <button type="button" onclick="closeMemberModal()" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <form id="memberForm" class="grid grid-cols-1 md:grid-cols-2 gap-8 pb-20">
+                <input type="hidden" id="memberId">
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nomor Identitas</label>
+                    <input type="text" id="m_nis" required class="browser-input text-xl font-bold">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nama Lengkap</label>
+                    <input type="text" id="m_nama" required class="browser-input font-semibold">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Kualifikasi</label>
+                    <select id="m_jenjang" required class="browser-select font-semibold">
+                        <option value="" disabled selected>Pilih Jenjang</option>
+                        <option value="SLTP">SLTP / Sederajat</option>
+                        <option value="SLTA">SLTA / Sederajat</option>
+                        <option value="PT">Perguruan Tinggi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">ORDA</label>
+                    <input type="text" id="m_organisasi" class="browser-input font-semibold">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Lokasi / Kamar</label>
+                    <input type="text" id="m_kamar" class="browser-input font-semibold">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let membersData = [], modalCallback = null;
+        let currentPage = 0;
+        const itemsPerPage = 10;
+
+        function notify(text, isSuccess = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastText').innerText = text;
+            t.classList.add('show');
+            if(isSuccess) setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function showSystemModal(msg, title = "Konfirmasi", onConfirm = null, isConfirm = false) {
+            const modal = document.getElementById('systemModal');
+            document.getElementById('sysModalMsg').innerText = msg;
+            document.getElementById('sysModalTitle').innerText = title;
+            document.getElementById('sysCancelBtn').style.display = isConfirm ? 'block' : 'none';
+            modalCallback = onConfirm;
+            modal.classList.add('active');
+        }
+
+        function closeSystemModal(isConfirmed = false) {
+            document.getElementById('systemModal').classList.remove('active');
+            if(isConfirmed && modalCallback) modalCallback();
+            modalCallback = null;
+        }
+
+        document.getElementById('sysConfirmBtn').onclick = () => closeSystemModal(true);
+        document.getElementById('sysCancelBtn').onclick = () => closeSystemModal(false);
+
+        async function loadMembers() {
+            document.getElementById('memberList').innerHTML = '';
+            document.getElementById('loadingState').classList.remove('hidden');
+            
+            try {
+                const q = document.getElementById('memberSearch').value;
+                const from = currentPage * itemsPerPage;
+                const to = from + itemsPerPage - 1;
+
+                let req = client.from('anggota').select('*', { count: 'exact' }).order('nama', { ascending: true }).range(from, to);
+                if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
+                
+                const { data, count, error } = await req;
+                if(error) throw error;
+
+                membersData = data || [];
+                renderMembers();
+                
+                document.getElementById('pageNumber').innerText = currentPage + 1;
+                document.getElementById('prevBtn').disabled = (currentPage === 0);
+                document.getElementById('nextBtn').disabled = (to >= (count || 0) - 1);
+
+            } catch (err) {
+                showSystemModal("Gagal memuat: " + err.message);
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        function changePage(step) {
+            currentPage += step;
+            loadMembers();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderMembers() {
+            const list = document.getElementById('memberList');
+            if (membersData.length === 0) {
+                list.innerHTML = `<div class="p-32 text-center text-slate-300 font-bold uppercase tracking-widest text-[10px]">Tidak ada data</div>`;
+                return;
+            }
+            list.innerHTML = membersData.map(m => `
+                <div onclick="openMemberModal('${m.id}')" class="list-row">
+                    <div class="flex justify-center"><div class="profile-icon"><i class="fa-solid fa-user"></i></div></div>
+                    <div class="font-bold text-slate-900 text-xs tracking-tight">${m.nis}</div>
+                    <div class="font-bold text-slate-700">${m.nama}</div>
+                    <div><span class="jenjang-badge">${m.jenjang}</span></div>
+                    <div class="text-slate-400 font-semibold text-[11px] truncate">${m.organisasi || '-'}</div>
+                    <div class="text-slate-900 font-bold text-[11px]">${m.kamar || '-'}</div>
+                </div>
+            `).join('');
+        }
+
+        function askDelete() {
+            const id = document.getElementById('memberId').value;
+            showSystemModal("Data ini akan dihapus permanen.", "Hapus Data", async () => {
+                notify('Menghapus...');
+                await client.from('anggota').delete().eq('id', id);
+                closeMemberModal(); loadMembers();
+                notify('Terhapus', true);
+            }, true);
+        }
+
+        function openMemberModal(id) {
+            document.getElementById('memberForm').reset();
+            document.getElementById('memberId').value = id;
+            if(id !== 'NEW') {
+                const m = membersData.find(x => x.id === id);
+                if(m) {
+                    document.getElementById('m_nis').value = m.nis;
+                    document.getElementById('m_nama').value = m.nama;
+                    document.getElementById('m_jenjang').value = m.jenjang;
+                    document.getElementById('m_organisasi').value = m.organisasi || '';
+                    document.getElementById('m_kamar').value = m.kamar || '';
+                    document.getElementById('btnDeleteMember').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('btnDeleteMember').classList.add('hidden');
+            }
+            document.getElementById('memberModal').classList.add('active');
+        }
+
+        function closeMemberModal() { document.getElementById('memberModal').classList.remove('active'); }
+
+        document.getElementById('memberForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('memberId').value;
+            const payload = {
+                nis: document.getElementById('m_nis').value.trim(),
+                nama: document.getElementById('m_nama').value.trim(),
+                jenjang: document.getElementById('m_jenjang').value,
+                organisasi: document.getElementById('m_organisasi').value.trim(),
+                kamar: document.getElementById('m_kamar').value.trim()
+            };
+            notify('Menyimpan...');
+            try {
+                if(id === 'NEW') await client.from('anggota').insert([payload]);
+                else await client.from('anggota').update(payload).eq('id', id);
+                closeMemberModal(); loadMembers();
+                notify('Tersimpan', true);
+            } catch (err) { showSystemModal(err.message); }
+        };
+
+        window.onload = loadMembers;
+    </script>
+</body>
+</html>

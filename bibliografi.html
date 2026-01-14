@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Bibliografi Terpadu - Snow Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #f8fafc;
+            --bg-card: #ffffff;
+            --accent: #3b82f6;
+            --accent-light: #dbeafe;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+        }
+
+        body { 
+            background-color: var(--bg-deep); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-size: 14px;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1, h2, h3, .brand-font { font-family: 'Cinzel', serif; }
+
+        #topProgressBarContainer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 3px;
+            background: transparent; z-index: 9999; display: none;
+        }
+        #topProgressBar {
+            height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #93c5fd);
+            transition: width 0.4s ease;
+        }
+
+        .search-container {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .search-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+        }
+
+        .list-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 140px 100px;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: var(--bg-card);
+        }
+        .list-row:hover { background: #f1f5f9; border-left: 4px solid var(--accent); }
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 140px 100px;
+            padding: 15px 20px;
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border-bottom: 2px solid var(--accent-light);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 10;
+        }
+
+        .stok-badge {
+            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            font-weight: 700;
+            color: var(--text-dim);
+        }
+        .stok-active { background: var(--accent-light); color: var(--accent); }
+
+        .browser-input {
+            background: #f8fafc !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px;
+            padding: 12px 16px !important;
+            width: 100%;
+            color: var(--text-main) !important;
+        }
+        .browser-input:focus { border-color: var(--accent) !important; outline: none; background: #fff !important; }
+
+        .bottom-sheet {
+            position: fixed; inset: 0;
+            background: #ffffff;
+            transform: translateY(100%); 
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 60; 
+        }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .icon-btn {
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            background: #f1f5f9;
+            border-radius: 8px;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+        .icon-btn:hover { background: var(--accent-light); color: var(--accent); }
+        .btn-save { background: var(--accent); color: white; }
+        .btn-save:hover { background: #2563eb; color: white; }
+        
+        .pg-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-weight: 700;
+            background: white;
+            color: var(--text-dim);
+        }
+        .pg-active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .tag-item {
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        #toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(150%);
+            background: var(--text-main);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 24px; 
+            font-weight: 600; font-size: 12px;
+            z-index: 2000; 
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        
+        .accent-gradient-text {
+            background: linear-gradient(to right, #1e40af, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .alert-modal {
+            position: fixed; inset: 0; z-index: 500;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .alert-modal.active { opacity: 1; pointer-events: auto; }
+        .alert-box {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%; max-width: 400px;
+            padding: 40px; text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="topProgressBarContainer"><div id="topProgressBar"></div></div>
+
+    <div id="toast">
+        <div class="spinner-border animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+        <span id="toastText">Memproses...</span>
+    </div>
+
+    <div id="alertModal" class="alert-modal" tabindex="-1">
+        <div class="alert-box">
+            <i id="alertIcon" class="fa-solid fa-circle-exclamation text-blue-500 text-3xl mb-6"></i>
+            <h3 id="alertTitle" class="text-slate-800 font-bold uppercase tracking-widest text-xs mb-3">Notifikasi Sistem</h3>
+            <p id="alertMsg" class="text-slate-500 text-sm mb-10 font-light leading-relaxed"></p>
+            <div id="alertActions" class="flex flex-col gap-3">
+                <button id="alertConfirmBtn" class="bg-blue-600 text-white py-3 rounded-lg font-bold text-[11px] uppercase tracking-widest">Konfirmasi (ENTER)</button>
+                <button id="alertCancelBtn" class="text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-800 transition">Batalkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 py-16">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
+            <div>
+                <h1 class="text-5xl font-bold tracking-tighter accent-gradient-text">REPOSITORY</h1>
+                <p class="text-dim text-xs mt-2 tracking-[0.4em] uppercase font-semibold">Snow Edition • Bibliografi Terpadu</p>
+            </div>
+            <button onclick="openModal('NEW')" class="w-full md:w-auto bg-blue-600 text-white px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+                + Registrasi Bibliografi
+            </button>
+        </header>
+
+        <div class="mb-12">
+            <div class="search-container flex items-center px-8 py-2">
+                <i class="fa-solid fa-magnifying-glass text-blue-500 mr-6 text-lg"></i>
+                <input type="text" id="searchInput" placeholder="Telusuri & tekan Enter..." autocomplete="off"
+                    class="w-full py-5 text-xl font-light outline-none bg-transparent text-slate-800 placeholder:text-slate-300">
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="list-header">
+                <span>Sampul</span>
+                <span>Metadata Bibliografi</span>
+                <span>Identitas</span>
+                <span class="text-center">Ketersediaan</span>
+            </div>
+            <div id="dataList" class="divide-y divide-slate-100"></div>
+        </div>
+
+        <div id="paginationContainer" class="mt-12 flex justify-center gap-2 pb-24"></div>
+    </div>
+
+    <div id="mainModal" class="bottom-sheet overflow-y-auto">
+        <div class="max-w-4xl mx-auto px-8 py-12">
+            <div class="flex justify-between items-center mb-12 border-b border-slate-100 pb-8 sticky top-0 bg-white/90 backdrop-blur-md z-20">
+                <h2 class="text-2xl font-bold text-slate-800 uppercase tracking-widest">Detail Bibliografi</h2>
+                <div class="flex gap-3">
+                    <button id="btnDelete" onclick="confirmDeleteBiblio()" class="hidden icon-btn hover:!bg-red-50 hover:!text-red-500" title="Hapus Data"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="document.getElementById('biblioForm').requestSubmit()" class="icon-btn btn-save" title="Simpan Perubahan"><i class="fa-solid fa-check"></i></button>
+                    <button onclick="closeModal()" class="icon-btn" title="Tutup Panel"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <form id="biblioForm" class="space-y-10" autocomplete="off">
+                <input type="hidden" id="editId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block">Judul Utama</label>
+                        <input type="text" id="f_judul" required class="browser-input text-2xl font-semibold" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Pengarang / Kontributor</label>
+                        <input type="text" id="f_penulis" class="browser-input" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Penerbitan (Imprint)</label>
+                        <input type="text" id="f_penerbit" class="browser-input" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Tahun Terbit</label>
+                        <input type="text" id="f_tahun" class="browser-input" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Nomor Standar (ISBN/ISSN)</label>
+                        <input type="text" id="f_isbn" class="browser-input" autocomplete="off">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Deskripsi Fisik (Kolasi)</label>
+                        <input type="text" id="f_deskripsi_fisik" class="browser-input" placeholder="Contoh: xii, 350 hlm; 24 cm." autocomplete="off">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Tautan Gambar Sampul</label>
+                        <input type="url" id="f_sampul" class="browser-input" autocomplete="off">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Subjek / Deskriptor</label>
+                        <input type="text" id="topicInput" class="browser-input" placeholder="Masukkan terminologi subjek dan tekan Enter..." autocomplete="off">
+                        <div class="flex flex-wrap gap-2 mt-4" id="tagList"></div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 block">Abstrak / Catatan</label>
+                        <textarea id="f_abstrak" rows="4" class="browser-input" autocomplete="off"></textarea>
+                    </div>
+                </div>
+
+                <div id="eksSection" class="pt-16 hidden">
+                    <div class="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+                        <span class="text-xs font-bold text-slate-800 uppercase tracking-[0.3em]">Inventaris Eksemplar</span>
+                        <button type="button" onclick="openAddEksModal()" class="text-[10px] bg-slate-100 text-slate-700 px-6 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition-all font-bold uppercase tracking-widest">+ Eksemplar</button>
+                    </div>
+                    <div id="eksList" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-24"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="eksModal" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-10">
+            <h3 id="eksModalTitle" class="font-bold mb-8 text-center text-xs uppercase tracking-[0.4em] text-blue-600">Registrasi Eksemplar</h3>
+            <div class="space-y-6">
+                <input type="hidden" id="e_id">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Nomor Barcode / Aksesi</label>
+                    <input type="text" id="e_kode" class="browser-input text-center font-mono text-blue-600 text-lg uppercase" oninput="checkDuplicate(this.value)" autocomplete="off">
+                    <p id="errorDuplicate" class="text-red-500 text-[9px] font-bold text-center mt-2 hidden">KODE SUDAH TERDAFTAR</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">No. Panggil</label><input type="text" id="e_nomer" class="browser-input" onkeydown="handleEksEnter(event)" autocomplete="off"></div>
+                    <div><label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Lokasi Simpan</label><input type="text" id="e_lokasi" class="browser-input" onkeydown="handleEksEnter(event)" autocomplete="off"></div>
+                </div>
+            </div>
+            <div class="mt-10 flex flex-col gap-3">
+                <button id="btnSaveEks" onclick="saveEkslempar()" class="bg-blue-600 text-white py-4 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-100">Simpan (ENTER)</button>
+                <button onclick="closeEksModal()" class="text-slate-400 text-[10px] py-2 uppercase font-bold tracking-widest hover:text-slate-800 transition">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let localData = [], currentPage = 1, totalItems = 0, currentSearch = '';
+        let currentTags = [], alertCallback = null;
+        let currentEksData = []; 
+
+        function showCustomAlert(msg, title = "Notifikasi Sistem", callback = null, isConfirm = false) {
+            const modal = document.getElementById('alertModal');
+            document.getElementById('alertMsg').innerText = msg;
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertCancelBtn').style.display = isConfirm ? 'block' : 'none';
+            alertCallback = callback;
+            modal.classList.add('active');
+            document.getElementById('alertConfirmBtn').focus();
+        }
+
+        function closeAlert(confirm = false) {
+            document.getElementById('alertModal').classList.remove('active');
+            if(confirm && alertCallback) alertCallback();
+            alertCallback = null;
+        }
+
+        document.getElementById('alertConfirmBtn').onclick = () => closeAlert(true);
+        document.getElementById('alertCancelBtn').onclick = () => closeAlert(false);
+
+        function setLoader(show, percent = 0) {
+            const container = document.getElementById('topProgressBarContainer');
+            const bar = document.getElementById('topProgressBar');
+            if(show) {
+                container.style.display = 'block';
+                setTimeout(() => bar.style.width = percent + '%', 10);
+            } else {
+                bar.style.width = '100%';
+                setTimeout(() => { container.style.display = 'none'; bar.style.width = '0%'; }, 300);
+            }
+        }
+
+        function toggleToast(show, text) {
+            const t = document.getElementById('toast');
+            if(show) { 
+                document.getElementById('toastText').innerText = text.toUpperCase(); 
+                t.classList.add('show'); 
+            } else { 
+                t.classList.remove('show'); 
+            }
+        }
+
+        async function loadData(q = currentSearch, page = 1) {
+            setLoader(true, 30);
+            try {
+                currentPage = page; currentSearch = q;
+                const from = (currentPage - 1) * 15, to = from + 14;
+                
+                let biblioIdsFromEks = [];
+                
+                // Logic pencarian diperluas ke Kode Eksemplar
+                if (q) {
+                    const { data: eksMatches } = await client
+                        .from('ekslempar')
+                        .select('biblio_id')
+                        .ilike('kode', `%${q}%`);
+                    
+                    if (eksMatches && eksMatches.length > 0) {
+                        biblioIdsFromEks = eksMatches.map(e => e.biblio_id);
+                    }
+                }
+
+                let req = client.from('biblio')
+                    .select('*, ekslempar(*)', { count: 'exact' })
+                    .order('updated_at', { ascending: false })
+                    .range(from, to);
+                
+                if (q) {
+                    let filterString = `judul.ilike.%${q}%,penulis.ilike.%${q}%`;
+                    
+                    // Jika ditemukan kecocokan di kode eksemplar, masukkan ke dalam filter OR
+                    if (biblioIdsFromEks.length > 0) {
+                        const idList = biblioIdsFromEks.join(',');
+                        filterString += `,id.in.(${idList})`;
+                    }
+                    
+                    req = req.or(filterString);
+                }
+
+                const { data, count, error } = await req;
+                if (error) throw error;
+                
+                localData = data || []; 
+                totalItems = count || 0;
+                renderUI(); 
+                renderPagination();
+            } finally { setLoader(false); }
+        }
+
+        function renderUI() {
+            const list = document.getElementById('dataList');
+            if (localData.length === 0) {
+                list.innerHTML = `<div class="p-32 text-center text-slate-300 text-[11px] font-bold tracking-[0.4em] uppercase">Data Tidak Ditemukan</div>`;
+                return;
+            }
+            list.innerHTML = localData.map(b => `
+                <div onclick="openModal('${b.id}')" class="list-row">
+                    <div class="w-10 h-14 bg-slate-100 rounded-md overflow-hidden border border-slate-200 shadow-sm">
+                        ${b.sampul_url ? `<img src="${b.sampul_url}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fa-solid fa-book text-sm"></i></div>'}
+                    </div>
+                    <div class="min-w-0 pr-6 pl-4">
+                        <div class="font-bold text-slate-800 text-base leading-tight truncate tracking-tight">${b.judul}</div>
+                        <div class="text-[11px] text-slate-400 truncate mt-1 uppercase tracking-widest font-semibold">${b.penulis || 'Karya Tanpa Pengarang'}</div>
+                    </div>
+                    <div class="text-blue-600 font-mono text-[10px] font-bold opacity-70">${b.isbn_issn || 'TANPA-NOMOR'}</div>
+                    <div class="flex justify-center"><span class="stok-badge ${b.ekslempar?.length > 0 ? 'stok-active' : ''}">${b.ekslempar?.length || 0} EKSEMPLAR</span></div>
+                </div>
+            `).join('');
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('paginationContainer');
+            const totalPages = Math.ceil(totalItems / 15);
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if(i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button onclick="loadData(currentSearch, ${i})" class="pg-btn ${i === currentPage ? 'pg-active' : ''}">${i}</button>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        document.getElementById('topicInput').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.target.value.trim();
+                if(val && !currentTags.includes(val)) { 
+                    currentTags.push(val); 
+                    renderTags(); 
+                }
+                e.target.value = '';
+            }
+        });
+        function renderTags() {
+            const list = document.getElementById('tagList');
+            list.innerHTML = currentTags.map((t, idx) => `<div class="tag-item uppercase">${t}<i class="fa-solid fa-xmark ml-1 cursor-pointer opacity-50 hover:opacity-100" onclick="removeTag(${idx})"></i></div>`).join('');
+        }
+        function removeTag(idx) { currentTags.splice(idx, 1); renderTags(); }
+
+        async function refreshEksList(bid) {
+            const { data } = await client.from('ekslempar').select('*').eq('biblio_id', bid).order('created_at', {ascending: true});
+            currentEksData = data || [];
+            document.getElementById('eksList').innerHTML = currentEksData.map(e => `
+                <div onclick="openEditEksModal('${e.id}')" class="group flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer hover:border-blue-300 transition-all">
+                    <div class="flex-1">
+                        <p class="text-blue-600 font-mono text-xs font-bold uppercase tracking-widest">${e.kode}</p>
+                        <p class="text-[9px] text-slate-400 mt-2 uppercase font-bold tracking-[0.1em]">${e.nomor_panggil || ''} | ${e.lokasi_rak || 'LOKASI BELUM DITETAPKAN'}</p>
+                    </div>
+                    <button type="button" onclick="event.stopPropagation(); confirmDeleteEks('${e.id}')" class="text-slate-300 hover:text-red-500 transition px-3"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function saveEkslempar() {
+            const bid = document.getElementById('editId').value;
+            const eid = document.getElementById('e_id').value;
+            const kode = document.getElementById('e_kode').value.trim();
+            if(!kode) return;
+            
+            toggleToast(true, 'Menyimpan Eksemplar...');
+            
+            const payload = { 
+                biblio_id: bid, 
+                kode: kode.toUpperCase(), 
+                nomor_panggil: document.getElementById('e_nomer').value.trim(), 
+                lokasi_rak: document.getElementById('e_lokasi').value.trim() 
+            };
+
+            let error;
+            if(eid) {
+                const { error: err } = await client.from('ekslempar').update(payload).eq('id', eid);
+                error = err;
+            } else {
+                const { error: err } = await client.from('ekslempar').insert([payload]);
+                error = err;
+            }
+            
+            if(!error) {
+                closeEksModal(); 
+                refreshEksList(bid); 
+                loadData();
+            }
+            toggleToast(false);
+        }
+
+        async function checkDuplicate(val) {
+            const errorElement = document.getElementById('errorDuplicate');
+            const btn = document.getElementById('btnSaveEks');
+            const currentEditingId = document.getElementById('e_id').value;
+
+            if(!val) { errorElement.style.display = 'none'; btn.disabled = false; return; }
+            
+            const { data } = await client.from('ekslempar')
+                .select('id, kode')
+                .eq('kode', val.trim().toUpperCase())
+                .maybeSingle();
+
+            if(data && data.id !== currentEditingId) { 
+                errorElement.style.display = 'block'; 
+                btn.disabled = true; 
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else { 
+                errorElement.style.display = 'none'; 
+                btn.disabled = false; 
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById('biblioForm').reset();
+            document.getElementById('editId').value = id;
+            currentTags = [];
+            
+            if(id === 'NEW') {
+                document.getElementById('eksSection').classList.add('hidden');
+                document.getElementById('btnDelete').classList.add('hidden');
+                renderTags();
+            } else {
+                const b = localData.find(x => x.id === id);
+                if(b) {
+                    document.getElementById('f_judul').value = b.judul;
+                    document.getElementById('f_penulis').value = b.penulis || '';
+                    document.getElementById('f_isbn').value = b.isbn_issn || '';
+                    document.getElementById('f_penerbit').value = b.penerbit || '';
+                    document.getElementById('f_tahun').value = b.tahun_terbit || '';
+                    document.getElementById('f_sampul').value = b.sampul_url || '';
+                    document.getElementById('f_abstrak').value = b.abstrak || '';
+                    document.getElementById('f_deskripsi_fisik').value = b.deskripsi_fisik || '';
+                    currentTags = b.topik || [];
+                    renderTags();
+                    document.getElementById('eksSection').classList.remove('hidden');
+                    document.getElementById('btnDelete').classList.remove('hidden');
+                    refreshEksList(id);
+                }
+            }
+            document.getElementById('mainModal').classList.add('active');
+        }
+
+        document.getElementById('biblioForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const payload = { 
+                judul: document.getElementById('f_judul').value.trim(), 
+                penulis: document.getElementById('f_penulis').value.trim(), 
+                isbn_issn: document.getElementById('f_isbn').value.trim(),
+                penerbit: document.getElementById('f_penerbit').value.trim(),
+                tahun_terbit: document.getElementById('f_tahun').value.trim(),
+                sampul_url: document.getElementById('f_sampul').value.trim(),
+                abstrak: document.getElementById('f_abstrak').value.trim(),
+                deskripsi_fisik: document.getElementById('f_deskripsi_fisik').value.trim(),
+                topik: currentTags,
+                updated_at: new Date().toISOString() 
+            };
+
+            toggleToast(true, 'Menyimpan data...');
+            if(id === 'NEW') {
+                const { data, error } = await client.from('biblio').insert([payload]).select();
+                if(!error) openModal(data[0].id);
+            } else {
+                await client.from('biblio').update(payload).eq('id', id);
+                closeModal();
+            }
+            loadData();
+            toggleToast(false);
+        };
+
+        async function deleteBiblio() {
+            await client.from('biblio').delete().eq('id', document.getElementById('editId').value);
+            closeModal();
+            loadData();
+        }
+
+        function confirmDeleteBiblio() { showCustomAlert("Hapus bibliografi ini selamanya?", "Hapus Data", deleteBiblio, true); }
+        function confirmDeleteEks(id) { showCustomAlert("Hapus eksemplar ini?", "Hapus Eksemplar", async () => { await client.from('ekslempar').delete().eq('id', id); refreshEksList(document.getElementById('editId').value); loadData(); }, true); }
+
+        function closeModal() { document.getElementById('mainModal').classList.remove('active'); }
+        
+        function openAddEksModal() { 
+            document.getElementById('eksModalTitle').innerText = "Registrasi Eksemplar";
+            document.getElementById('e_id').value = "";
+            document.getElementById('e_kode').value = "";
+            document.getElementById('e_nomer').value = "";
+            document.getElementById('e_lokasi').value = "";
+            document.getElementById('errorDuplicate').style.display = 'none';
+            document.getElementById('btnSaveEks').disabled = false;
+            document.getElementById('btnSaveEks').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('eksModal').classList.remove('hidden'); 
+            document.getElementById('e_kode').focus(); 
+        }
+
+        function openEditEksModal(eid) {
+            const e = currentEksData.find(x => x.id === eid);
+            if(!e) return;
+            document.getElementById('eksModalTitle').innerText = "Update Eksemplar";
+            document.getElementById('e_id').value = e.id;
+            document.getElementById('e_kode').value = e.kode;
+            document.getElementById('e_nomer').value = e.nomor_panggil || "";
+            document.getElementById('e_lokasi').value = e.lokasi_rak || "";
+            document.getElementById('errorDuplicate').style.display = 'none';
+            document.getElementById('btnSaveEks').disabled = false;
+            document.getElementById('btnSaveEks').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('eksModal').classList.remove('hidden');
+        }
+
+        function closeEksModal() { document.getElementById('eksModal').classList.add('hidden'); }
+        function handleEksEnter(e) { if(e.key === 'Enter' && !document.getElementById('btnSaveEks').disabled) saveEkslempar(); }
+
+        document.getElementById('searchInput').onkeydown = (e) => {
+            if(e.key === 'Enter') {
+                loadData(e.target.value, 1);
+            }
+        };
+
+        window.onload = () => loadData();
+    </script>
+</body>
+</html>

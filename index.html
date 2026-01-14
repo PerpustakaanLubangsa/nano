@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPAC - Perpustakaan Lubangsa</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-body: #fdfdfe; --accent: #2563eb; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; border: 2px solid #f1f5f9; }
+        
+        body { background-color: var(--bg-body); color: #1e293b; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .hero-section { height: 55vh; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(rgba(15,23,42,0.75), rgba(15,23,42,0.85)), url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=2000'); background-size: cover; background-position: center; }
+        .hero-title { font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 800; color: white; letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 1.2rem; }
+        .search-container { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 700px; z-index: 50; }
+        .search-input-group { background: white; padding: 6px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: flex; align-items: center; border: 1px solid #e2e8f0; }
+        .search-input-group input { flex: 1; padding: 12px 20px; border: none; outline: none; font-size: 16px; color: #334155; border-radius: 20px; }
+        
+        .main-content { flex: 1; padding-top: 100px; padding-bottom: 80px; position: relative; z-index: 10; }
+        .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; position: relative; }
+        .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
+        .book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 14px; margin-bottom: 12px; background: #f8fafc; }
+        
+        #pagination { display: flex; justify-content: center; gap: 8px; margin-top: 50px; }
+        .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; color: #64748b; font-weight: 700; border: 1px solid #e2e8f0; cursor: pointer; }
+        .page-link.active { background: var(--accent) !important; color: white !important; border-color: var(--accent) !important; pointer-events: none; }
+        
+        footer { background: #0f172a; color: #94a3b8; padding: 50px 0; text-align: center; margin-top: auto; border-top: 1px solid #1e293b; }
+        .footer-nav { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .footer-btn { padding: 8px 16px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: 1px solid #1e293b; color: #64748b; text-decoration: none; transition: 0.3s; }
+        .footer-btn:hover:not(.btn-disabled) { background: #1e293b; color: white; border-color: #3b82f6; }
+        .btn-disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(1); border-style: dashed !important; }
+        
+        #progressBar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0%; transition: width 0.3s; z-index: 1000; }
+        
+        .modal-scroll-area::-webkit-scrollbar { width: 4px; }
+        .modal-scroll-area::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .info-table td { padding: 6px 0; font-size: 12px; vertical-align: top; border-bottom: 1px solid #f8fafc; }
+        .info-label { color: #94a3b8; font-weight: 600; width: 120px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { color: #1e293b; font-weight: 700; }
+
+        .loading-shimmer { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body>
+    <div id="progressBar"></div>
+    <header class="hero-section">
+        <div class="text-center px-4">
+            <h1 class="hero-title">Perpustakaan <span class="text-blue-500">Lubangsa</span></h1>
+            <p class="text-white/80 max-w-xl mx-auto text-sm">Jejak ilmu yang dikumpulkan dengan kesungguhan, kini disajikan dengan kemudahan.</p>
+        </div>
+        <div class="search-container">
+            <div class="search-input-group">
+                <input type="text" id="searchInput" placeholder="Ketik judul lalu tekan Enter...">
+                <div class="pr-4 text-blue-500"><i class="fa-solid fa-magnifying-glass"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 main-content">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-xs font-bold uppercase text-slate-400 tracking-widest">Katalog Koleksi</h2>
+            <div class="text-[10px] font-bold text-slate-400 uppercase">Total: <span id="countVal" class="text-blue-600">0</span> Item</div>
+        </div>
+        <div id="catalogGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+        <div id="pagination"></div>
+    </main>
+
+    <footer>
+        <div class="footer-nav">
+            <a href="dual-page.html" id="btnDualPage" class="footer-btn">Dual Page</a>
+            <a href="login.html" class="footer-btn">Admin Login</a>
+        </div>
+    </footer>
+
+    <div id="detailModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
+            <div class="w-full md:w-[35%] bg-slate-50 p-8 flex items-center justify-center border-r border-slate-100">
+                <img id="modalCover" class="w-full max-w-[240px] rounded-xl shadow-2xl object-cover aspect-[3/4.5]">
+            </div>
+            
+            <div class="w-full md:w-[65%] p-8 overflow-y-auto modal-scroll-area">
+                <div class="flex justify-end mb-2">
+                    <button onclick="closeModal()" class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-xmark text-xl text-slate-400"></i>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <h2 id="modalJudul" class="text-2xl font-extrabold text-slate-800 leading-tight mb-2 uppercase"></h2>
+                    <p id="modalPenulis" class="text-blue-600 font-bold text-sm uppercase tracking-wide"></p>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-100">
+                    <table class="w-full info-table">
+                        <tr><td class="info-label">ISBN / ISSN</td><td id="modalIsbn" class="info-value">-</td></tr>
+                        <tr><td class="info-label">Penerbit</td><td id="modalPenerbit" class="info-value">-</td></tr>
+                        <tr><td class="info-label">Tahun Terbit</td><td id="modalTahun" class="info-value">-</td></tr>
+                        <tr><td class="info-label">Lokasi Rak</td><td id="modalRak" class="info-value text-blue-600 font-black">-</td></tr>
+                    </table>
+                </div>
+
+                <div class="mb-8">
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Sinopsis / Abstrak</h4>
+                    <div id="modalAbstrak" class="text-sm text-slate-600 leading-relaxed border-l-4 border-blue-500 pl-4 bg-blue-50/30 py-3 rounded-lg"></div>
+                </div>
+
+                <div>
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Status Eksemplar</h4>
+                    <div id="modalEksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+        let totalRecords = 0, perPage = 24, currentPage = 1;
+
+        function checkStatus() {
+            const btn = document.getElementById('btnDualPage');
+            if (window.self !== window.top) {
+                btn.classList.add('btn-disabled');
+                btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Dual Page Aktif';
+                btn.onclick = (e) => e.preventDefault();
+            }
+        }
+
+        async function fetchPage(page, query = '') {
+            const pb = document.getElementById('progressBar'); 
+            pb.style.width = '40%';
+            
+            try {
+                let bibQuery = client.from('biblio').select('id, judul, penulis, sampul_url, updated_at', { count: 'exact' });
+                
+                if (query) {
+                    bibQuery = bibQuery.or(`judul.ilike.%${query}%,penulis.ilike.%${query}%`);
+                }
+                
+                // Mengurutkan berdasarkan updated_at terbaru (descending)
+                const { data, count, error } = await bibQuery
+                    .order('updated_at', { ascending: false })
+                    .range((page-1)*perPage, page*perPage-1);
+                
+                if (error) throw error;
+
+                totalRecords = count; 
+                currentPage = page;
+                
+                renderUI(data); 
+                renderPagination();
+                
+                pb.style.width = '100%'; 
+                setTimeout(() => pb.style.width = '0%', 300);
+            } catch (e) { 
+                pb.style.width = '0%'; 
+                console.error("Fetch error:", e);
+            }
+        }
+
+        function renderUI(data) {
+            const grid = document.getElementById('catalogGrid'); 
+            grid.innerHTML = '';
+            document.getElementById('countVal').innerText = totalRecords;
+            
+            data.forEach(item => {
+                grid.innerHTML += `
+                <div class="book-card" onclick="openModal('${item.id}')">
+                    <img src="${item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover'}" class="book-img" loading="lazy">
+                    <h3 class="font-bold text-[11px] leading-tight line-clamp-2 uppercase mb-1">${item.judul}</h3>
+                    <p class="text-[9px] text-slate-400 font-bold truncate">${item.penulis || 'ANONIM'}</p>
+                </div>`;
+            });
+        }
+
+        async function openModal(id) {
+            const pb = document.getElementById('progressBar'); 
+            pb.style.width = '30%';
+            
+            try {
+                const { data: item, error } = await client.from('biblio').select('*, ekslempar(*)').eq('id', id).single();
+                if (error) throw error;
+
+                const { data: circData } = await client.from('sirkulasi').select('kode_eksemplar').eq('status', 'DIPINJAM');
+                const borrowed = circData ? circData.map(c => c.kode_eksemplar) : [];
+
+                document.getElementById('modalCover').src = item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover';
+                document.getElementById('modalJudul').innerText = item.judul;
+                document.getElementById('modalPenulis').innerText = item.penulis || 'ANONIM';
+                document.getElementById('modalIsbn').innerText = item.isbn_issn || '-';
+                document.getElementById('modalPenerbit').innerText = item.penerbit || '-';
+                document.getElementById('modalTahun').innerText = item.tahun_terbit || '-';
+                document.getElementById('modalAbstrak').innerText = item.abstrak || 'Sinopsis belum tersedia.';
+                
+                const eks = item.ekslempar || [];
+                document.getElementById('modalRak').innerText = eks.length > 0 ? (eks[0].lokasi_rak || 'LUBANGSA') : '-';
+
+                document.getElementById('modalEksList').innerHTML = eks.map(e => `
+                    <div class="bg-white p-3 rounded-xl flex justify-between items-center text-[10px] border border-slate-200 shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-800">${e.kode}</span>
+                            <span class="text-[8px] text-slate-400 uppercase font-bold">${e.lokasi_rak || 'PERPUSTAKAAN'}</span>
+                        </div>
+                        <span class="px-2 py-1 rounded-lg font-black uppercase text-[8px] ${borrowed.includes(e.kode) ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}">
+                            ${borrowed.includes(e.kode) ? 'Dipinjam' : 'Tersedia'}
+                        </span>
+                    </div>`).join('');
+
+                document.getElementById('detailModal').classList.replace('hidden', 'flex'); 
+                document.body.style.overflow = 'hidden';
+                pb.style.width = '100%'; 
+                setTimeout(() => pb.style.width = '0%', 300);
+            } catch (e) {
+                console.error(e);
+                pb.style.width = '0%';
+            }
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination'); 
+            container.innerHTML = '';
+            const totalPages = Math.ceil(totalRecords / perPage); 
+            if (totalPages <= 1) return;
+
+            for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, Math.max(1, currentPage-2)+4); i++) {
+                const btn = document.createElement('button'); 
+                btn.className = `page-link ${i === currentPage ? 'active' : ''}`;
+                btn.innerText = i; 
+                btn.onclick = () => { 
+                    fetchPage(i, document.getElementById('searchInput').value); 
+                    window.scrollTo({top: 0, behavior:'smooth'}); 
+                };
+                container.appendChild(btn);
+            }
+        }
+
+        function closeModal() { document.getElementById('detailModal').classList.replace('flex', 'hidden'); document.body.style.overflow = 'auto'; }
+        document.getElementById('searchInput').onkeydown = (e) => { if (e.key === 'Enter') fetchPage(1, e.target.value); };
+        window.onclick = (e) => { if (e.target.id === 'detailModal') closeModal(); };
+        window.onload = () => { fetchPage(1); checkStatus(); };
+    </script>
+</body>
+</html>
