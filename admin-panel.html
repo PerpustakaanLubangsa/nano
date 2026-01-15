@@ -142,11 +142,10 @@
             <p class="nav-label">Profil Sesi</p>
             <div class="px-3 py-4 bg-slate-900/40 rounded-2xl mb-3 border border-white/5">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700">
-                        <i class="fa-solid fa-user-tie text-base"></i>
-                    </div>
+                    <div id="adminAvatar" class="w-9 h-9 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400 border border-blue-500/30 font-bold uppercase text-xs">
+                        </div>
                     <div class="overflow-hidden">
-                        <p id="adminNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter">Admin</p>
+                        <p id="adminNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter italic">Admin</p>
                         <div class="flex items-center gap-1.5">
                             <span class="relative flex h-1.5 w-1.5">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -188,10 +187,16 @@
     </div>
 
     <script>
-        // PROTEKSI KEAMANAN
-        if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('userRole') !== 'admin') {
-            window.location.replace('login.html');
-        }
+        // --- KEAMANAN & SESI ---
+        const checkAuth = () => {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            const userRole = sessionStorage.getItem('userRole');
+            
+            if (isLoggedIn !== 'true' || userRole !== 'admin') {
+                window.location.replace('login.html');
+            }
+        };
+        checkAuth();
 
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
         const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; 
@@ -201,9 +206,11 @@
         let timeLeft = 30;
         let monitorInterval;
 
-        // ISI DATA PROFIL
-        document.getElementById('adminNameDisplay').textContent = sessionStorage.getItem('userName') || 'Administrator';
-        document.getElementById('roleDisplay').textContent = sessionStorage.getItem('userRole') || 'Administrator';
+        // --- RENDER DATA PROFIL ---
+        const adminName = sessionStorage.getItem('userName') || 'Administrator';
+        document.getElementById('adminNameDisplay').textContent = adminName;
+        document.getElementById('roleDisplay').textContent = sessionStorage.getItem('userRole') || 'ADMIN';
+        document.getElementById('adminAvatar').textContent = adminName.charAt(0);
 
         function loadPage(page, element) {
             const frame = document.getElementById('contentFrame');
@@ -289,7 +296,7 @@
         }
 
         function logout() {
-            if(confirm('Apakah Anda yakin ingin keluar?')) {
+            if(confirm('Apakah Anda yakin ingin keluar dari sesi Administrator?')) {
                 sessionStorage.clear();
                 window.location.replace('login.html');
             }
