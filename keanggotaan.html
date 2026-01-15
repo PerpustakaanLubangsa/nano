@@ -32,12 +32,6 @@
         
         h1, h2, h3 { font-family: 'Outfit', sans-serif; }
 
-        .title-bar-drag {
-            position: fixed; top: 0; left: 0; width: 100%;
-            height: env(titlebar-area-inset-top, 40px);
-            -webkit-app-region: drag; z-index: 10000;
-        }
-
         .search-container { 
             background: var(--snow-card); border: 1px solid var(--border-soft); 
             border-radius: 16px; transition: all 0.3s ease; 
@@ -71,11 +65,10 @@
         .role-pustakawan { background: #dcfce7; color: #22c55e; }
         .role-anggota { background: #e0f2fe; color: #0ea5e9; }
 
-        .empty-data { color: #cbd5e1; font-style: italic; font-size: 10px; font-weight: 400; }
-
         .browser-input, .browser-select { 
             background: #f1f5f9 !important; border: 1px solid var(--border-soft) !important; 
             padding: 12px 16px !important; width: 100%; border-radius: 8px !important;
+            outline: none;
         }
 
         .bottom-sheet { 
@@ -92,15 +85,14 @@
 
         #toast { 
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150%); 
-            background: var(--text-main); color: white; padding: 12px 24px; border-radius: 12px; z-index: 2000; 
-            transition: transform 0.3s; 
+            background: #0f172a; color: white; padding: 12px 24px; border-radius: 12px; z-index: 2000; 
+            transition: transform 0.3s; font-size: 12px; font-weight: 600;
         }
         #toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body class="antialiased">
 
-    <div class="title-bar-drag"></div>
     <div id="toast"><span id="toastText">Memproses...</span></div>
 
     <div class="max-w-6xl mx-auto px-6 py-10 md:py-16">
@@ -148,8 +140,8 @@
         <div class="flex justify-between items-center mt-6 px-2">
             <div class="text-[11px] text-slate-400 font-bold uppercase">Hal. <span id="pageNumber" class="text-blue-600">1</span></div>
             <div class="flex gap-2">
-                <button id="prevBtn" onclick="changePage(-1)" class="icon-btn hover:border-blue-500"><i class="fa-solid fa-chevron-left"></i></button>
-                <button id="nextBtn" onclick="changePage(1)" class="icon-btn hover:border-blue-500"><i class="fa-solid fa-chevron-right"></i></button>
+                <button id="prevBtn" onclick="changePage(-1)" class="icon-btn hover:border-blue-500 disabled:opacity-30"><i class="fa-solid fa-chevron-left"></i></button>
+                <button id="nextBtn" onclick="changePage(1)" class="icon-btn hover:border-blue-500 disabled:opacity-30"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
         </div>
     </div>
@@ -204,15 +196,19 @@
     </div>
 
     <script>
+        // 1. KONFIGURASI SUPABASE
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
-        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3mJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
         const client = supabase.createClient(SB_URL, SB_KEY);
 
-        const myRole = (sessionStorage.getItem('userRole') || 'anggota').toLowerCase();
+        // 2. PROTEKSI HALAMAN & ROLE CHECK
+        const rawRole = sessionStorage.getItem('userRole') || '';
+        const myRole = rawRole.toLowerCase();
         const myName = sessionStorage.getItem('userName') || 'User';
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
 
-        // Hanya Admin dan Pustakawan yang boleh masuk ke file ini
-        if (sessionStorage.getItem('isLoggedIn') !== 'true' || (myRole !== 'admin' && myRole !== 'pustakawan')) {
+        // Jika bukan admin/pustakawan atau belum login, tendang ke login
+        if (isLoggedIn !== 'true' || (myRole !== 'admin' && myRole !== 'pustakawan')) {
             window.location.replace('login.html');
         }
 
@@ -221,11 +217,7 @@
 
         let membersData = [], currentPage = 0, itemsPerPage = 10;
 
-        function checkEmpty(val) {
-            return (val === null || val === undefined || val.toString().trim() === "") 
-                ? `<span class="empty-data">Belum Ditentukan</span>` : val;
-        }
-
+        // 3. FUNGSI HELPER
         function notify(text, isSuccess = false) {
             const t = document.getElementById('toast');
             document.getElementById('toastText').innerText = text;
@@ -233,16 +225,24 @@
             if(isSuccess) setTimeout(() => t.classList.remove('show'), 2000);
         }
 
+        function checkEmpty(val) {
+            return (!val || val.toString().trim() === "") 
+                ? `<span class="text-slate-300 italic text-[10px]">Kosong</span>` : val;
+        }
+
+        // 4. LOAD DATA ANGGOTA
         async function loadMembers() {
-            document.getElementById('memberList').innerHTML = '';
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
             document.getElementById('loadingState').classList.remove('hidden');
             
             try {
-                const q = document.getElementById('memberSearch').value;
+                const q = document.getElementById('memberSearch').value.trim();
                 const from = currentPage * itemsPerPage;
                 const to = from + itemsPerPage - 1;
 
                 let req = client.from('anggota').select('*', { count: 'exact' }).order('nama', { ascending: true }).range(from, to);
+                
                 if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
                 
                 const { data, count, error } = await req;
@@ -254,40 +254,56 @@
                 document.getElementById('pageNumber').innerText = currentPage + 1;
                 document.getElementById('prevBtn').disabled = (currentPage === 0);
                 document.getElementById('nextBtn').disabled = (to >= (count || 0) - 1);
-            } catch (err) { console.error(err); } 
-            finally { document.getElementById('loadingState').classList.add('hidden'); }
+
+            } catch (err) { 
+                console.error(err);
+                notify("Gagal memuat data");
+            } finally { 
+                document.getElementById('loadingState').classList.add('hidden'); 
+            }
         }
 
         function renderMembers() {
             const list = document.getElementById('memberList');
+            if(membersData.length === 0) {
+                list.innerHTML = `<div class="p-20 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Data Tidak Ditemukan</div>`;
+                return;
+            }
+
             list.innerHTML = membersData.map(m => `
                 <div onclick="openMemberModal('${m.id}')" class="list-row">
-                    <div class="flex justify-center"><div class="w-10 h-10 bg-slate-50 text-blue-500 rounded-xl flex items-center justify-center border border-slate-100"><i class="fa-solid fa-user"></i></div></div>
-                    <div class="font-bold text-xs text-slate-900">${checkEmpty(m.nis)}</div>
-                    <div class="font-bold text-slate-700">${checkEmpty(m.nama)}</div>
+                    <div class="flex justify-center">
+                        <div class="w-10 h-10 bg-slate-50 text-blue-500 rounded-xl flex items-center justify-center border border-slate-100">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="font-bold text-xs text-slate-900">${m.nis}</div>
+                    <div class="font-bold text-slate-700 uppercase">${m.nama}</div>
                     <div class="text-[10px] font-bold text-slate-500">${checkEmpty(m.jenjang)}</div>
-                    <div><span class="role-badge role-${m.role || 'anggota'}">${m.role || 'anggota'}</span></div>
+                    <div><span class="role-badge role-${(m.role || 'anggota').toLowerCase()}">${m.role || 'anggota'}</span></div>
                     <div class="text-slate-900 font-bold text-[11px]">${checkEmpty(m.kamar)}</div>
                 </div>
             `).join('');
         }
 
+        // 5. MODAL & CRUD
         function openMemberModal(id) {
             const form = document.getElementById('memberForm');
             form.reset();
             document.getElementById('memberId').value = id;
+            document.getElementById('m_password').value = "";
             
             const deleteBtn = document.getElementById('btnDeleteMember');
-            deleteBtn.classList.remove('hidden'); // Pustakawan kini bisa hapus data juga
 
             if(id !== 'NEW') {
-                const m = membersData.find(x => x.id === id);
+                const m = membersData.find(x => x.id.toString() === id.toString());
                 if(m) {
                     document.getElementById('m_nis').value = m.nis || '';
                     document.getElementById('m_nama').value = m.nama || '';
-                    document.getElementById('m_role').value = m.role || 'anggota';
+                    document.getElementById('m_role').value = (m.role || 'anggota').toLowerCase();
                     document.getElementById('m_jenjang').value = m.jenjang || 'SLTP';
                     document.getElementById('m_kamar').value = m.kamar || '';
+                    deleteBtn.classList.remove('hidden');
                 }
             } else {
                 deleteBtn.classList.add('hidden');
@@ -311,13 +327,8 @@
                 kamar: document.getElementById('m_kamar').value.trim()
             };
 
-            // Jika password diisi, update password
-            if (pass !== "") {
-                payload.password = pass;
-            } else if (id === 'NEW') {
-                // Default password untuk user baru adalah NIS-nya
-                payload.password = nis;
-            }
+            if (pass !== "") payload.password = pass;
+            else if (id === 'NEW') payload.password = nis; // Default password = NIS
 
             notify('Menyimpan...');
             
@@ -331,20 +342,34 @@
             if (!res.error) {
                 closeMemberModal();
                 loadMembers();
-                notify('Sinkronisasi Berhasil', true);
+                notify('Berhasil Disimpan', true);
             } else {
-                alert("Gagal: " + res.error.message);
+                alert("Gagal menyimpan: " + res.error.message);
+                notify('Gagal menyimpan');
             }
         };
 
         async function askDelete() {
-            if(!confirm("Hapus data ini secara permanen?")) return;
+            if(!confirm("Hapus anggota ini secara permanen?")) return;
             const id = document.getElementById('memberId').value;
-            await client.from('anggota').delete().eq('id', id);
-            closeMemberModal(); loadMembers(); notify('Terhapus', true);
+            
+            notify('Menghapus...');
+            const { error } = await client.from('anggota').delete().eq('id', id);
+            
+            if(!error) {
+                closeMemberModal(); 
+                loadMembers(); 
+                notify('Terhapus', true);
+            } else {
+                alert("Gagal menghapus: " + error.message);
+            }
         }
 
-        function changePage(s) { currentPage += s; loadMembers(); window.scrollTo(0,0); }
+        function changePage(s) { 
+            currentPage += s; 
+            loadMembers(); 
+            window.scrollTo(0,0); 
+        }
 
         window.onload = loadMembers;
     </script>
