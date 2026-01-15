@@ -1,0 +1,23 @@
+name: Deploy Edge Function Otomatis
+
+on:
+  push:
+    branches:
+      - main # Ganti jadi 'master' jika nama branch utama Anda 'master'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil Kode
+        uses: actions/checkout@v3
+
+      - name: Pasang Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ke Supabase
+        run: supabase functions deploy delete-user --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
