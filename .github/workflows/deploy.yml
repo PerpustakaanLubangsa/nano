@@ -3,13 +3,13 @@ name: Deploy Edge Function Otomatis
 on:
   push:
     branches:
-      - main # Pastikan ini nama branch Anda (main/master)
+      - main # Pastikan ini nama branch Anda
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Ambil Kode dari Repo
+      - name: Ambil Kode
         uses: actions/checkout@v3
 
       - name: Pasang Supabase CLI
@@ -18,6 +18,7 @@ jobs:
           version: latest
 
       - name: Kirim ke Supabase
-        run: supabase functions deploy delete-user --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify --use-api
+        # Kita hapus --no-verify dan ganti dengan --no-verify-jwt serta --use-api
+        run: supabase functions deploy delete-user --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify-jwt --use-api
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
