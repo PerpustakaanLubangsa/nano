@@ -20,23 +20,18 @@ serve(async (req) => {
     )
 
     const { userId } = await req.json()
-
-    if (!userId) throw new Error('User ID is required')
-
-    // Menghapus user dari sistem Auth (Login)
     const { data, error } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (error) throw error
 
-    return new Response(
-      JSON.stringify({ message: `User ${userId} berhasil dihapus.` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
-
+    return new Response(JSON.stringify({ data }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    })
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    })
   }
 })
