@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buku Tamu - Digital Library</title>
+    <title>Buku Tamu - Digital Library Achievement</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -41,14 +41,13 @@
         label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: block; }
         
         .drop-box {
-            position: absolute; width: 100%; max-height: 280px; overflow-y: auto;
+            position: absolute; width: 100%; max-height: 250px; overflow-y: auto;
             background: #1e293b; border-radius: 10px; border: 1px solid var(--border);
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; margin-top: 5px; display: none;
         }
         .drop-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; transition: all 0.2s; }
         .drop-item:last-child { border-bottom: none; }
         .drop-item.selected { background: #3b82f6; color: white; }
-        .drop-item.selected .sub-text { color: #dbeafe; }
 
         .btn-submit { 
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -57,25 +56,68 @@
         }
 
         #customModal {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); 
-            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px);
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); 
+            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(10px);
         }
-        .sub-text { font-size: 10px; opacity: 0.6; display: block; margin-top: 2px; }
         
         .room-badge { 
             background: rgba(59, 130, 246, 0.2); color: #60a5fa; 
             padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700;
         }
+
+        .stat-card { background: rgba(51, 65, 85, 0.4); border: 1px solid #334155; border-radius: 15px; padding: 12px; }
     </style>
 </head>
 <body onload="initData()">
 
     <div id="customModal">
-        <div class="modal-content bg-[#1e293b] p-8 rounded-3xl text-center max-w-[320px] w-full border border-[#334155] shadow-2xl">
-            <div id="modalIcon" class="text-6xl mb-4 text-green-400"><i class="fa-solid fa-circle-check fa-bounce"></i></div>
-            <h2 id="modalTitle" class="text-white font-extrabold text-2xl mb-2">Berhasil!</h2>
-            <p id="modalDesc" class="text-slate-400 text-sm mb-6 leading-relaxed"></p>
-            <button id="modalAction" class="btn-submit">Selesai</button>
+        <div class="modal-content bg-[#1e293b] p-6 rounded-[2.5rem] w-full max-w-[340px] border border-[#334155] shadow-2xl relative overflow-hidden text-center">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl"></div>
+            
+            <div class="relative">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-400 rounded-2xl shadow-lg mb-4 transform rotate-3">
+                    <i class="fa-solid fa-user-astronaut text-3xl text-white"></i>
+                </div>
+                <h2 id="profNama" class="text-white font-extrabold text-xl truncate uppercase tracking-tight"></h2>
+                <div id="profInfo" class="text-blue-400 text-[10px] font-black tracking-widest uppercase mt-1 mb-6 opacity-80"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="stat-card flex flex-col items-center">
+                    <span class="text-[8px] font-bold text-slate-500 uppercase">Total Baca</span>
+                    <span id="statBaca" class="text-2xl font-black text-white">0</span>
+                </div>
+                <div class="stat-card flex flex-col items-center">
+                    <span class="text-[8px] font-bold text-slate-500 uppercase">Total Pinjam</span>
+                    <span id="statPinjam" class="text-2xl font-black text-white">0</span>
+                </div>
+            </div>
+
+            <div class="space-y-2 mb-6">
+                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-yellow-500 text-xs"></i>
+                        <span class="text-[10px] font-bold text-slate-300">RANK BULAN INI</span>
+                    </div>
+                    <span id="rankBulan" class="text-sm font-black text-yellow-500">#--</span>
+                </div>
+                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-earth-asia text-blue-500 text-xs"></i>
+                        <span class="text-[10px] font-bold text-slate-300">RANK SEPANJANG MASA</span>
+                    </div>
+                    <span id="rankAll" class="text-sm font-black text-blue-500">#--</span>
+                </div>
+            </div>
+
+            <div class="mb-6 px-1 text-left">
+                <p class="text-[9px] font-black text-slate-500 uppercase mb-3 flex items-center">
+                    <i class="fa-solid fa-clock-rotate-left mr-2"></i>Riwayat Terakhir
+                </p>
+                <div id="listBukuRiwayat" class="space-y-2 max-h-[100px] overflow-y-auto pr-2"></div>
+            </div>
+
+            <button id="modalAction" class="btn-submit !rounded-2xl">Mantap!</button>
         </div>
     </div>
 
@@ -84,13 +126,13 @@
             <h1 class="text-xl font-extrabold text-white tracking-tighter">BUKU TAMU</h1>
             <p class="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em]">Digital Library Sync</p>
         </div>
-        <i class="fa-solid fa-database text-slate-700"></i>
+        <i id="syncStatus" class="fa-solid fa-database text-slate-700"></i>
     </header>
 
     <form id="guestForm" autocomplete="off">
         <div class="relative">
             <label><i class="fa-solid fa-user-tag mr-1"></i> Nama / NIS</label>
-            <input type="text" id="inputNama" placeholder="Cari nama atau NIS..." required class="input-formal">
+            <input type="text" id="inputNama" placeholder="Ketik minimal 2 huruf..." required class="input-formal">
             <div id="dropNama" class="drop-box"></div>
         </div>
 
@@ -119,7 +161,7 @@
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label><i class="fa-solid fa-tags mr-1"></i> Kategori</label>
-                <select id="inputKategori" required class="input-formal text-xs">
+                <select id="inputKategori" required class="input-formal text-[11px]">
                     <option value="" disabled selected>- Pilih -</option>
                     <option value="Kesusastraan">Kesusastraan</option>
                     <option value="Komik">Komik</option>
@@ -159,36 +201,43 @@
 
         async function initData() {
             try {
+                const statusIcon = document.getElementById('syncStatus');
+                statusIcon.classList.add('fa-spin', 'text-blue-500');
+
+                // Fungsi untuk menembus limit 1000 baris
+                const fetchAll = async (table, cols) => {
+                    let results = [], from = 0, to = 999, more = true;
+                    while (more) {
+                        const { data, error } = await client.from(table).select(cols).range(from, to);
+                        if (error) throw error;
+                        results = [...results, ...data];
+                        if (data.length < 1000) more = false;
+                        else { from += 1000; to += 1000; }
+                    }
+                    return results;
+                };
+
                 const [resA, resB] = await Promise.all([
-                    client.from('anggota').select('nama, nis, kamar, jenjang'),
-                    client.from('biblio').select('judul, kategori')
+                    fetchAll('anggota', 'nama, nis, kamar, jenjang'),
+                    fetchAll('biblio', 'judul, kategori')
                 ]);
-                dataAnggota = resA.data || [];
-                dataBiblio = resB.data || [];
+
+                dataAnggota = resA;
+                dataBiblio = resB;
 
                 bindSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
                 bindSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
-            } catch (err) { console.error(err); }
+
+                statusIcon.classList.remove('fa-spin', 'text-blue-500');
+                statusIcon.classList.add('text-green-500');
+            } catch (err) { 
+                console.error(err);
+                showToast("Gagal memuat database!");
+            }
         }
 
         function showToast(msg) {
-            Toastify({
-                text: msg, duration: 3000, gravity: "top", position: "center",
-                style: { background: "#ef4444", borderRadius: "10px", fontWeight: "bold" }
-            }).showToast();
-        }
-
-        function handleExactEnter(inputId, val, source, keys) {
-            const found = source.find(item => 
-                keys.some(k => item[k] && item[k].toString().toLowerCase() === val.toLowerCase())
-            );
-            if (found) {
-                const dropId = inputId === 'inputNama' ? 'dropNama' : 'dropBuku';
-                document.getElementById(dropId).dataset.currentMatches = JSON.stringify([found]);
-                pick(inputId, dropId, 0);
-                return true;
-            }
-            return false;
+            Toastify({ text: msg, duration: 3000, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "10px" } }).showToast();
         }
 
         function bindSearch(inputId, dropId, source, keys) {
@@ -199,15 +248,7 @@
                 const items = drop.querySelectorAll('.drop-item');
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (activeIdx > -1) {
-                        items[activeIdx].click();
-                    } else {
-                        const val = input.value.trim();
-                        if (val && !handleExactEnter(inputId, val, source, keys)) {
-                            showToast("Data tidak ditemukan!");
-                            input.value = "";
-                        }
-                    }
+                    if (activeIdx > -1) items[activeIdx].click();
                     drop.style.display = 'none';
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlightItem(items);
@@ -219,25 +260,15 @@
             input.addEventListener('input', () => {
                 const val = input.value.toLowerCase().trim();
                 activeIdx = -1;
-                if (val.length < 1) { drop.style.display = 'none'; return; }
-
-                const matches = source.filter(i => 
-                    keys.some(k => i[k] && i[k].toString().toLowerCase().includes(val))
-                ).slice(0, 10);
-
+                if (val.length < 2) { drop.style.display = 'none'; return; }
+                const matches = source.filter(i => keys.some(k => i[k]?.toString().toLowerCase().includes(val))).slice(0, 15);
                 if (matches.length > 0) {
                     drop.innerHTML = matches.map((item, i) => {
                         const title = inputId === 'inputNama' ? item.nama : item.judul;
-                        const sub = inputId === 'inputNama' 
-                            ? `<div class="flex justify-between items-center w-full mt-1">
-                                <span class="sub-text">NIS: ${item.nis || '-'}</span>
-                                <span class="room-badge">Kamar: ${item.kamar || '-'}</span>
-                               </div>` 
-                            : `<span class="sub-text">${item.kategori || '-'}</span>`;
-                        
+                        const sub = inputId === 'inputNama' ? `<span class="room-badge">Kamar: ${item.kamar || '-'}</span>` : `<span class="text-[10px] opacity-50">${item.kategori || '-'}</span>`;
                         return `<div class="drop-item" onclick="pick('${inputId}', '${dropId}', ${i})">
-                            <div class="text-sm font-bold truncate">${title}</div>
-                            ${sub}
+                            <div class="text-[13px] font-bold truncate">${title}</div>
+                            <div class="mt-1">${sub}</div>
                         </div>`;
                     }).join('');
                     drop.style.display = 'block';
@@ -255,7 +286,6 @@
             const drop = document.getElementById(dropId);
             const matches = JSON.parse(drop.dataset.currentMatches);
             const data = matches[index];
-
             if (inputId === 'inputNama') {
                 document.getElementById('inputNama').value = data.nama;
                 document.getElementById('inputKamar').value = data.kamar || '';
@@ -264,17 +294,45 @@
                 document.getElementById('inputBuku').value = data.judul;
                 document.getElementById('inputKategori').value = data.kategori || '';
             }
-            drop.style.display = 'none';
-            activeIdx = -1;
+            drop.style.display = 'none'; activeIdx = -1;
+        }
+
+        async function fetchAchievement(namaUser) {
+            const { data: history } = await client.from('data_pengunjung').select('nama, aktivitas, judul_buku, created_at');
+            if (!history) return null;
+
+            const myHistory = history.filter(h => h.nama === namaUser);
+            const countBaca = myHistory.filter(h => h.aktivitas === 'Baca').length;
+            const countPinjam = myHistory.filter(h => h.aktivitas === 'Pinjam').length;
+            const lastThree = [...new Set(myHistory.map(h => h.judul_buku))].reverse().slice(0, 3);
+
+            const getRank = (list, filterFn = () => true) => {
+                const filtered = list.filter(filterFn);
+                const scores = filtered.reduce((acc, curr) => { acc[curr.nama] = (acc[curr.nama] || 0) + 1; return acc; }, {});
+                const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+                const rankPos = sorted.findIndex(x => x[0] === namaUser);
+                return rankPos !== -1 ? `#${rankPos + 1}` : '-';
+            };
+
+            const now = new Date();
+            const rankAll = getRank(history);
+            const rankBulan = getRank(history, (h) => {
+                const d = new Date(h.created_at);
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+
+            return { countBaca, countPinjam, lastThree, rankAll, rankBulan };
         }
 
         document.getElementById('guestForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sinkronisasi...';
+            const namaUser = document.getElementById('inputNama').value;
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sinkronisasi...';
 
             const payload = {
-                nama: document.getElementById('inputNama').value,
+                nama: namaUser,
                 kamar: document.getElementById('inputKamar').value,
                 jenjang: document.getElementById('inputJenjang').value,
                 judul_buku: document.getElementById('inputBuku').value,
@@ -283,18 +341,30 @@
                 created_at: new Date().toISOString()
             };
 
-            const results = await Promise.all([
-                client.from('log_aktivitas').insert([payload]),
-                client.from('anggota').update({ kamar: payload.kamar, jenjang: payload.jenjang }).eq('nama', payload.nama),
-                client.from('biblio').update({ kategori: payload.kategori }).eq('judul', payload.judul_buku)
-            ]);
+            try {
+                await Promise.all([
+                    client.from('log_aktivitas').insert([payload]),
+                    client.from('anggota').update({ kamar: payload.kamar, jenjang: payload.jenjang }).eq('nama', payload.nama),
+                    client.from('biblio').update({ kategori: payload.kategori }).eq('judul', payload.judul_buku)
+                ]);
 
-            if (!results[0].error) {
-                document.getElementById('modalDesc').innerHTML = `Log <b>${payload.nama}</b> berhasil disimpan.`;
-                document.getElementById('customModal').style.display = 'flex';
-                document.getElementById('modalAction').onclick = () => location.reload();
-            } else {
-                showToast("Simpan gagal!");
+                const ach = await fetchAchievement(namaUser);
+                if (ach) {
+                    document.getElementById('profNama').innerText = namaUser;
+                    document.getElementById('profInfo').innerText = `${payload.jenjang} • Kamar ${payload.kamar}`;
+                    document.getElementById('statBaca').innerText = ach.countBaca;
+                    document.getElementById('statPinjam').innerText = ach.countPinjam;
+                    document.getElementById('rankBulan').innerText = ach.rankBulan;
+                    document.getElementById('rankAll').innerText = ach.rankAll;
+                    document.getElementById('listBukuRiwayat').innerHTML = ach.lastThree.map(b => 
+                        `<div class="text-[11px] text-slate-300 truncate bg-slate-800/30 p-2 rounded-lg border border-slate-700/30 mb-1"><i class="fa-solid fa-check text-green-500 mr-2"></i>${b}</div>`
+                    ).join('') || '<div class="text-center text-slate-500 text-[10px]">Belum ada riwayat</div>';
+
+                    document.getElementById('customModal').style.display = 'flex';
+                    document.getElementById('modalAction').onclick = () => location.reload();
+                }
+            } catch (err) {
+                console.error(err); showToast("Gagal Sinkronisasi!");
                 btn.disabled = false; btn.innerText = "Simpan & Sinkron";
             }
         };
