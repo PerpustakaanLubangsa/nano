@@ -137,11 +137,10 @@
             <p class="nav-label">Akun Sistem</p>
             <div class="px-3 py-4 bg-slate-900/40 rounded-2xl mb-3 border border-white/5">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700">
-                        <i class="fa-solid fa-user-shield text-base"></i>
-                    </div>
+                    <div id="userAvatar" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700 font-bold uppercase">
+                        </div>
                     <div class="overflow-hidden">
-                        <p id="staffNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter">Pustakawan</p>
+                        <p id="staffNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter italic">Pustakawan</p>
                         <div class="flex items-center gap-1.5">
                             <span class="relative flex h-1.5 w-1.5">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -183,11 +182,13 @@
     </div>
 
     <script>
+        // --- PROTEKSI HALAMAN ---
         const userRole = sessionStorage.getItem('userRole');
         if (sessionStorage.getItem('isLoggedIn') !== 'true' || (userRole !== 'pustakawan' && userRole !== 'admin')) {
             window.location.replace('login.html');
         }
 
+        // --- KONFIGURASI ---
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
         const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
         const client = supabase.createClient(SB_URL, SB_KEY);
@@ -196,8 +197,12 @@
         let timeLeft = 30;
         let monitorInterval;
 
-        document.getElementById('staffNameDisplay').textContent = sessionStorage.getItem('userName') || 'User';
-        document.getElementById('roleDisplay').textContent = sessionStorage.getItem('userRole') || 'Staff';
+        // --- RENDER PROFIL ---
+        const storedName = sessionStorage.getItem('userName') || 'Pustakawan';
+        document.getElementById('staffNameDisplay').textContent = storedName;
+        document.getElementById('roleDisplay').textContent = userRole || 'Staff';
+        // Ambil inisial nama untuk avatar
+        document.getElementById('userAvatar').textContent = storedName.charAt(0);
 
         function loadPage(page, element) {
             const frame = document.getElementById('contentFrame');
@@ -231,7 +236,8 @@
         }
 
         function updateCircle(offset) {
-            document.getElementById('progressProgress').style.strokeDashoffset = offset;
+            const bar = document.getElementById('progressProgress');
+            if(bar) bar.style.strokeDashoffset = offset;
         }
 
         async function monitorAttendance() {
