@@ -96,7 +96,7 @@
                     </div>
                 </div>
 
-                <div id="errorMessage" class="hidden text-red-400 text-[10px] font-bold uppercase text-center bg-red-950/30 py-3 rounded-xl border border-red-900/50">
+                <div id="errorMessage" class="hidden text-red-400 text-[10px] font-bold uppercase text-center bg-red-950/30 py-3 rounded-xl border border-red-900/50 px-2">
                     Akses Ditolak!
                 </div>
 
@@ -125,40 +125,43 @@
             const userVal = document.getElementById('username').value.trim();
             const passVal = document.getElementById('password').value.trim();
 
-            btnSubmit.innerText = 'MEMVERIFIKASI...';
+            btnSubmit.innerText = 'MENYAMBUNG KE SERVER...';
             btnSubmit.disabled = true;
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('anggota')
-                    .select('nis, nama, role, password')
-                    .eq('nis', userVal)
-                    .maybeSingle();
+                // Memanggil RPC verify_user_login yang sudah kita buat di SQL Editor
+                const { data, error } = await supabaseClient.rpc('verify_user_login', {
+                    p_nis: userVal,
+                    p_pass: passVal
+                });
 
                 if (error) throw error;
 
-                if (data && data.password === passVal && data.password !== null) {
-                    const userRole = data.role ? data.role.toLowerCase() : 'anggota';
+                if (data && data.success) {
+                    const user = data.user_profile;
+                    const userRole = user.role ? user.role.toLowerCase() : 'anggota';
                     
-                    // PENENTUAN HALAMAN TUJUAN
-                    let targetPage = '';
-                    if (userRole === 'admin') {
-                        targetPage = 'admin-panel.html';
-                    } else if (userRole === 'pustakawan') {
-                        targetPage = 'panel.html';
-                    } else {
-                        throw new Error("Akses Ditolak: Hanya Staf/Admin yang dapat masuk!");
+                    // Filter akses: Hanya admin dan pustakawan
+                    if (userRole !== 'admin' && userRole !== 'pustakawan') {
+                        throw new Error("Akses Ditolak: Hanya Staf/Admin!");
                     }
 
-                    btnSubmit.innerText = 'BERHASIL! MENGALIHKAN...';
-                    
+                    // Simpan ke Session Storage
                     sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('userName', data.nama);
+                    sessionStorage.setItem('userName', user.nama);
                     sessionStorage.setItem('userRole', userRole);
-                    sessionStorage.setItem('userNis', data.nis); 
+                    sessionStorage.setItem('userNis', user.nis);
+                    sessionStorage.setItem('userId', user.id);
 
+                    btnSubmit.innerText = 'BERHASIL! MENGALIHKAN...';
+
+                    // LOGIKA ROUTING BERDASARKAN ROLE
                     setTimeout(() => {
-                        window.location.replace(targetPage);
+                        if (userRole === 'admin') {
+                            window.location.replace('admin-panel.html');
+                        } else {
+                            window.location.replace('panel.html');
+                        }
                     }, 800);
 
                 } else {
