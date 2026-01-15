@@ -14,14 +14,23 @@
             background-color: #000000;
         }
         .container { display: flex; width: 100%; height: 100vh; position: relative; }
-        .sidebar { width: 22%; display: flex; flex-direction: column; background-color: #000000; z-index: 1; min-width: 240px; }
+        
+        /* Sidebar Lebar 30% */
+        .sidebar { 
+            width: 30%; 
+            display: flex; 
+            flex-direction: column; 
+            background-color: #000000; 
+            z-index: 1; 
+            min-width: 320px; 
+        }
+        
         .clock-section { padding: 20px 10px 10px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .clock-wrapper { display: flex; gap: 6px; align-items: center; }
-        .time-card { background: #0a0a0a; color: #ffffff; padding: 8px 4px; border-radius: 10px; min-width: 55px; text-align: center; font-size: 1.8rem; font-weight: 900; line-height: 1; border: 2px solid #222; }
+        .time-card { background: #0a0a0a; color: #ffffff; padding: 8px 4px; border-radius: 10px; min-width: 65px; text-align: center; font-size: 2rem; font-weight: 900; line-height: 1; border: 2px solid #222; }
         
-        /* GAYA TANGGAL SEBAGAI TOMBOL */
         #date-display { 
-            font-size: 0.65rem; 
+            font-size: 0.75rem; 
             text-transform: uppercase; 
             letter-spacing: 1.5px; 
             margin-top: 10px; 
@@ -42,10 +51,16 @@
 
         .iframe-container-left { flex-grow: 1; padding: 0 15px 20px 15px; box-sizing: border-box; }
         .iframe-card { width: 100%; height: 100%; background: #ffffff; border-radius: 18px; overflow: hidden; }
+        
+        /* Main content: Shadow dan Border-radius dihilangkan */
         .main-content {
-            width: 78%; background-color: #ffffff; z-index: 10;
-            border-top-left-radius: 40px; border-bottom-left-radius: 40px;
-            box-shadow: -20px 0 40px rgba(0, 0, 0, 0.6); overflow: hidden; position: relative;
+            width: 70%; 
+            background-color: #ffffff; 
+            z-index: 10;
+            border-top-left-radius: 0; /* Menghapus lengkungan atas */
+            border-bottom-left-radius: 0; /* Menghapus lengkungan bawah */
+            overflow: hidden; 
+            position: relative;
         }
         iframe { width: 100%; height: 100%; border: none; display: block; }
     </style>
