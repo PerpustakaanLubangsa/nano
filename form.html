@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buku Tamu - Digital Library Achievement</title>
+    <title>Buku Tamu - Snowy Digital Library</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -12,137 +12,154 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         :root {
-            --bg: #0f172a;
-            --border: #334155;
-            --accent: #3b82f6;
-            --text-main: #f1f5f9;
-            --input-bg: #1e293b;
+            --bg: #f0f9ff; /* Blue sky light */
+            --glass: rgba(255, 255, 255, 0.7);
+            --border: #e2e8f0;
+            --accent: #0ea5e9;
+            --text-main: #0f172a;
+            --input-bg: #ffffff;
         }
 
         * { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }
         *::-webkit-scrollbar { display: none; }
 
         body { 
-            background: var(--bg); color: var(--text-main); 
+            background: radial-gradient(circle at top right, #e0f2fe, #f0f9ff);
+            color: var(--text-main); 
             font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh;
             margin: 0; padding: 15px; display: flex; flex-direction: column; overflow: hidden;
+            position: relative;
         }
 
-        header { margin-bottom: 15px; flex-shrink: 0; }
-        form { display: flex; flex-direction: column; height: 100%; gap: 10px; }
+        /* Animasi Salju Halus */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: snow 10s linear infinite;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        @keyframes snow {
+            0% { background-position: 0px 0px; }
+            100% { background-position: 500px 1000px; }
+        }
+
+        header { margin-bottom: 15px; flex-shrink: 0; position: relative; }
+        form { display: flex; flex-direction: column; height: 100%; gap: 10px; position: relative; }
 
         .input-formal { 
-            background: var(--input-bg) !important; border: 1px solid var(--border) !important; 
-            border-radius: 10px !important; padding: 10px 12px !important; font-weight: 600; 
-            width: 100%; font-size: 14px; color: #fff !important; outline: none;
+            background: var(--input-bg) !important; border: 1.5px solid #cbd5e1 !important; 
+            border-radius: 12px !important; padding: 10px 12px !important; font-weight: 600; 
+            width: 100%; font-size: 14px; color: #1e293b !important; outline: none;
+            transition: all 0.3s ease;
         }
-        .input-formal:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .input-formal:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1); }
         
-        label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: block; }
+        label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: block; }
         
         .drop-box {
             position: absolute; width: 100%; max-height: 250px; overflow-y: auto;
-            background: #1e293b; border-radius: 10px; border: 1px solid var(--border);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; margin-top: 5px; display: none;
+            background: rgba(255, 255, 255, 0.95); border-radius: 12px; border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; margin-top: 5px; display: none;
+            backdrop-filter: blur(10px);
         }
-        .drop-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #334155; transition: all 0.2s; }
+        .drop-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
         .drop-item:last-child { border-bottom: none; }
-        .drop-item.selected { background: #3b82f6; color: white; }
+        .drop-item:hover, .drop-item.selected { background: #f0f9ff; border-left: 4px solid #0ea5e9; }
 
         .btn-submit { 
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white; padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; border: none; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white; padding: 14px; border-radius: 14px; font-weight: 800; width: 100%; border: none; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(14, 165, 233, 0.2);
         }
 
         #customModal {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); 
-            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(10px);
-        }
-        
-        .room-badge { 
-            background: rgba(59, 130, 246, 0.2); color: #60a5fa; 
-            padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700;
+            position: fixed; inset: 0; background: rgba(240, 249, 255, 0.85); 
+            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(12px);
         }
 
-        .stat-card { background: rgba(51, 65, 85, 0.4); border: 1px solid #334155; border-radius: 15px; padding: 12px; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
 <body onload="initData()">
 
     <div id="customModal">
-        <div class="modal-content bg-[#1e293b] p-6 rounded-[2.5rem] w-full max-w-[340px] border border-[#334155] shadow-2xl relative overflow-hidden text-center">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl"></div>
+        <div class="modal-content bg-white p-6 rounded-[2.5rem] w-full max-w-[340px] border border-blue-100 shadow-[0_20px_50px_rgba(14,165,233,0.15)] relative overflow-hidden text-center">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl"></div>
             
             <div class="relative">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-400 rounded-2xl shadow-lg mb-4 transform rotate-3">
-                    <i class="fa-solid fa-user-astronaut text-3xl text-white"></i>
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-sky-400 to-blue-500 rounded-2xl shadow-lg mb-4">
+                    <i class="fa-solid fa-snowflake text-3xl text-white"></i>
                 </div>
-                <h2 id="profNama" class="text-white font-extrabold text-xl truncate uppercase tracking-tight"></h2>
-                <div id="profInfo" class="text-blue-400 text-[10px] font-black tracking-widest uppercase mt-1 mb-6 opacity-80"></div>
+                <h2 id="profNama" class="text-slate-800 font-extrabold text-xl truncate uppercase tracking-tight"></h2>
+                <div id="profInfo" class="text-sky-600 text-[10px] font-black tracking-widest uppercase mt-1 mb-6"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div class="stat-card flex flex-col items-center">
-                    <span class="text-[8px] font-bold text-slate-500 uppercase">Total Baca</span>
-                    <span id="statBaca" class="text-2xl font-black text-white">0</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase">Total Baca</span>
+                    <span id="statBaca" class="text-2xl font-black text-slate-800">0</span>
                 </div>
                 <div class="stat-card flex flex-col items-center">
-                    <span class="text-[8px] font-bold text-slate-500 uppercase">Total Pinjam</span>
-                    <span id="statPinjam" class="text-2xl font-black text-white">0</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase">Total Pinjam</span>
+                    <span id="statPinjam" class="text-2xl font-black text-slate-800">0</span>
                 </div>
             </div>
 
             <div class="space-y-2 mb-6">
-                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                <div class="flex justify-between items-center bg-sky-50 p-3 rounded-xl border border-sky-100">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-trophy text-yellow-500 text-xs"></i>
-                        <span class="text-[10px] font-bold text-slate-300">RANK BULAN INI</span>
+                        <i class="fa-solid fa-award text-sky-500 text-xs"></i>
+                        <span class="text-[10px] font-bold text-slate-500">RANK BULAN INI</span>
                     </div>
-                    <span id="rankBulan" class="text-sm font-black text-yellow-500">#--</span>
+                    <span id="rankBulan" class="text-sm font-black text-sky-600">#--</span>
                 </div>
-                <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-earth-asia text-blue-500 text-xs"></i>
-                        <span class="text-[10px] font-bold text-slate-300">RANK SEPANJANG MASA</span>
+                        <i class="fa-solid fa-mountain text-slate-400 text-xs"></i>
+                        <span class="text-[10px] font-bold text-slate-500">SEPANGJANG MASA</span>
                     </div>
-                    <span id="rankAll" class="text-sm font-black text-blue-500">#--</span>
+                    <span id="rankAll" class="text-sm font-black text-slate-700">#--</span>
                 </div>
             </div>
 
             <div class="mb-6 px-1 text-left">
-                <p class="text-[9px] font-black text-slate-500 uppercase mb-3 flex items-center">
-                    <i class="fa-solid fa-clock-rotate-left mr-2"></i>Riwayat Terakhir
+                <p class="text-[9px] font-black text-slate-400 uppercase mb-3 flex items-center">
+                    <i class="fa-solid fa-book-open mr-2"></i>Riwayat Buku
                 </p>
                 <div id="listBukuRiwayat" class="space-y-2 max-h-[100px] overflow-y-auto pr-2"></div>
             </div>
 
-            <button id="modalAction" class="btn-submit !rounded-2xl">Mantap!</button>
+            <button id="modalAction" class="btn-submit !rounded-2xl">Selesai</button>
         </div>
     </div>
 
     <header class="flex justify-between items-center">
         <div>
-            <h1 class="text-xl font-extrabold text-white tracking-tighter">BUKU TAMU</h1>
-            <p class="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em]">Digital Library Sync</p>
+            <h1 class="text-xl font-extrabold text-slate-800 tracking-tighter">BUKU TAMU</h1>
+            <p class="text-[8px] font-black text-sky-500 uppercase tracking-[0.2em]">Crystal Library Sync</p>
         </div>
-        <i id="syncStatus" class="fa-solid fa-database text-slate-700"></i>
+        <i id="syncStatus" class="fa-solid fa-snowflake text-slate-200"></i>
     </header>
 
     <form id="guestForm" autocomplete="off">
         <div class="relative">
-            <label><i class="fa-solid fa-user-tag mr-1"></i> Nama / NIS</label>
-            <input type="text" id="inputNama" placeholder="Ketik minimal 2 huruf..." required class="input-formal">
+            <label><i class="fa-solid fa-id-card mr-1"></i> Identitas Nama / NIS</label>
+            <input type="text" id="inputNama" placeholder="Ketik nama di sini..." required class="input-formal">
             <div id="dropNama" class="drop-box"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
             <div>
-                <label><i class="fa-solid fa-door-open mr-1"></i> Kamar</label>
+                <label><i class="fa-solid fa-house-chimney mr-1"></i> Kamar</label>
                 <input type="text" id="inputKamar" required placeholder="A-01" class="input-formal uppercase">
             </div>
             <div>
-                <label><i class="fa-solid fa-graduation-cap mr-1"></i> Jenjang</label>
+                <label><i class="fa-solid fa-school mr-1"></i> Jenjang</label>
                 <select id="inputJenjang" required class="input-formal">
                     <option value="" disabled selected>- Pilih -</option>
                     <option value="SLTP">SLTP</option>
@@ -153,14 +170,14 @@
         </div>
 
         <div class="relative">
-            <label><i class="fa-solid fa-book mr-1"></i> Judul Koleksi</label>
+            <label><i class="fa-solid fa-book-bookmark mr-1"></i> Judul Koleksi</label>
             <input type="text" id="inputBuku" placeholder="Cari judul buku..." required class="input-formal">
             <div id="dropBuku" class="drop-box"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
             <div>
-                <label><i class="fa-solid fa-tags mr-1"></i> Kategori</label>
+                <label><i class="fa-solid fa-tag mr-1"></i> Kategori</label>
                 <select id="inputKategori" required class="input-formal text-[11px]">
                     <option value="" disabled selected>- Pilih -</option>
                     <option value="Kesusastraan">Kesusastraan</option>
@@ -176,7 +193,7 @@
                 </select>
             </div>
             <div>
-                <label><i class="fa-solid fa-person-walking mr-1"></i> Aktivitas</label>
+                <label><i class="fa-solid fa-person-rays mr-1"></i> Aktivitas</label>
                 <select id="inputAktivitas" required class="input-formal">
                     <option value="" disabled selected>- Pilih -</option>
                     <option value="Baca">Baca</option>
@@ -202,9 +219,8 @@
         async function initData() {
             try {
                 const statusIcon = document.getElementById('syncStatus');
-                statusIcon.classList.add('fa-spin', 'text-blue-500');
+                statusIcon.classList.add('fa-spin', 'text-sky-400');
 
-                // Fungsi untuk menembus limit 1000 baris
                 const fetchAll = async (table, cols) => {
                     let results = [], from = 0, to = 999, more = true;
                     while (more) {
@@ -222,22 +238,17 @@
                     fetchAll('biblio', 'judul, kategori')
                 ]);
 
-                dataAnggota = resA;
-                dataBiblio = resB;
-
+                dataAnggota = resA; dataBiblio = resB;
                 bindSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
                 bindSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
 
-                statusIcon.classList.remove('fa-spin', 'text-blue-500');
-                statusIcon.classList.add('text-green-500');
-            } catch (err) { 
-                console.error(err);
-                showToast("Gagal memuat database!");
-            }
+                statusIcon.classList.remove('fa-spin', 'text-sky-400');
+                statusIcon.classList.add('text-sky-300');
+            } catch (err) { console.error(err); showToast("Database error!"); }
         }
 
         function showToast(msg) {
-            Toastify({ text: msg, duration: 3000, gravity: "top", position: "center", style: { background: "#ef4444", borderRadius: "10px" } }).showToast();
+            Toastify({ text: msg, duration: 3000, gravity: "top", position: "center", style: { background: "#0ea5e9", borderRadius: "12px" } }).showToast();
         }
 
         function bindSearch(inputId, dropId, source, keys) {
@@ -265,9 +276,9 @@
                 if (matches.length > 0) {
                     drop.innerHTML = matches.map((item, i) => {
                         const title = inputId === 'inputNama' ? item.nama : item.judul;
-                        const sub = inputId === 'inputNama' ? `<span class="room-badge">Kamar: ${item.kamar || '-'}</span>` : `<span class="text-[10px] opacity-50">${item.kategori || '-'}</span>`;
+                        const sub = inputId === 'inputNama' ? `<span class="text-xs text-sky-600 font-bold">${item.kamar || '-'}</span> • <span class="text-[10px] text-slate-400">${item.nis || '-'}</span>` : `<span class="text-[10px] opacity-50 uppercase font-bold">${item.kategori || '-'}</span>`;
                         return `<div class="drop-item" onclick="pick('${inputId}', '${dropId}', ${i})">
-                            <div class="text-[13px] font-bold truncate">${title}</div>
+                            <div class="text-[13px] font-bold text-slate-700 truncate">${title}</div>
                             <div class="mt-1">${sub}</div>
                         </div>`;
                     }).join('');
@@ -332,8 +343,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sinkronisasi...';
 
             const payload = {
-                nama: namaUser,
-                kamar: document.getElementById('inputKamar').value,
+                nama: namaUser, kamar: document.getElementById('inputKamar').value,
                 jenjang: document.getElementById('inputJenjang').value,
                 judul_buku: document.getElementById('inputBuku').value,
                 kategori: document.getElementById('inputKategori').value,
@@ -357,14 +367,14 @@
                     document.getElementById('rankBulan').innerText = ach.rankBulan;
                     document.getElementById('rankAll').innerText = ach.rankAll;
                     document.getElementById('listBukuRiwayat').innerHTML = ach.lastThree.map(b => 
-                        `<div class="text-[11px] text-slate-300 truncate bg-slate-800/30 p-2 rounded-lg border border-slate-700/30 mb-1"><i class="fa-solid fa-check text-green-500 mr-2"></i>${b}</div>`
-                    ).join('') || '<div class="text-center text-slate-500 text-[10px]">Belum ada riwayat</div>';
+                        `<div class="text-[11px] text-slate-600 truncate bg-blue-50/50 p-2 rounded-lg border border-blue-100 mb-1"><i class="fa-solid fa-circle-check text-sky-500 mr-2"></i>${b}</div>`
+                    ).join('') || '<div class="text-center text-slate-400 text-[10px]">Belum ada riwayat</div>';
 
                     document.getElementById('customModal').style.display = 'flex';
                     document.getElementById('modalAction').onclick = () => location.reload();
                 }
             } catch (err) {
-                console.error(err); showToast("Gagal Sinkronisasi!");
+                console.error(err); showToast("Gagal Sinkron!");
                 btn.disabled = false; btn.innerText = "Simpan & Sinkron";
             }
         };
