@@ -21,65 +21,80 @@
             overflow: hidden;
         }
         .brand-font { font-family: 'Cinzel', serif; }
+        
+        /* Glassmorphism Card */
         .glass-card {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
+            /* Animasi Masuk */
+            animation: fadeInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .input-focus:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+
+        /* Animasi Keyframes */
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .bg-glow {
-            position: absolute; width: 300px; height: 300px;
-            background: #2563eb; filter: blur(100px);
-            border-radius: 50%; z-index: -1; opacity: 0.2;
-        }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
         }
         .shake { animation: shake 0.2s ease-in-out 0s 2; }
+
+        .input-focus:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .bg-glow {
+            position: absolute; width: 400px; height: 400px;
+            background: radial-gradient(circle, #2563eb 0%, transparent 70%);
+            filter: blur(80px);
+            border-radius: 50%; z-index: -1; opacity: 0.15;
+            transition: all 1s ease-in-out;
+        }
         
         .home-link {
             position: absolute; top: 25px; left: 25px;
             color: rgba(255,255,255,0.3); transition: all 0.3s;
         }
-        .home-link:hover { color: #3b82f6; transform: translateY(-2px); }
+        .home-link:hover { color: #3b82f6; transform: translateX(-3px); }
     </style>
 </head>
 <body>
 
-    <div class="bg-glow" style="top: 10%; left: 20%;"></div>
-    <div class="bg-glow" style="bottom: 10%; right: 20%;"></div>
+    <div class="bg-glow" style="top: -10%; left: -10%;"></div>
+    <div class="bg-glow" style="bottom: -10%; right: -10%;"></div>
 
     <div class="w-full max-w-md px-6">
         <div class="glass-card p-10 rounded-[2.5rem] shadow-2xl" id="loginCard">
             
             <a href="index.html" class="home-link" title="Kembali ke Beranda">
-                <i class="fa-solid fa-house-chimney text-xl"></i>
+                <i class="fa-solid fa-arrow-left-long text-xl"></i>
             </a>
 
             <div class="text-center mb-10">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-900/50 mx-auto mb-6">
+                <div class="w-16 h-16 bg-gradient-to-tr from-blue-700 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-900/50 mx-auto mb-6">
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <h1 class="brand-font text-[12px] tracking-[0.4em] text-blue-400 font-bold leading-none uppercase mb-2">Perpustakaan</h1>
-                <h2 class="brand-font text-3xl text-white font-bold uppercase tracking-tighter text-nowrap">Lubangsa</h2>
-                <p class="text-slate-400 text-xs mt-4 font-semibold uppercase tracking-widest">Sistem Manajemen Akses</p>
+                <h1 class="brand-font text-[11px] tracking-[0.5em] text-blue-400 font-bold leading-none uppercase mb-2">Perpustakaan</h1>
+                <h2 class="brand-font text-3xl text-white font-bold uppercase tracking-tighter">Lubangsa</h2>
+                <div class="h-1 w-12 bg-blue-600 mx-auto mt-4 rounded-full"></div>
             </div>
 
-            <form id="loginForm" class="space-y-5" autocomplete="off">
+            <form id="loginForm" class="space-y-6" autocomplete="off">
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Username (NIS)</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
-                            <i class="fa-solid fa-user text-sm"></i>
+                            <i class="fa-solid fa-id-card text-sm"></i>
                         </span>
-                        <input type="text" id="username" required 
-                            class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-2xl pl-11 pr-4 py-4 outline-none transition-all input-focus"
+                        <input type="text" id="username" required autofocus
+                            class="w-full bg-slate-900/40 border border-slate-700 text-white text-sm rounded-2xl pl-11 pr-4 py-4 outline-none transition-all input-focus"
                             placeholder="Masukkan NIS">
                     </div>
                 </div>
@@ -88,23 +103,27 @@
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
-                            <i class="fa-solid fa-lock text-sm"></i>
+                            <i class="fa-solid fa-key text-sm"></i>
                         </span>
                         <input type="password" id="password" required
-                            class="w-full bg-slate-900/50 border border-slate-700 text-white text-sm rounded-2xl pl-11 pr-4 py-4 outline-none transition-all input-focus"
+                            class="w-full bg-slate-900/40 border border-slate-700 text-white text-sm rounded-2xl pl-11 pr-4 py-4 outline-none transition-all input-focus"
                             placeholder="••••••••">
                     </div>
                 </div>
 
-                <div id="errorMessage" class="hidden text-red-400 text-[10px] font-bold uppercase text-center bg-red-950/30 py-3 rounded-xl border border-red-900/50 px-2">
+                <div id="errorMessage" class="hidden text-red-400 text-[10px] font-bold uppercase text-center bg-red-950/30 py-3 rounded-xl border border-red-900/50 px-2 animate-pulse">
                     Akses Ditolak!
                 </div>
 
                 <button type="submit" id="btnSubmit"
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-[0.2em] py-5 rounded-2xl transition-all shadow-lg shadow-blue-900/30 active:scale-[0.98]">
-                    Masuk Ke Panel
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-[0.2em] py-5 rounded-2xl transition-all shadow-lg shadow-blue-900/30 active:scale-[0.97] flex items-center justify-center">
+                    <span>Masuk Ke Panel</span>
                 </button>
             </form>
+            
+            <p class="text-center text-slate-500 text-[10px] mt-8 uppercase tracking-widest">
+                &copy; 2024 Perpustakaan Lubangsa
+            </p>
         </div>
     </div>
 
@@ -125,11 +144,10 @@
             const userVal = document.getElementById('username').value.trim();
             const passVal = document.getElementById('password').value.trim();
 
-            btnSubmit.innerText = 'MENYAMBUNG KE SERVER...';
+            btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> VERIFIKASI...`;
             btnSubmit.disabled = true;
 
             try {
-                // Memanggil RPC verify_user_login yang sudah kita buat di SQL Editor
                 const { data, error } = await supabaseClient.rpc('verify_user_login', {
                     p_nis: userVal,
                     p_pass: passVal
@@ -141,9 +159,8 @@
                     const user = data.user_profile;
                     const userRole = user.role ? user.role.toLowerCase() : 'anggota';
                     
-                    // Filter akses: Hanya admin dan pustakawan
                     if (userRole !== 'admin' && userRole !== 'pustakawan') {
-                        throw new Error("Akses Ditolak: Hanya Staf/Admin!");
+                        throw new Error("Hanya Admin atau Pustakawan yang diizinkan!");
                     }
 
                     // Simpan ke Session Storage
@@ -153,16 +170,12 @@
                     sessionStorage.setItem('userNis', user.nis);
                     sessionStorage.setItem('userId', user.id);
 
-                    btnSubmit.innerText = 'BERHASIL! MENGALIHKAN...';
+                    btnSubmit.innerHTML = `<i class="fa-solid fa-check mr-2"></i> BERHASIL`;
+                    btnSubmit.classList.replace('bg-blue-600', 'bg-green-600');
 
-                    // LOGIKA ROUTING BERDASARKAN ROLE
                     setTimeout(() => {
-                        if (userRole === 'admin') {
-                            window.location.replace('admin-panel.html');
-                        } else {
-                            window.location.replace('panel.html');
-                        }
-                    }, 800);
+                        window.location.replace('panel.html');
+                    }, 600);
 
                 } else {
                     throw new Error("NIS atau Password salah!");
@@ -173,7 +186,7 @@
                 loginCard.classList.add('shake');
                 setTimeout(() => loginCard.classList.remove('shake'), 500);
 
-                btnSubmit.innerText = 'MASUK KE PANEL';
+                btnSubmit.innerHTML = `<span>Masuk Ke Panel</span>`;
                 btnSubmit.disabled = false;
             }
         });
