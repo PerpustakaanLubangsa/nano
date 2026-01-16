@@ -25,18 +25,12 @@
             background-color: var(--snow-bg); 
             color: var(--text-main); 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            font-size: 14px; 
-            margin: 0; 
+            font-size: 14px; margin: 0; 
             padding-top: env(titlebar-area-inset-top, 20px);
+            overflow-x: hidden; /* Mencegah scroll horizontal di body */
         }
         
         h1, h2, h3 { font-family: 'Outfit', sans-serif; }
-
-        .title-bar-drag {
-            position: fixed; top: 0; left: 0; width: 100%;
-            height: env(titlebar-area-inset-top, 40px);
-            -webkit-app-region: drag; z-index: 10000;
-        }
 
         .search-container { 
             background: var(--snow-card); border: 1px solid var(--border-soft); 
@@ -48,21 +42,40 @@
             border-color: var(--ice-blue); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1); 
         }
 
+        /* Tabel Grid Layout */
         .list-row {
-            display: grid; grid-template-columns: 60px 140px 1fr 120px 140px 120px;
+            display: grid; grid-template-columns: 80px 150px 1fr 100px 120px 100px;
             align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-soft);
-            transition: all 0.2s; cursor: pointer; background: var(--snow-card);
+            transition: background 0.2s ease; cursor: pointer; background: var(--snow-card);
+            position: relative;
+            width: 100%; /* Pastikan lebar tetap */
         }
 
-        .list-row:hover { background: var(--ice-light); transform: scale(1.005); z-index: 10; }
+        /* FIX HOVER: Menggunakan box-shadow dalam agar tidak memicu scroll horizontal */
+        .list-row:hover { 
+            background: var(--ice-light); 
+            box-shadow: inset 4px 0 0 0 var(--ice-blue);
+            z-index: 10; 
+        }
 
         .list-header {
-            display: grid; grid-template-columns: 60px 140px 1fr 120px 140px 120px;
+            display: grid; grid-template-columns: 80px 150px 1fr 100px 120px 100px;
             padding: 15px 20px; color: var(--text-muted); font-weight: 700; font-size: 11px;
             text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 2px solid var(--border-soft);
             background: rgba(248, 250, 252, 0.9); backdrop-filter: blur(10px);
             position: sticky; top: 0; z-index: 40;
         }
+
+        /* Rank Badge Styling */
+        .rank-tag {
+            font-size: 8px; font-weight: 900; letter-spacing: 0.05em; padding: 2px 6px;
+            border-radius: 4px; text-transform: uppercase; width: fit-content;
+        }
+        .rank-Warrior { background: #fee2e2; color: #991b1b; }
+        .rank-Grandmaster { background: #fef3c7; color: #92400e; }
+        .rank-Epic { background: #f0fdf4; color: #166534; }
+        .rank-Legend { background: #faf5ff; color: #6b21a8; }
+        .rank-Mythic { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
         .role-badge {
             font-size: 9px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 800;
@@ -70,8 +83,6 @@
         .role-admin { background: #fee2e2; color: #ef4444; }
         .role-pustakawan { background: #dcfce7; color: #22c55e; }
         .role-anggota { background: #e0f2fe; color: #0ea5e9; }
-
-        .empty-data { color: #cbd5e1; font-style: italic; font-size: 10px; font-weight: 400; }
 
         .browser-input, .browser-select { 
             background: #f1f5f9 !important; border: 1px solid var(--border-soft) !important; 
@@ -100,7 +111,6 @@
 </head>
 <body class="antialiased">
 
-    <div class="title-bar-drag"></div>
     <div id="toast"><span id="toastText">Memproses...</span></div>
 
     <div class="max-w-6xl mx-auto px-6 py-10 md:py-16">
@@ -111,11 +121,9 @@
                     Halo, <span id="displayUserName" class="text-blue-600">User</span> (<span id="displayUserRole">Role</span>)
                 </p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="openMemberModal('NEW')" class="bg-blue-600 text-white px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
-                    <i class="fa-solid fa-plus mr-2"></i> Tambah Anggota
-                </button>
-            </div>
+            <button onclick="openMemberModal('NEW')" class="bg-blue-600 text-white px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+                <i class="fa-solid fa-plus mr-2"></i> Tambah Anggota
+            </button>
         </header>
 
         <div class="mb-8">
@@ -131,7 +139,7 @@
                 <div class="min-w-[900px]">
                     <div class="list-header">
                         <span class="text-center">Profil</span>
-                        <span>NIS</span>
+                        <span>Identitas & Rank</span>
                         <span>Nama Lengkap</span>
                         <span>Jenjang</span>
                         <span>Role</span>
@@ -156,7 +164,7 @@
 
     <div id="memberModal" class="bottom-sheet overflow-y-auto">
         <div class="max-w-2xl mx-auto px-8 py-12">
-            <div class="flex justify-between items-center mb-10 pb-4 border-b">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b">
                 <h2 class="text-2xl font-extrabold text-slate-900">Profil Anggota</h2>
                 <div class="flex gap-2">
                     <button id="btnDeleteMember" onclick="askDelete()" class="hidden icon-btn text-red-500 hover:bg-red-50"><i class="fa-solid fa-trash"></i></button>
@@ -165,18 +173,29 @@
                 </div>
             </div>
 
+            <div id="rankDisplay" class="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-6">
+                <div class="w-20 h-20 rounded-full border-4 border-white shadow-sm overflow-hidden bg-white">
+                    <img id="modalRankImg" src="" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=User'">
+                </div>
+                <div>
+                    <div id="modalRankTag" class="rank-tag mb-1">Warrior</div>
+                    <div class="text-xl font-black text-slate-800 uppercase tracking-tight">Kolektor Literasi</div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Total Poin: <span id="modalPoin" class="text-blue-600">0</span></p>
+                </div>
+            </div>
+
             <form id="memberForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                 <input type="hidden" id="memberId">
                 <div class="md:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">NIS (Identitas)</label>
-                    <input type="text" id="m_nis" required class="browser-input font-bold text-lg">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">NIS</label>
+                    <input type="text" id="m_nis" required class="browser-input font-bold">
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Nama Lengkap</label>
                     <input type="text" id="m_nama" required class="browser-input font-semibold">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Hak Akses (Role)</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Role</label>
                     <select id="m_role" class="browser-select font-bold">
                         <option value="anggota">Anggota</option>
                         <option value="pustakawan">Pustakawan</option>
@@ -188,16 +207,16 @@
                     <select id="m_jenjang" required class="browser-select">
                         <option value="SLTP">SLTP</option>
                         <option value="SLTA">SLTA</option>
-                        <option value="PT">Perguruan Tinggi</option>
+                        <option value="PT">PT</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Lokasi Kamar</label>
-                    <input type="text" id="m_kamar" class="browser-input font-medium" placeholder="Contoh: A.01">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Kamar</label>
+                    <input type="text" id="m_kamar" class="browser-input uppercase">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Password</label>
-                    <input type="password" id="m_password" placeholder="Kosongkan jika tidak diubah" class="browser-input">
+                    <input type="password" id="m_password" placeholder="Isi untuk ubah" class="browser-input">
                 </div>
             </form>
         </div>
@@ -205,44 +224,39 @@
 
     <script>
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
-        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
+        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; 
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         const myRole = (sessionStorage.getItem('userRole') || 'anggota').toLowerCase();
         const myName = sessionStorage.getItem('userName') || 'User';
-
-        // Hanya Admin dan Pustakawan yang boleh masuk ke file ini
-        if (sessionStorage.getItem('isLoggedIn') !== 'true' || (myRole !== 'admin' && myRole !== 'pustakawan')) {
-            window.location.replace('login.html');
-        }
 
         document.getElementById('displayUserName').innerText = myName;
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
 
         let membersData = [], currentPage = 0, itemsPerPage = 10;
 
-        function checkEmpty(val) {
-            return (val === null || val === undefined || val.toString().trim() === "") 
-                ? `<span class="empty-data">Belum Ditentukan</span>` : val;
-        }
-
-        function notify(text, isSuccess = false) {
-            const t = document.getElementById('toast');
-            document.getElementById('toastText').innerText = text;
-            t.classList.add('show');
-            if(isSuccess) setTimeout(() => t.classList.remove('show'), 2000);
+        function getRankInfo(points) {
+            const p = parseInt(points) || 0;
+            if (p >= 100) return { name: 'Mythic', img: 'Mythic.jpg' };
+            if (p >= 50)  return { name: 'Legend', img: 'Legend.jpg' };
+            if (p >= 25)  return { name: 'Epic', img: 'Epic.jpg' };
+            if (p >= 10)  return { name: 'Grandmaster', img: 'Grandmaster.jpg' };
+            return { name: 'Warrior', img: 'Warrior.jpg' };
         }
 
         async function loadMembers() {
-            document.getElementById('memberList').innerHTML = '';
             document.getElementById('loadingState').classList.remove('hidden');
-            
             try {
                 const q = document.getElementById('memberSearch').value;
                 const from = currentPage * itemsPerPage;
                 const to = from + itemsPerPage - 1;
 
-                let req = client.from('anggota').select('*', { count: 'exact' }).order('nama', { ascending: true }).range(from, to);
+                // ORDER BY updated_at DESC: Menampilkan data terbaru yang diupdate di paling atas
+                let req = client.from('anggota')
+                            .select('*', { count: 'exact' })
+                            .order('updated_at', { ascending: false }) 
+                            .range(from, to);
+
                 if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
                 
                 const { data, count, error } = await req;
@@ -260,25 +274,32 @@
 
         function renderMembers() {
             const list = document.getElementById('memberList');
-            list.innerHTML = membersData.map(m => `
+            list.innerHTML = membersData.map(m => {
+                const rank = getRankInfo(m.total_poin || 0);
+                return `
                 <div onclick="openMemberModal('${m.id}')" class="list-row">
-                    <div class="flex justify-center"><div class="w-10 h-10 bg-slate-50 text-blue-500 rounded-xl flex items-center justify-center border border-slate-100"><i class="fa-solid fa-user"></i></div></div>
-                    <div class="font-bold text-xs text-slate-900">${checkEmpty(m.nis)}</div>
-                    <div class="font-bold text-slate-700">${checkEmpty(m.nama)}</div>
-                    <div class="text-[10px] font-bold text-slate-500">${checkEmpty(m.jenjang)}</div>
+                    <div class="flex justify-center">
+                        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden shadow-sm">
+                            <img src="img/ranks/${rank.img}" onerror="this.src='https://ui-avatars.com/api/?name=${m.nama}'" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="font-bold text-xs text-slate-900">${m.nis || '---'}</span>
+                        <span class="rank-tag rank-${rank.name}">${rank.name}</span>
+                    </div>
+                    <div class="font-bold text-slate-700 truncate pr-4">${m.nama}</div>
+                    <div class="text-[10px] font-bold text-slate-500">${m.jenjang || '---'}</div>
                     <div><span class="role-badge role-${m.role || 'anggota'}">${m.role || 'anggota'}</span></div>
-                    <div class="text-slate-900 font-bold text-[11px]">${checkEmpty(m.kamar)}</div>
-                </div>
-            `).join('');
+                    <div class="text-slate-900 font-bold text-[11px]">${m.kamar || '---'}</div>
+                </div>`;
+            }).join('');
         }
 
         function openMemberModal(id) {
             const form = document.getElementById('memberForm');
             form.reset();
             document.getElementById('memberId').value = id;
-            
             const deleteBtn = document.getElementById('btnDeleteMember');
-            deleteBtn.classList.remove('hidden'); // Pustakawan kini bisa hapus data juga
 
             if(id !== 'NEW') {
                 const m = membersData.find(x => x.id === id);
@@ -288,8 +309,17 @@
                     document.getElementById('m_role').value = m.role || 'anggota';
                     document.getElementById('m_jenjang').value = m.jenjang || 'SLTP';
                     document.getElementById('m_kamar').value = m.kamar || '';
+                    
+                    const rank = getRankInfo(m.total_poin || 0);
+                    document.getElementById('rankDisplay').classList.remove('hidden');
+                    document.getElementById('modalRankImg').src = `img/ranks/${rank.img}`;
+                    document.getElementById('modalRankTag').innerText = rank.name;
+                    document.getElementById('modalRankTag').className = `rank-tag rank-${rank.name}`;
+                    document.getElementById('modalPoin').innerText = m.total_poin || 0;
+                    deleteBtn.classList.remove('hidden');
                 }
             } else {
+                document.getElementById('rankDisplay').classList.add('hidden');
                 deleteBtn.classList.add('hidden');
             }
             document.getElementById('memberModal').classList.add('active');
@@ -300,52 +330,41 @@
         document.getElementById('memberForm').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('memberId').value;
-            const nis = document.getElementById('m_nis').value.trim();
-            const pass = document.getElementById('m_password').value.trim();
-
             const payload = {
-                nis: nis,
-                nama: document.getElementById('m_nama').value.trim(),
+                nis: document.getElementById('m_nis').value,
+                nama: document.getElementById('m_nama').value,
                 role: document.getElementById('m_role').value,
                 jenjang: document.getElementById('m_jenjang').value,
-                kamar: document.getElementById('m_kamar').value.trim()
+                kamar: document.getElementById('m_kamar').value,
+                updated_at: new Date().toISOString() // Update timestamp
             };
-
-            // Jika password diisi, update password
-            if (pass !== "") {
-                payload.password = pass;
-            } else if (id === 'NEW') {
-                // Default password untuk user baru adalah NIS-nya
-                payload.password = nis;
-            }
+            
+            const pass = document.getElementById('m_password').value;
+            if(pass) payload.password = pass;
 
             notify('Menyimpan...');
-            
-            let res;
-            if (id === 'NEW') {
-                res = await client.from('anggota').insert([payload]);
-            } else {
-                res = await client.from('anggota').update(payload).eq('id', id);
-            }
+            const res = id === 'NEW' ? await client.from('anggota').insert([payload]) : await client.from('anggota').update(payload).eq('id', id);
 
-            if (!res.error) {
-                closeMemberModal();
-                loadMembers();
-                notify('Sinkronisasi Berhasil', true);
-            } else {
-                alert("Gagal: " + res.error.message);
-            }
+            if(!res.error) { closeMemberModal(); loadMembers(); notify('Berhasil!', true); }
+            else { alert(res.error.message); }
         };
 
         async function askDelete() {
-            if(!confirm("Hapus data ini secara permanen?")) return;
-            const id = document.getElementById('memberId').value;
-            await client.from('anggota').delete().eq('id', id);
-            closeMemberModal(); loadMembers(); notify('Terhapus', true);
+            if(confirm("Hapus Anggota?")) {
+                const id = document.getElementById('memberId').value;
+                await client.from('anggota').delete().eq('id', id);
+                closeMemberModal(); loadMembers(); notify('Terhapus', true);
+            }
         }
 
-        function changePage(s) { currentPage += s; loadMembers(); window.scrollTo(0,0); }
+        function notify(text, success) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastText').innerText = text;
+            t.classList.add('show');
+            if(success) setTimeout(()=> t.classList.remove('show'), 2000);
+        }
 
+        function changePage(s) { currentPage += s; loadMembers(); }
         window.onload = loadMembers;
     </script>
 </body>
