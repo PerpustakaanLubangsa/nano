@@ -65,7 +65,6 @@
             color: white; padding: 14px; border-radius: 14px; font-weight: 800; width: 100%; border: none; cursor: pointer; text-transform: uppercase;
         }
 
-        /* MODAL FIX: Sticky Button */
         #customModal {
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
             display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px); padding: 20px;
@@ -87,7 +86,7 @@
         <div class="modal-content">
             <div class="modal-body">
                 <div class="relative text-center flex flex-col items-center">
-                    <div class="w-20 h-20 mb-3 overflow-hidden rounded-full shadow-md border-2 border-white">
+                    <div class="w-20 h-20 mb-3 overflow-hidden rounded-full shadow-md border-2 border-white bg-slate-100">
                         <img id="rankImg" src="" alt="Rank" class="w-full h-full object-cover">
                     </div>
                     <h2 id="profNama" class="text-slate-800 font-extrabold text-xl truncate uppercase tracking-tight w-full"></h2>
@@ -224,7 +223,6 @@
             statusIcon.classList.remove('fa-spin');
         }
 
-        // SMART SEARCH LOGIC
         function bindSmartSearch(inputId, dropId, source, keys) {
             const input = document.getElementById(inputId);
             const drop = document.getElementById(dropId);
@@ -252,7 +250,6 @@
                     const matches = source.filter(item => {
                         return keys.some(k => {
                             const target = item[k]?.toString().toLowerCase() || '';
-                            // Smart logic: split words and match all
                             const queryWords = val.split(/[\s.]+/).filter(w => w.length > 0);
                             return queryWords.every(word => target.includes(word));
                         });
@@ -275,7 +272,6 @@
         function handleBlurOrEnter(input, source, inputId) {
             if (inputId !== 'inputNama') return;
             const val = input.value.trim();
-            // Jika user ketik NIS persis, ganti ke Nama
             const found = source.find(s => s.nis?.toString() === val || s.nama?.toLowerCase() === val.toLowerCase());
             if (found) {
                 input.value = found.nama;
@@ -314,9 +310,13 @@
         }
 
         async function fetchAch(name) {
-            const { data } = await client.from('data_pengunjung').select('*');
+            // Upgrade: Membaca dari log_aktivitas agar data real-time sinkron
+            const { data } = await client.from('log_aktivitas').select('*');
             if (!data) return null;
+            
             const my = data.filter(h => h.nama === name);
+            const now = new Date();
+            
             const ranker = (list, filter = () => true) => {
                 const filtered = list.filter(filter);
                 const s = filtered.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
@@ -324,12 +324,16 @@
                 const p = sorted.findIndex(x => x[0] === name);
                 return p !== -1 ? `#${p + 1}` : '-';
             };
+
             return {
                 b: my.filter(h => h.aktivitas === 'Baca').length,
                 p: my.filter(h => h.aktivitas === 'Pinjam').length,
                 l: [...new Set(my.map(h => h.judul_buku))].reverse().slice(0, 5),
                 rA: ranker(data),
-                rB: ranker(data, h => new Date(h.created_at).getMonth() === new Date().getMonth())
+                rB: ranker(data, h => {
+                    const d = new Date(h.created_at);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                })
             };
         }
 
@@ -340,7 +344,8 @@
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>SINKRON...';
 
             const payload = {
-                nama: name, kamar: document.getElementById('inputKamar').value,
+                nama: name, 
+                kamar: document.getElementById('inputKamar').value,
                 jenjang: document.getElementById('inputJenjang').value,
                 judul_buku: document.getElementById('inputBuku').value,
                 kategori: document.getElementById('inputKategori').value,
@@ -352,7 +357,9 @@
                 await client.from('log_aktivitas').insert([payload]);
                 const a = await fetchAch(name);
                 if (a) {
-                    const rc = getRank(a.rA);
+                    // Upgrade: Gambar Rank sekarang mengikuti Ranking Bulanan (a.rB)
+                    const rc = getRank(a.rB); 
+                    
                     document.getElementById('rankImg').src = rc.i;
                     document.getElementById('rankLabel').innerText = rc.n;
                     document.getElementById('profNama').innerText = name;
@@ -364,6 +371,7 @@
                     document.getElementById('listBukuRiwayat').innerHTML = a.l.map(b => 
                         `<div class="text-[11px] text-slate-600 truncate bg-blue-50/50 p-2 rounded-lg border border-blue-100"><i class="fa-solid fa-circle-check text-sky-500 mr-2"></i>${b}</div>`
                     ).join('') || '<div class="text-[10px] text-slate-400">Belum ada riwayat</div>';
+                    
                     document.getElementById('customModal').style.display = 'flex';
                     document.getElementById('modalAction').onclick = () => location.reload();
                 }
