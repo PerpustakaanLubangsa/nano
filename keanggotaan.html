@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sistem Pemustaka - Snow Edition (Optimized)</title>
+    <title>Sistem Pemustaka - Snow Edition (Sorted by Update)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -138,7 +138,7 @@
                 <div class="min-w-[900px]">
                     <div class="list-header">
                         <span class="text-center">Profil</span>
-                        <span>Identitas & Rank (Bulan Ini)</span>
+                        <span>Identitas & Rank</span>
                         <span>Nama Lengkap</span>
                         <span>Jenjang</span>
                         <span>Role</span>
@@ -147,7 +147,7 @@
                     <div id="memberList" class="divide-y divide-slate-100"></div>
                     <div id="loadingState" class="hidden p-20 text-center">
                         <i class="fa-solid fa-snowflake fa-spin text-blue-400 text-3xl"></i>
-                        <p class="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">Memproses Ranking Bulanan...</p>
+                        <p class="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">Sinkronisasi Poin & Ranking...</p>
                     </div>
                 </div>
             </div>
@@ -180,7 +180,7 @@
                 <div>
                     <div id="modalRankTag" class="rank-tag mb-1">Warrior</div>
                     <div class="text-xl font-black text-slate-800 uppercase tracking-tight">Status Aktivitas</div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Poin Bulan Ini: <span id="modalPoin" class="text-blue-600">0</span></p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Poin Bulan Ini: <span id="modalPoin" class="text-blue-600">0</span> • Rank Global: #<span id="modalRankPos">0</span></p>
                 </div>
             </div>
 
@@ -231,6 +231,7 @@
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
 
         let membersData = [], currentPage = 0, itemsPerPage = 10;
+        let globalRankMap = {};
 
         function getRankByPosition(pos) {
             const n = parseInt(pos) || 999;
@@ -246,19 +247,36 @@
             document.getElementById('memberList').innerHTML = "";
             
             try {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                document.getElementById('currentMonthLabel').innerText = 
+                    now.toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase();
+
+                // 1. Ambil Leaderboard Global (untuk menentukan Tier Rank)
+                const { data: allLogs, error: errL } = await client
+                    .from('data_pengunjung')
+                    .select('nama')
+                    .gte('created_at', firstDay);
+                
+                if(errL) throw errL;
+
+                const pointCounts = {};
+                allLogs.forEach(log => pointCounts[log.nama] = (pointCounts[log.nama] || 0) + 1);
+                const sortedNames = Object.keys(pointCounts).sort((a, b) => pointCounts[b] - pointCounts[a]);
+                
+                globalRankMap = {};
+                sortedNames.forEach((name, index) => {
+                    globalRankMap[name] = { poin: pointCounts[name], rank: index + 1 };
+                });
+
+                // 2. Ambil Data Anggota (Diurutkan berdasarkan updated_at DESC)
                 const q = document.getElementById('memberSearch').value;
                 const from = currentPage * itemsPerPage;
                 const to = from + itemsPerPage - 1;
 
-                const now = new Date();
-                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-                
-                document.getElementById('currentMonthLabel').innerText = 
-                    now.toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase();
-
-                // OPTIMASI: Hanya memanggil kolom yang dibutuhkan saja
                 let req = client.from('anggota')
-                    .select('id, nis, nama, role, jenjang, kamar', { count: 'exact' })
+                    .select('id, nis, nama, role, jenjang, kamar, updated_at', { count: 'exact' })
+                    .order('updated_at', { ascending: false }) // PENGURUTAN DISINI
                     .range(from, to);
 
                 if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
@@ -266,25 +284,14 @@
                 const { data, count, error } = await req;
                 if(error) throw error;
 
-                // OPTIMASI: Panggil log hanya untuk nama yang ada di halaman ini saja
-                const namesInPage = data.map(m => m.nama);
-                const { data: logs, error: errL } = await client
-                    .from('data_pengunjung')
-                    .select('nama')
-                    .gte('created_at', firstDay)
-                    .in('nama', namesInPage);
-                if(errL) throw errL;
-
-                const monthlyPoints = {};
-                logs.forEach(log => {
-                    monthlyPoints[log.nama] = (monthlyPoints[log.nama] || 0) + 1;
+                membersData = data.map(m => {
+                    const info = globalRankMap[m.nama] || { poin: 0, rank: 999 };
+                    return {
+                        ...m,
+                        poin_bulan_ini: info.poin,
+                        realRankPos: info.rank
+                    };
                 });
-
-                membersData = data.map((m, index) => ({
-                    ...m,
-                    poin_bulan_ini: monthlyPoints[m.nama] || 0,
-                    currentRankPos: from + index + 1 // Estimasi posisi berdasarkan page
-                }));
 
                 renderMembers();
                 
@@ -294,7 +301,7 @@
 
             } catch (err) { 
                 console.error(err);
-                notify("Gagal memuat data halaman ini", false);
+                notify("Gagal memuat data", false);
             } finally { 
                 document.getElementById('loadingState').classList.add('hidden'); 
             }
@@ -303,26 +310,26 @@
         function renderMembers() {
             const list = document.getElementById('memberList');
             if(membersData.length === 0) {
-                list.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Data tidak tersedia</div>`;
+                list.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Data tidak ditemukan</div>`;
                 return;
             }
 
             list.innerHTML = membersData.map(m => {
-                const rank = getRankByPosition(m.currentRankPos);
+                const rankInfo = getRankByPosition(m.realRankPos);
                 return `
                 <div onclick="openMemberModal('${m.id}')" class="list-row animate-in fade-in duration-500">
                     <div class="flex justify-center">
                         <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden shadow-sm">
-                            <img src="${rank.img}" onerror="this.src='https://ui-avatars.com/api/?name=${m.nama}&background=random'" class="w-full h-full object-cover">
+                            <img src="${rankInfo.img}" onerror="this.src='https://ui-avatars.com/api/?name=${m.nama}&background=random'" class="w-full h-full object-cover">
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
                         <span class="font-bold text-xs text-slate-900">${m.nis || '---'}</span>
-                        <span class="rank-tag rank-${rank.name}">${rank.name}</span>
+                        <span class="rank-tag rank-${rankInfo.name}">${rankInfo.name}</span>
                     </div>
                     <div class="font-bold text-slate-700 truncate pr-4">
                         ${m.nama}
-                        <div class="text-[9px] text-blue-500 font-black">${m.poin_bulan_ini} POIN</div>
+                        <div class="text-[9px] text-blue-500 font-black">${m.poin_bulan_ini} POIN • Rank #${m.realRankPos}</div>
                     </div>
                     <div class="text-[10px] font-bold text-slate-500">${m.jenjang || '---'}</div>
                     <div><span class="role-badge role-${m.role || 'anggota'}">${m.role || 'anggota'}</span></div>
@@ -359,12 +366,13 @@
 
                     if (myRole === 'admin') deleteBtn.classList.remove('hidden');
 
-                    const rank = getRankByPosition(m.currentRankPos);
+                    const rankInfo = getRankByPosition(m.realRankPos);
                     document.getElementById('rankDisplay').classList.remove('hidden');
-                    document.getElementById('modalRankImg').src = rank.img;
-                    document.getElementById('modalRankTag').innerText = rank.name;
-                    document.getElementById('modalRankTag').className = `rank-tag rank-${rank.name}`;
-                    document.getElementById('modalPoin').innerText = m.poin_bulan_ini || 0;
+                    document.getElementById('modalRankImg').src = rankInfo.img;
+                    document.getElementById('modalRankTag').innerText = rankInfo.name;
+                    document.getElementById('modalRankTag').className = `rank-tag rank-${rankInfo.name}`;
+                    document.getElementById('modalPoin').innerText = m.poin_bulan_ini;
+                    document.getElementById('modalRankPos').innerText = m.realRankPos;
                 }
             } else {
                 document.getElementById('rankDisplay').classList.add('hidden');
