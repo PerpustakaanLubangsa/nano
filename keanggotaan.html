@@ -220,7 +220,7 @@
 
     <script>
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
-        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; 
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY'; 
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         const myRole = (sessionStorage.getItem('userRole') || 'anggota').toLowerCase();
@@ -230,15 +230,16 @@
         document.getElementById('displayUserName').innerText = myName;
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
 
-        let membersData = [], currentPage = 0, itemsPerPage = 10;
+        let membersData = [], allProcessedMembers = [], currentPage = 0, itemsPerPage = 10;
 
-        function getRankInfo(points) {
-            const p = parseInt(points) || 0;
-            if (p >= 100) return { name: 'Mythic', img: './Mythic.jpg' };
-            if (p >= 50)  return { name: 'Legend', img: './Legend.jpg' };
-            if (p >= 25)  return { name: 'Epic', img: './Epic.jpg' };
-            if (p >= 10)  return { name: 'Grandmaster', img: './Grandmaster.jpg' };
-            return { name: 'Warrior', img: './Warrior.jpg' };
+        // FUNGSI RANKING: Menggunakan Posisi (Juara) sesuai rujukan buku tamu
+        function getRankByPosition(pos) {
+            const n = parseInt(pos) || 999;
+            if (n <= 3) return { name: 'Mythic', img: 'Mythic.jpg' };
+            if (n <= 10) return { name: 'Legend', img: 'Legend.jpg' };
+            if (n <= 25) return { name: 'Epic', img: 'Epic.jpg' };
+            if (n <= 50) return { name: 'Grandmaster', img: 'Grandmaster.jpg' };
+            return { name: 'Warrior', img: 'Warrior.jpg' };
         }
 
         async function loadMembers() {
@@ -247,60 +248,61 @@
             
             try {
                 const q = document.getElementById('memberSearch').value;
-                const from = currentPage * itemsPerPage;
-                const to = from + itemsPerPage - 1;
-
-                // 1. Dapatkan range waktu bulan ini
                 const now = new Date();
                 const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 
-                // Label bulan
                 const monthName = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
                 document.getElementById('currentMonthLabel').innerText = monthName.toUpperCase();
 
-                // 2. Ambil semua anggota
+                // 1. Ambil semua anggota
                 let req = client.from('anggota').select('*');
                 if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
                 const { data: allMembers, error: errM } = await req;
                 if(errM) throw errM;
 
-                // 3. Ambil log aktivitas BULAN INI saja
+                // 2. Ambil log aktivitas BULAN INI (GTE FirstDay)
                 const { data: logs, error: errL } = await client
                     .from('data_pengunjung')
                     .select('nama')
                     .gte('created_at', firstDay);
                 if(errL) throw errL;
 
-                // 4. Hitung poin bulanan per user
+                // 3. Hitung poin bulanan
                 const monthlyPoints = {};
                 logs.forEach(log => {
                     monthlyPoints[log.nama] = (monthlyPoints[log.nama] || 0) + 1;
                 });
 
-                // 5. Gabungkan poin ke data anggota dan SORTING
-                let processedMembers = allMembers.map(m => ({
+                // 4. Proses data & Sorting (Juara ditentukan dari poin tertinggi)
+                allProcessedMembers = allMembers.map(m => ({
                     ...m,
                     poin_bulan_ini: monthlyPoints[m.nama] || 0
-                }));
+                })).sort((a, b) => b.poin_bulan_ini - a.poin_bulan_ini);
 
-                // Urutkan berdasarkan poin bulanan tertinggi
-                processedMembers.sort((a, b) => b.poin_bulan_ini - a.poin_bulan_ini);
+                // 5. Simpan urutan juara asli sebelum pagination
+                allProcessedMembers.forEach((m, index) => {
+                    m.currentRankPos = index + 1;
+                });
 
-                // 6. Pagination manual setelah sorting bulanan
-                const count = processedMembers.length;
-                membersData = processedMembers.slice(from, from + itemsPerPage);
-
-                renderMembers();
-                
-                document.getElementById('pageNumber').innerText = currentPage + 1;
-                document.getElementById('prevBtn').disabled = (currentPage === 0);
-                document.getElementById('nextBtn').disabled = (from + itemsPerPage >= count);
+                updatePagination();
             } catch (err) { 
                 console.error(err);
                 notify("Gagal memuat ranking bulanan", false);
             } finally { 
                 document.getElementById('loadingState').classList.add('hidden'); 
             }
+        }
+
+        function updatePagination() {
+            const from = currentPage * itemsPerPage;
+            const to = from + itemsPerPage;
+            membersData = allProcessedMembers.slice(from, to);
+            
+            renderMembers();
+            
+            document.getElementById('pageNumber').innerText = currentPage + 1;
+            document.getElementById('prevBtn').disabled = (currentPage === 0);
+            document.getElementById('nextBtn').disabled = (to >= allProcessedMembers.length);
         }
 
         function renderMembers() {
@@ -311,7 +313,8 @@
             }
 
             list.innerHTML = membersData.map(m => {
-                const rank = getRankInfo(m.poin_bulan_ini || 0);
+                // Penentuan Gambar Rank berdasarkan posisi juara (m.currentRankPos)
+                const rank = getRankByPosition(m.currentRankPos);
                 return `
                 <div onclick="openMemberModal('${m.id}')" class="list-row animate-in fade-in duration-500">
                     <div class="flex justify-center">
@@ -320,10 +323,13 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <span class="font-bold text-xs text-slate-900">${m.nis || '---'}</span>
-                        <span class="rank-tag rank-${rank.name}">${rank.name} (${m.poin_bulan_ini})</span>
+                        <span class="font-bold text-xs text-slate-900">Rank #${m.currentRankPos}</span>
+                        <span class="rank-tag rank-${rank.name}">${rank.name}</span>
                     </div>
-                    <div class="font-bold text-slate-700 truncate pr-4">${m.nama}</div>
+                    <div class="font-bold text-slate-700 truncate pr-4">
+                        ${m.nama}
+                        <div class="text-[9px] text-blue-500 font-black">${m.poin_bulan_ini} POIN BULAN INI</div>
+                    </div>
                     <div class="text-[10px] font-bold text-slate-500">${m.jenjang || '---'}</div>
                     <div><span class="role-badge role-${m.role || 'anggota'}">${m.role || 'anggota'}</span></div>
                     <div class="text-slate-900 font-bold text-[11px]">${m.kamar || '---'}</div>
@@ -349,7 +355,7 @@
             passInput.placeholder = "Isi untuk ubah password";
 
             if(id !== 'NEW') {
-                const m = membersData.find(x => x.id === id);
+                const m = allProcessedMembers.find(x => x.id === id);
                 if(m) {
                     document.getElementById('m_nis').value = m.nis || '';
                     document.getElementById('m_nama').value = m.nama || '';
@@ -368,7 +374,7 @@
                         deleteBtn.classList.remove('hidden');
                     }
 
-                    const rank = getRankInfo(m.poin_bulan_ini || 0);
+                    const rank = getRankByPosition(m.currentRankPos);
                     document.getElementById('rankDisplay').classList.remove('hidden');
                     document.getElementById('modalRankImg').src = rank.img;
                     document.getElementById('modalRankTag').innerText = rank.name;
@@ -390,7 +396,7 @@
             const targetNis = document.getElementById('m_nis').value;
             const newRole = document.getElementById('m_role').value;
             const pass = document.getElementById('m_password').value;
-            const originalData = id !== 'NEW' ? membersData.find(x => x.id === id) : null;
+            const originalData = id !== 'NEW' ? allProcessedMembers.find(x => x.id === id) : null;
 
             if (myRole === 'pustakawan' && id !== 'NEW') {
                 if (originalData && originalData.nis !== myNis && originalData.role === 'pustakawan' && newRole === 'anggota') {
@@ -456,7 +462,7 @@
         function changePage(s) { 
             currentPage += s; 
             if(currentPage < 0) currentPage = 0;
-            loadMembers(); 
+            updatePagination();
         }
 
         window.onload = loadMembers;
