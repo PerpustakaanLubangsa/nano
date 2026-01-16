@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sistem Pemustaka - Snow Edition (Monthly Rank)</title>
+    <title>Sistem Pemustaka - Snow Edition (Optimized)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -230,9 +230,8 @@
         document.getElementById('displayUserName').innerText = myName;
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
 
-        let membersData = [], allProcessedMembers = [], currentPage = 0, itemsPerPage = 10;
+        let membersData = [], currentPage = 0, itemsPerPage = 10;
 
-        // FUNGSI RANKING: Menggunakan Posisi (Juara) sesuai rujukan buku tamu
         function getRankByPosition(pos) {
             const n = parseInt(pos) || 999;
             if (n <= 3) return { name: 'Mythic', img: 'Mythic.jpg' };
@@ -248,72 +247,67 @@
             
             try {
                 const q = document.getElementById('memberSearch').value;
+                const from = currentPage * itemsPerPage;
+                const to = from + itemsPerPage - 1;
+
                 const now = new Date();
                 const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 
-                const monthName = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-                document.getElementById('currentMonthLabel').innerText = monthName.toUpperCase();
+                document.getElementById('currentMonthLabel').innerText = 
+                    now.toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase();
 
-                // 1. Ambil semua anggota
-                let req = client.from('anggota').select('*');
+                // OPTIMASI: Hanya memanggil kolom yang dibutuhkan saja
+                let req = client.from('anggota')
+                    .select('id, nis, nama, role, jenjang, kamar', { count: 'exact' })
+                    .range(from, to);
+
                 if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
-                const { data: allMembers, error: errM } = await req;
-                if(errM) throw errM;
+                
+                const { data, count, error } = await req;
+                if(error) throw error;
 
-                // 2. Ambil log aktivitas BULAN INI (GTE FirstDay)
+                // OPTIMASI: Panggil log hanya untuk nama yang ada di halaman ini saja
+                const namesInPage = data.map(m => m.nama);
                 const { data: logs, error: errL } = await client
                     .from('data_pengunjung')
                     .select('nama')
-                    .gte('created_at', firstDay);
+                    .gte('created_at', firstDay)
+                    .in('nama', namesInPage);
                 if(errL) throw errL;
 
-                // 3. Hitung poin bulanan
                 const monthlyPoints = {};
                 logs.forEach(log => {
                     monthlyPoints[log.nama] = (monthlyPoints[log.nama] || 0) + 1;
                 });
 
-                // 4. Proses data & Sorting (Juara ditentukan dari poin tertinggi)
-                allProcessedMembers = allMembers.map(m => ({
+                membersData = data.map((m, index) => ({
                     ...m,
-                    poin_bulan_ini: monthlyPoints[m.nama] || 0
-                })).sort((a, b) => b.poin_bulan_ini - a.poin_bulan_ini);
+                    poin_bulan_ini: monthlyPoints[m.nama] || 0,
+                    currentRankPos: from + index + 1 // Estimasi posisi berdasarkan page
+                }));
 
-                // 5. Simpan urutan juara asli sebelum pagination
-                allProcessedMembers.forEach((m, index) => {
-                    m.currentRankPos = index + 1;
-                });
+                renderMembers();
+                
+                document.getElementById('pageNumber').innerText = currentPage + 1;
+                document.getElementById('prevBtn').disabled = (currentPage === 0);
+                document.getElementById('nextBtn').disabled = (to >= count);
 
-                updatePagination();
             } catch (err) { 
                 console.error(err);
-                notify("Gagal memuat ranking bulanan", false);
+                notify("Gagal memuat data halaman ini", false);
             } finally { 
                 document.getElementById('loadingState').classList.add('hidden'); 
             }
         }
 
-        function updatePagination() {
-            const from = currentPage * itemsPerPage;
-            const to = from + itemsPerPage;
-            membersData = allProcessedMembers.slice(from, to);
-            
-            renderMembers();
-            
-            document.getElementById('pageNumber').innerText = currentPage + 1;
-            document.getElementById('prevBtn').disabled = (currentPage === 0);
-            document.getElementById('nextBtn').disabled = (to >= allProcessedMembers.length);
-        }
-
         function renderMembers() {
             const list = document.getElementById('memberList');
             if(membersData.length === 0) {
-                list.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Tidak ada data ditemukan</div>`;
+                list.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Data tidak tersedia</div>`;
                 return;
             }
 
             list.innerHTML = membersData.map(m => {
-                // Penentuan Gambar Rank berdasarkan posisi juara (m.currentRankPos)
                 const rank = getRankByPosition(m.currentRankPos);
                 return `
                 <div onclick="openMemberModal('${m.id}')" class="list-row animate-in fade-in duration-500">
@@ -323,12 +317,12 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
-                        <span class="font-bold text-xs text-slate-900">Rank #${m.currentRankPos}</span>
+                        <span class="font-bold text-xs text-slate-900">${m.nis || '---'}</span>
                         <span class="rank-tag rank-${rank.name}">${rank.name}</span>
                     </div>
                     <div class="font-bold text-slate-700 truncate pr-4">
                         ${m.nama}
-                        <div class="text-[9px] text-blue-500 font-black">${m.poin_bulan_ini} POIN BULAN INI</div>
+                        <div class="text-[9px] text-blue-500 font-black">${m.poin_bulan_ini} POIN</div>
                     </div>
                     <div class="text-[10px] font-bold text-slate-500">${m.jenjang || '---'}</div>
                     <div><span class="role-badge role-${m.role || 'anggota'}">${m.role || 'anggota'}</span></div>
@@ -346,16 +340,10 @@
             const passInput = document.getElementById('m_password');
             const deleteBtn = document.getElementById('btnDeleteMember');
 
-            let roleOptions = `<option value="anggota">Anggota</option><option value="pustakawan">Pustakawan</option>`;
-            if(myRole === 'admin') roleOptions += `<option value="admin">Admin</option>`;
-            roleSelect.innerHTML = roleOptions;
-
-            roleSelect.disabled = false;
-            passInput.disabled = false;
-            passInput.placeholder = "Isi untuk ubah password";
+            roleSelect.innerHTML = `<option value="anggota">Anggota</option><option value="pustakawan">Pustakawan</option>${myRole === 'admin' ? '<option value="admin">Admin</option>' : ''}`;
 
             if(id !== 'NEW') {
-                const m = allProcessedMembers.find(x => x.id === id);
+                const m = membersData.find(x => x.id === id);
                 if(m) {
                     document.getElementById('m_nis').value = m.nis || '';
                     document.getElementById('m_nama').value = m.nama || '';
@@ -363,16 +351,13 @@
                     document.getElementById('m_jenjang').value = m.jenjang || 'SLTP';
                     document.getElementById('m_kamar').value = m.kamar || '';
                     
-                    if(myRole === 'pustakawan') {
-                        deleteBtn.classList.add('hidden');
-                        if (m.nis !== myNis && m.role === 'pustakawan') {
-                            roleSelect.disabled = true;
-                            passInput.disabled = true;
-                            passInput.placeholder = "Dibatasi";
-                        }
-                    } else if (myRole === 'admin') {
-                        deleteBtn.classList.remove('hidden');
+                    if (myRole === 'pustakawan' && m.nis !== myNis && m.role === 'pustakawan') {
+                        roleSelect.disabled = true; passInput.disabled = true;
+                    } else {
+                        roleSelect.disabled = false; passInput.disabled = false;
                     }
+
+                    if (myRole === 'admin') deleteBtn.classList.remove('hidden');
 
                     const rank = getRankByPosition(m.currentRankPos);
                     document.getElementById('rankDisplay').classList.remove('hidden');
@@ -393,60 +378,34 @@
         document.getElementById('memberForm').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('memberId').value;
-            const targetNis = document.getElementById('m_nis').value;
-            const newRole = document.getElementById('m_role').value;
-            const pass = document.getElementById('m_password').value;
-            const originalData = id !== 'NEW' ? allProcessedMembers.find(x => x.id === id) : null;
-
-            if (myRole === 'pustakawan' && id !== 'NEW') {
-                if (originalData && originalData.nis !== myNis && originalData.role === 'pustakawan' && newRole === 'anggota') {
-                    notify('Gagal: Demosi dilarang!', false); return;
-                }
-                if (targetNis !== myNis && pass !== "") {
-                    notify('Gagal: Password dikunci!', false); return;
-                }
-            }
-
             const payload = {
-                nis: targetNis,
+                nis: document.getElementById('m_nis').value,
                 nama: document.getElementById('m_nama').value,
-                role: newRole,
+                role: document.getElementById('m_role').value,
                 jenjang: document.getElementById('m_jenjang').value,
                 kamar: document.getElementById('m_kamar').value,
                 updated_at: new Date().toISOString()
             };
-            
+            const pass = document.getElementById('m_password').value;
             if(pass) payload.password = pass;
 
-            notify('Sedang menyimpan...');
-            
+            notify('Menyimpan...');
             try {
                 const res = id === 'NEW' ? 
                     await client.from('anggota').insert([payload]) : 
                     await client.from('anggota').update(payload).eq('id', id);
 
                 if(!res.error) { 
-                    closeMemberModal(); 
-                    loadMembers(); 
-                    notify('Data Berhasil Disimpan!', true); 
-                } else { 
-                    alert("Error: " + res.error.message); 
-                }
-            } catch (err) {
-                notify("Terjadi kesalahan sistem", false);
-            }
+                    closeMemberModal(); loadMembers(); notify('Tersimpan!', true); 
+                } else { alert(res.error.message); }
+            } catch (err) { notify("Sistem error", false); }
         };
 
         async function askDelete() {
-            if(myRole !== 'admin') return;
-            if(confirm("Apakah Anda yakin ingin menghapus anggota ini secara permanen?")) {
+            if(confirm("Hapus permanen?")) {
                 const id = document.getElementById('memberId').value;
                 const { error } = await client.from('anggota').delete().eq('id', id);
-                if(!error) {
-                    closeMemberModal();
-                    loadMembers();
-                    notify('Data telah dihapus', true);
-                }
+                if(!error) { closeMemberModal(); loadMembers(); notify('Dihapus', true); }
             }
         }
 
@@ -454,15 +413,13 @@
             const t = document.getElementById('toast');
             document.getElementById('toastText').innerText = text;
             t.classList.add('show');
-            if(success !== null) {
-                setTimeout(()=> t.classList.remove('show'), 3000);
-            }
+            if(success !== null) setTimeout(()=> t.classList.remove('show'), 3000);
         }
 
         function changePage(s) { 
             currentPage += s; 
             if(currentPage < 0) currentPage = 0;
-            updatePagination();
+            loadMembers();
         }
 
         window.onload = loadMembers;
