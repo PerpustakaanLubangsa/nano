@@ -86,11 +86,11 @@
         <div class="modal-content">
             <div class="modal-body">
                 <div class="relative text-center flex flex-col items-center">
-                    <div class="w-20 h-20 mb-3 overflow-hidden rounded-full shadow-md border-2 border-white bg-slate-100">
-                        <img id="rankImg" src="" alt="Rank" class="w-full h-full object-cover">
+                    <div class="w-24 h-24 mb-2 overflow-hidden rounded-full bg-transparent">
+                        <img id="rankImg" src="" alt="Rank" class="w-full h-full object-contain">
                     </div>
                     <h2 id="profNama" class="text-slate-800 font-extrabold text-xl truncate uppercase tracking-tight w-full"></h2>
-                    <div id="rankLabel" class="text-sky-600 text-[10px] font-black tracking-widest uppercase mt-1"></div>
+                    <div id="rankLabel" class="text-sky-600 text-[11px] font-black tracking-widest uppercase mt-1"></div>
                     <div id="profInfo" class="text-slate-400 text-[9px] font-bold uppercase mb-6 mt-1"></div>
                 </div>
 
@@ -310,8 +310,8 @@
         }
 
         async function fetchAch(name) {
-            // Upgrade: Membaca dari log_aktivitas agar data real-time sinkron
-            const { data } = await client.from('log_aktivitas').select('*');
+            // Membaca data historis dari data_pengunjung untuk perhitungan RANKING
+            const { data } = await client.from('data_pengunjung').select('*');
             if (!data) return null;
             
             const my = data.filter(h => h.nama === name);
@@ -354,10 +354,14 @@
             };
 
             try {
-                await client.from('log_aktivitas').insert([payload]);
+                // KIRIM DATA KE TABEL log_aktivitas
+                const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
+                if (logErr) throw logErr;
+
+                // AMBIL DATA ACHIEVEMENT DARI TABEL data_pengunjung
                 const a = await fetchAch(name);
                 if (a) {
-                    // Upgrade: Gambar Rank sekarang mengikuti Ranking Bulanan (a.rB)
+                    // Update: Penentuan gambar rank diambil dari rB (Bulan Ini)
                     const rc = getRank(a.rB); 
                     
                     document.getElementById('rankImg').src = rc.i;
@@ -375,7 +379,12 @@
                     document.getElementById('customModal').style.display = 'flex';
                     document.getElementById('modalAction').onclick = () => location.reload();
                 }
-            } catch (err) { alert("Gagal!"); btn.disabled = false; }
+            } catch (err) { 
+                console.error(err);
+                alert("Sinkronisasi gagal!"); 
+                btn.disabled = false; 
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
+            }
         };
 
         window.onclick = (e) => { if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); };
