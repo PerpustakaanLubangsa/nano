@@ -10,26 +10,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        :root { 
+            --snow-blue-bg: #f0f7ff; 
+            --snow-blue-card: #e2eeff;
+        }
         body { 
-            background: #f8fafc;
+            background: var(--snow-blue-bg);
             font-family: 'Plus Jakarta Sans', sans-serif;
             min-height: 100vh;
-            color: #1e293b;
         }
         h1 { font-family: 'Cinzel', serif; }
         
-        .stat-card {
-            background: white;
-            border: 1px solid #f1f5f9;
-            border-radius: 2rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+        .glass-container {
+            background: var(--snow-blue-card);
+            backdrop-filter: blur(20px);
+            border: 2px solid #ffffff;
+            border-radius: 4rem;
+            box-shadow: 0 40px 100px -20px rgba(148, 187, 233, 0.3);
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05);
-            border-color: #3b82f633;
+
+        .petugas-stat-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid white;
+            border-radius: 2.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
 
         .counter-box {
@@ -37,68 +47,45 @@
             flex-direction: column;
             align-items: center;
             padding: 12px 6px;
-            border-radius: 1.25rem;
-            background: #f8fafc;
-            border: 1px solid #f1f5f9;
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover .counter-box { background: white; }
-
-        .progress-bar {
-            height: 6px;
-            border-radius: 10px;
-            background: #f1f5f9;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 1s ease-out;
+            border-radius: 1.2rem;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
 
-        .avatar-box {
-            width: 56px; height: 56px; border-radius: 1.25rem;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 1.25rem; color: white;
-            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.3);
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            filter: invert(0.5);
+        .label-status {
+            font-size: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-top: 4px;
+            color: #94a3b8;
         }
     </style>
 </head>
-<body class="p-6 md:p-10">
+<body class="p-4 md:p-12">
 
     <div class="max-w-7xl mx-auto">
-        <header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <header class="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-1 h-blue-600 bg-blue-600 rounded-full"></div>
-                    <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Analytics Engine</p>
-                </div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Rekapitulasi SDM</h1>
+                <h1 class="text-4xl font-black text-slate-800 tracking-tighter uppercase leading-none">Statistik Petugas</h1>
+                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mt-2">Performance & Attendance Summary</p>
             </div>
             
-            <div class="flex items-center gap-3 bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm">
-                <div class="px-5 py-2">
-                    <p class="text-[8px] font-black text-slate-400 uppercase mb-0.5">Filter Mulai</p>
-                    <input type="date" id="startDate" onchange="loadRekapIndividu()" class="text-xs font-bold outline-none text-slate-700 bg-transparent">
+            <div class="flex gap-4">
+                <div class="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Dimulai Sejak</p>
+                    <input type="date" id="startDate" onchange="loadRekapIndividu()" class="text-xs font-bold outline-none text-slate-700">
                 </div>
-                <button onclick="loadRekapIndividu()" class="bg-blue-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-lg shadow-blue-200">
-                    <i class="fa-solid fa-rotate"></i>
+                <button onclick="loadRekapIndividu()" class="bg-slate-900 text-white px-8 py-4 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
+                    Update
                 </button>
             </div>
         </header>
 
-        <div id="loading" class="flex flex-col items-center py-20">
-            <div class="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Menghitung Performa...</p>
-        </div>
+        <div id="rekapGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-        <div id="rekapGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+        <div id="loading" class="text-center py-20 text-blue-300">
+            <i class="fas fa-snowflake fa-spin text-5xl"></i>
+        </div>
     </div>
 
     <script>
@@ -106,109 +93,91 @@
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
         const client = supabase.createClient(SB_URL, SB_KEY);
 
-        // Set default filter ke awal bulan ini agar data lebih relevan
-        const now = new Date();
-        document.getElementById('startDate').value = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-01`;
+        // Set default filter ke 1 Januari tahun ini
+        const today = new Date();
+        document.getElementById('startDate').value = `${today.getFullYear()}-01-01`;
 
         async function loadRekapIndividu() {
-            const loading = document.getElementById('loading');
+            document.getElementById('loading').classList.remove('hidden');
             const grid = document.getElementById('rekapGrid');
-            loading.classList.remove('hidden');
-            grid.classList.add('hidden');
-            
             const startStr = document.getElementById('startDate').value;
             grid.innerHTML = "";
 
-            try {
-                const { data: masterPetugas } = await client.from('petugas_master').select('nama');
-                const { data: jadwal } = await client.from('jadwal_detail').select('*');
-                const { data: rekap } = await client.from('rekap_absensi').select('*').gte('tanggal', startStr);
+            // 1. Ambil Data Dasar
+            const { data: masterPetugas } = await client.from('petugas_master').select('nama');
+            const { data: jadwal } = await client.from('jadwal_detail').select('*');
+            const { data: rekap } = await client.from('rekap_absensi').select('*').gte('tanggal', startStr);
 
-                const weeksElapsed = getWeeksBetween(new Date(startStr), new Date());
+            // 2. Hitung jumlah "Seharusnya Masuk" per hari dalam seminggu
+            // Ini untuk menghitung estimasi jadwal yang terlewati
+            const weeksElapsed = getWeeksBetween(new Date(startStr), new Date());
 
-                masterPetugas.forEach(p => {
-                    const logs = rekap.filter(r => r.nama === p.nama);
-                    const hadir = logs.filter(l => l.status === 'Hadir').length;
-                    const izin = logs.filter(l => l.status === 'Izin').length;
-                    const alpha = logs.filter(l => l.status === 'Alpha').length;
+            masterPetugas.forEach(p => {
+                const logs = rekap.filter(r => r.nama === p.nama);
+                const hadir = logs.filter(l => l.status === 'Hadir').length;
+                const izin = logs.filter(l => l.status === 'Izin').length;
+                const alpha = logs.filter(l => l.status === 'Alpha').length;
 
-                    const shiftPerMinggu = jadwal.filter(j => j.nama === p.nama).length;
-                    const totalSeharusnya = shiftPerMinggu * weeksElapsed;
-                    const tidakAbsen = Math.max(0, totalSeharusnya - logs.length);
-                    const score = calculateScore(hadir, totalSeharusnya);
+                // Hitung Seharusnya Masuk (Berapa kali namanya muncul di jadwal per minggu x jumlah minggu)
+                const shiftPerMinggu = jadwal.filter(j => j.nama === p.nama).length;
+                const totalSeharusnya = shiftPerMinggu * weeksElapsed;
+                
+                // Tidak Absen = Total Jadwal - (Hadir + Izin + Alpha)
+                // Jika hasilnya negatif (karena absen di luar jadwal), kita set ke 0
+                const tidakAbsen = Math.max(0, totalSeharusnya - logs.length);
 
-                    grid.innerHTML += `
-                        <div class="stat-card p-7">
-                            <div class="flex items-center gap-4 mb-8">
-                                <div class="avatar-box bg-blue-600">
-                                    ${p.nama.charAt(0)}
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-tight">${p.nama}</h3>
-                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Staf Perpustakaan</p>
-                                </div>
-                                <div class="ml-auto text-right">
-                                    <span class="text-xs font-black text-blue-600">${score}%</span>
-                                    <div class="text-[7px] font-bold text-slate-400 uppercase">Performa</div>
-                                </div>
+                grid.innerHTML += `
+                    <div class="petugas-stat-card p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-100">
+                                ${p.nama.charAt(0)}
                             </div>
-
-                            <div class="grid grid-cols-4 gap-2">
-                                <div class="counter-box">
-                                    <span class="text-sm font-black text-emerald-600">${hadir}</span>
-                                    <span class="text-[7px] font-bold text-slate-400 uppercase mt-1">Hadir</span>
-                                </div>
-                                <div class="counter-box">
-                                    <span class="text-sm font-black text-amber-500">${izin}</span>
-                                    <span class="text-[7px] font-bold text-slate-400 uppercase mt-1">Izin</span>
-                                </div>
-                                <div class="counter-box">
-                                    <span class="text-sm font-black text-rose-500">${alpha}</span>
-                                    <span class="text-[7px] font-bold text-slate-400 uppercase mt-1">Alpha</span>
-                                </div>
-                                <div class="counter-box">
-                                    <span class="text-sm font-black text-slate-400">${tidakAbsen}</span>
-                                    <span class="text-[7px] font-bold text-slate-400 uppercase mt-1">N/A</span>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Attendance Rate</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill ${getScoreColor(score)}" style="width: ${score}%"></div>
-                                </div>
+                            <div>
+                                <h3 class="text-md font-black text-slate-800 uppercase leading-none">${p.nama}</h3>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Librarian Team</p>
                             </div>
                         </div>
-                    `;
-                });
-            } catch (err) {
-                console.error(err);
-            } finally {
-                loading.classList.add('hidden');
-                grid.classList.remove('hidden');
-            }
+
+                        <div class="counter-grid">
+                            <div class="counter-box">
+                                <span class="text-lg font-black text-green-500">${hadir}</span>
+                                <span class="label-status">Hadir</span>
+                            </div>
+                            <div class="counter-box">
+                                <span class="text-lg font-black text-amber-500">${izin}</span>
+                                <span class="label-status">Izin</span>
+                            </div>
+                            <div class="counter-box">
+                                <span class="text-lg font-black text-red-500">${alpha}</span>
+                                <span class="label-status">Alpha</span>
+                            </div>
+                            <div class="counter-box bg-slate-100 border-slate-200">
+                                <span class="text-lg font-black text-slate-400">${tidakAbsen}</span>
+                                <span class="label-status">N/A</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 border-t border-dashed border-slate-200 flex justify-between items-center">
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Performance</span>
+                            <span class="text-xs font-black text-blue-600">${calculateScore(hadir, totalSeharusnya)}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('loading').classList.add('hidden');
         }
 
         function getWeeksBetween(d1, d2) {
-            const diff = (d2.getTime() - d1.getTime()) / (7 * 24 * 60 * 60 * 1000);
-            return Math.max(1, Math.ceil(diff));
+            return Math.ceil((d2 - d1) / (7 * 24 * 60 * 60 * 1000));
         }
 
         function calculateScore(hadir, total) {
-            if (total === 0) return 0;
+            if (total === 0) return 100;
             return Math.min(100, Math.round((hadir / total) * 100));
-        }
-
-        function getScoreColor(score) {
-            if (score >= 80) return 'bg-emerald-500';
-            if (score >= 50) return 'bg-amber-500';
-            return 'bg-rose-500';
         }
 
         window.onload = loadRekapIndividu;
     </script>
 </body>
 </html>
-
