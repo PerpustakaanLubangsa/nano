@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Leaderboard - Gamer Sync</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --dark-bg: #0b0f1a;
+            --cyber-blue: #0ea5e9;
+            --cyber-pink: #d946ef;
+            --neon-green: #22c55e;
+        }
+
+        body { 
+            background-color: var(--dark-bg);
+            color: #f1f5f9; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin: 0; padding: 10px;
+            background-image: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.1) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
+        
+        .game-font { font-family: 'Orbitron', sans-serif; }
+
+        /* Minimalis Row untuk Layar Sempit */
+        .rank-row {
+            display: grid;
+            grid-template-columns: 40px 60px 1fr 50px;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .game-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Modal HUD Style */
+        #playerModal {
+            position: fixed; inset: 0;
+            background: rgba(11, 15, 26, 0.95);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 2px solid var(--cyber-blue);
+            width: 100%; max-width: 300px;
+            padding: 25px; border-radius: 0;
+            position: relative;
+            box-shadow: 0 0 30px rgba(14, 165, 233, 0.3);
+        }
+
+        .rank-tag {
+            font-size: 8px; font-weight: 900; padding: 1px 6px;
+            border-radius: 2px; text-transform: uppercase;
+        }
+        .rank-Mythic { background: linear-gradient(45deg, #7e22ce, #db2777); }
+        .rank-Legend { background: #ea580c; }
+        .rank-Epic { background: #2563eb; }
+        .rank-Grandmaster { background: #059669; }
+        .rank-Warrior { background: #4b5563; }
+
+        .search-hud {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue);
+            padding: 10px; width: 100%; outline: none;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="form.html" class="inline-flex items-center text-[10px] game-font text-cyber-blue mb-4 hover:opacity-70 transition">
+        <i class="fa-solid fa-arrow-left mr-2"></i> RETURN_TO_BASE
+    </a>
+
+    <header class="mb-6 border-b border-white/10 pb-2">
+        <h1 class="text-xl font-black game-font">LEADERBOARD</h1>
+        <p class="text-[8px] game-font text-cyber-pink tracking-widest uppercase">Sector_Mobile_v1.0</p>
+    </header>
+
+    <div class="mb-4">
+        <input type="text" id="searchInput" class="search-hud game-font" placeholder="[ SCAN_PLAYER ]" onkeyup="debounceSearch()">
+    </div>
+
+    <div class="game-card">
+        <div id="leaderboardList">
+            </div>
+        <div id="loader" class="p-10 text-center hidden">
+            <i class="fa-solid fa-atom fa-spin text-cyber-blue"></i>
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between mt-6">
+        <button id="prevBtn" onclick="changePage(-1)" class="text-[10px] game-font border border-white/20 p-2 disabled:opacity-20">PREV</button>
+        <span id="pageInfo" class="game-font text-xs">01</span>
+        <button id="nextBtn" onclick="changePage(1)" class="text-[10px] game-font border border-white/20 p-2 disabled:opacity-20">NEXT</button>
+    </div>
+
+    <div id="playerModal" onclick="closeModal(event)">
+        <div class="modal-content animate-in zoom-in duration-200">
+            <div id="modalData" class="text-center">
+                </div>
+            <button onclick="document.getElementById('playerModal').style.display='none'" 
+                class="mt-6 w-full py-2 bg-cyber-blue/20 border border-cyber-blue text-[10px] game-font text-cyber-blue">
+                CLOSE_SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let currentPage = 1;
+        const perPage = 10;
+        let searchTimeout;
+
+        async function fetchLeaderboard() {
+            const loader = document.getElementById('loader');
+            loader.classList.remove('hidden');
+            
+            try {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const searchQuery = document.getElementById('searchInput').value.trim();
+
+                let query = client.from('data_pengunjung')
+                    .select('nama, aktivitas')
+                    .gte('created_at', firstDay);
+
+                if (searchQuery) query = query.ilike('nama', `%${searchQuery}%`);
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                const stats = {};
+                data.forEach(item => {
+                    if(!item.nama) return;
+                    if(!stats[item.nama]) stats[item.nama] = { baca: 0, pinjam: 0, total: 0 };
+                    if(item.aktivitas === 'Baca') stats[item.nama].baca++;
+                    else if(item.aktivitas === 'Pinjam') stats[item.nama].pinjam++;
+                    stats[item.nama].total++;
+                });
+
+                const sortedData = Object.entries(stats)
+                    .map(([nama, val]) => ({ nama, ...val }))
+                    .sort((a, b) => b.total - a.total);
+
+                render(sortedData.slice((currentPage - 1) * perPage, currentPage * perPage), sortedData.length);
+            } catch (err) { console.error(err); } 
+            finally { loader.classList.add('hidden'); }
+        }
+
+        function getTier(rank) {
+            if (rank <= 3) return { n: 'Mythic', c: 'rank-Mythic', i: 'Mythic.jpg' };
+            if (rank <= 10) return { n: 'Legend', c: 'rank-Legend', i: 'Legend.jpg' };
+            if (rank <= 25) return { n: 'Epic', c: 'rank-Epic', i: 'Epic.jpg' };
+            if (rank <= 50) return { n: 'G-Master', c: 'rank-Grandmaster', i: 'Grandmaster.jpg' };
+            return { n: 'Warrior', c: 'rank-Warrior', i: 'Warrior.jpg' };
+        }
+
+        function render(items, total) {
+            const list = document.getElementById('leaderboardList');
+            const startIndex = (currentPage - 1) * perPage;
+
+            list.innerHTML = items.map((item, index) => {
+                const pos = startIndex + index + 1;
+                const tier = getTier(pos);
+                return `
+                <div class="rank-row" onclick="showDetail('${item.nama}', ${item.baca}, ${item.pinjam}, ${item.total}, ${pos})">
+                    <div class="game-font text-xs ${pos <= 3 ? 'text-cyber-blue' : 'text-white/30'}">#${pos}</div>
+                    <img src="${tier.i}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.nama)}&background=1e293b&color=0ea5e9'" class="w-10 h-10 object-cover">
+                    <div class="text-[11px] font-bold uppercase truncate px-2">${item.nama}</div>
+                    <div class="text-right text-cyber-blue font-black text-xs">${item.total}</div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('pageInfo').innerText = currentPage < 10 ? '0' + currentPage : currentPage;
+            document.getElementById('nextBtn').disabled = (currentPage * perPage) >= total;
+        }
+
+        function showDetail(nama, baca, pinjam, total, pos) {
+            const tier = getTier(pos);
+            document.getElementById('modalData').innerHTML = `
+                <img src="${tier.i}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=0b0f1a&color=0ea5e9'" class="w-20 h-20 mx-auto mb-4 border border-cyber-blue/30">
+                <div class="game-font text-[10px] text-cyber-blue mb-1">PLAYER_NAME</div>
+                <div class="font-black text-white uppercase text-sm mb-4">${nama}</div>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="bg-black/40 p-2">
+                        <div class="text-[8px] text-white/40">RANK</div>
+                        <div class="game-font text-xs text-white">#${pos}</div>
+                    </div>
+                    <div class="bg-black/40 p-2">
+                        <div class="text-[8px] text-white/40">TIER</div>
+                        <div class="rank-tag ${tier.c}">${tier.n}</div>
+                    </div>
+                </div>
+                <div class="space-y-2 text-left">
+                    <div class="flex justify-between text-[10px] border-b border-white/5 pb-1">
+                        <span class="text-white/40 uppercase">Aktivitas Baca</span>
+                        <span class="text-neon-green font-bold">${baca} PTS</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] border-b border-white/5 pb-1">
+                        <span class="text-white/40 uppercase">Aktivitas Pinjam</span>
+                        <span class="text-cyber-pink font-bold">${pinjam} PTS</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] pt-2">
+                        <span class="game-font text-white uppercase">Total XP</span>
+                        <span class="game-font text-cyber-blue font-black">${total}</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('playerModal').style.display = 'flex';
+        }
+
+        function closeModal(e) { if(e.target.id === 'playerModal') e.target.style.display = 'none'; }
+        function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; fetchLeaderboard(); }, 500); }
+        function changePage(step) { currentPage += step; fetchLeaderboard(); }
+
+        window.onload = fetchLeaderboard;
+    </script>
+</body>
+</html>
