@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sistem Pemustaka - Snow Edition</title>
+    <title>Sistem Pemustaka - Snow Edition (Monthly Rank)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -117,7 +117,7 @@
             <div>
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">Pemustaka<span class="text-blue-500">.</span></h1>
                 <p class="text-slate-400 text-[10px] mt-2 font-bold uppercase tracking-[0.3em]">
-                    Halo, <span id="displayUserName" class="text-blue-600">User</span> (<span id="displayUserRole">Role</span>)
+                    Halo, <span id="displayUserName" class="text-blue-600">User</span> (<span id="displayUserRole">Role</span>) • <span class="text-slate-600" id="currentMonthLabel">BULAN INI</span>
                 </p>
             </div>
             <button onclick="openMemberModal('NEW')" class="bg-blue-600 text-white px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
@@ -138,7 +138,7 @@
                 <div class="min-w-[900px]">
                     <div class="list-header">
                         <span class="text-center">Profil</span>
-                        <span>Identitas & Rank</span>
+                        <span>Identitas & Rank (Bulan Ini)</span>
                         <span>Nama Lengkap</span>
                         <span>Jenjang</span>
                         <span>Role</span>
@@ -147,7 +147,7 @@
                     <div id="memberList" class="divide-y divide-slate-100"></div>
                     <div id="loadingState" class="hidden p-20 text-center">
                         <i class="fa-solid fa-snowflake fa-spin text-blue-400 text-3xl"></i>
-                        <p class="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">Memuat Data...</p>
+                        <p class="text-xs font-bold text-slate-400 mt-4 uppercase tracking-widest">Memproses Ranking Bulanan...</p>
                     </div>
                 </div>
             </div>
@@ -180,7 +180,7 @@
                 <div>
                     <div id="modalRankTag" class="rank-tag mb-1">Warrior</div>
                     <div class="text-xl font-black text-slate-800 uppercase tracking-tight">Status Aktivitas</div>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase">Total Poin: <span id="modalPoin" class="text-blue-600">0</span></p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Poin Bulan Ini: <span id="modalPoin" class="text-blue-600">0</span></p>
                 </div>
             </div>
 
@@ -219,29 +219,21 @@
     </div>
 
     <script>
-        // Konfigurasi Supabase
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
         const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; 
         const client = supabase.createClient(SB_URL, SB_KEY);
 
-        // Session Data
         const myRole = (sessionStorage.getItem('userRole') || 'anggota').toLowerCase();
         const myName = sessionStorage.getItem('userName') || 'User';
         const myNis = sessionStorage.getItem('userNis');
 
-        // Initial UI
         document.getElementById('displayUserName').innerText = myName;
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
 
         let membersData = [], currentPage = 0, itemsPerPage = 10;
 
-        /**
-         * MENDAPATKAN INFORMASI RANK & GAMBAR
-         * Penting: Jalur './' digunakan agar mencari file di root repositori GitHub yang sama.
-         */
         function getRankInfo(points) {
             const p = parseInt(points) || 0;
-            // Pastikan penulisan Case-Sensitive sama persis dengan yang ada di GitHub
             if (p >= 100) return { name: 'Mythic', img: './Mythic.jpg' };
             if (p >= 50)  return { name: 'Legend', img: './Legend.jpg' };
             if (p >= 25)  return { name: 'Epic', img: './Epic.jpg' };
@@ -249,41 +241,68 @@
             return { name: 'Warrior', img: './Warrior.jpg' };
         }
 
-        // Memuat Data dari Supabase
         async function loadMembers() {
             document.getElementById('loadingState').classList.remove('hidden');
-            document.getElementById('memberList').innerHTML = ""; // Bersihkan list saat loading
+            document.getElementById('memberList').innerHTML = "";
             
             try {
                 const q = document.getElementById('memberSearch').value;
                 const from = currentPage * itemsPerPage;
                 const to = from + itemsPerPage - 1;
 
-                let req = client.from('anggota')
-                            .select('*', { count: 'exact' })
-                            .order('updated_at', { ascending: false }) 
-                            .range(from, to);
-
-                if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
+                // 1. Dapatkan range waktu bulan ini
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 
-                const { data, count, error } = await req;
-                if(error) throw error;
+                // Label bulan
+                const monthName = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+                document.getElementById('currentMonthLabel').innerText = monthName.toUpperCase();
 
-                membersData = data || [];
+                // 2. Ambil semua anggota
+                let req = client.from('anggota').select('*');
+                if(q) req = req.or(`nis.ilike.%${q}%,nama.ilike.%${q}%`);
+                const { data: allMembers, error: errM } = await req;
+                if(errM) throw errM;
+
+                // 3. Ambil log aktivitas BULAN INI saja
+                const { data: logs, error: errL } = await client
+                    .from('data_pengunjung')
+                    .select('nama')
+                    .gte('created_at', firstDay);
+                if(errL) throw errL;
+
+                // 4. Hitung poin bulanan per user
+                const monthlyPoints = {};
+                logs.forEach(log => {
+                    monthlyPoints[log.nama] = (monthlyPoints[log.nama] || 0) + 1;
+                });
+
+                // 5. Gabungkan poin ke data anggota dan SORTING
+                let processedMembers = allMembers.map(m => ({
+                    ...m,
+                    poin_bulan_ini: monthlyPoints[m.nama] || 0
+                }));
+
+                // Urutkan berdasarkan poin bulanan tertinggi
+                processedMembers.sort((a, b) => b.poin_bulan_ini - a.poin_bulan_ini);
+
+                // 6. Pagination manual setelah sorting bulanan
+                const count = processedMembers.length;
+                membersData = processedMembers.slice(from, from + itemsPerPage);
+
                 renderMembers();
                 
                 document.getElementById('pageNumber').innerText = currentPage + 1;
                 document.getElementById('prevBtn').disabled = (currentPage === 0);
-                document.getElementById('nextBtn').disabled = (to >= (count || 0) - 1);
+                document.getElementById('nextBtn').disabled = (from + itemsPerPage >= count);
             } catch (err) { 
                 console.error(err);
-                notify("Gagal memuat data", false);
+                notify("Gagal memuat ranking bulanan", false);
             } finally { 
                 document.getElementById('loadingState').classList.add('hidden'); 
             }
         }
 
-        // Menampilkan List ke Tabel
         function renderMembers() {
             const list = document.getElementById('memberList');
             if(membersData.length === 0) {
@@ -292,7 +311,7 @@
             }
 
             list.innerHTML = membersData.map(m => {
-                const rank = getRankInfo(m.total_poin || 0);
+                const rank = getRankInfo(m.poin_bulan_ini || 0);
                 return `
                 <div onclick="openMemberModal('${m.id}')" class="list-row animate-in fade-in duration-500">
                     <div class="flex justify-center">
@@ -302,7 +321,7 @@
                     </div>
                     <div class="flex flex-col gap-1">
                         <span class="font-bold text-xs text-slate-900">${m.nis || '---'}</span>
-                        <span class="rank-tag rank-${rank.name}">${rank.name}</span>
+                        <span class="rank-tag rank-${rank.name}">${rank.name} (${m.poin_bulan_ini})</span>
                     </div>
                     <div class="font-bold text-slate-700 truncate pr-4">${m.nama}</div>
                     <div class="text-[10px] font-bold text-slate-500">${m.jenjang || '---'}</div>
@@ -312,7 +331,6 @@
             }).join('');
         }
 
-        // Buka Modal & Isi Data
         function openMemberModal(id) {
             const form = document.getElementById('memberForm');
             form.reset();
@@ -322,12 +340,10 @@
             const passInput = document.getElementById('m_password');
             const deleteBtn = document.getElementById('btnDeleteMember');
 
-            // Set Opsi Role Berdasarkan Siapa yang Login
             let roleOptions = `<option value="anggota">Anggota</option><option value="pustakawan">Pustakawan</option>`;
             if(myRole === 'admin') roleOptions += `<option value="admin">Admin</option>`;
             roleSelect.innerHTML = roleOptions;
 
-            // Reset Disabled States
             roleSelect.disabled = false;
             passInput.disabled = false;
             passInput.placeholder = "Isi untuk ubah password";
@@ -341,10 +357,8 @@
                     document.getElementById('m_jenjang').value = m.jenjang || 'SLTP';
                     document.getElementById('m_kamar').value = m.kamar || '';
                     
-                    // Logika Proteksi Data
                     if(myRole === 'pustakawan') {
                         deleteBtn.classList.add('hidden');
-                        // Pustakawan tidak bisa ubah password/role sesama pustakawan (kecuali diri sendiri)
                         if (m.nis !== myNis && m.role === 'pustakawan') {
                             roleSelect.disabled = true;
                             passInput.disabled = true;
@@ -354,13 +368,12 @@
                         deleteBtn.classList.remove('hidden');
                     }
 
-                    // Rank Preview
-                    const rank = getRankInfo(m.total_poin || 0);
+                    const rank = getRankInfo(m.poin_bulan_ini || 0);
                     document.getElementById('rankDisplay').classList.remove('hidden');
                     document.getElementById('modalRankImg').src = rank.img;
                     document.getElementById('modalRankTag').innerText = rank.name;
                     document.getElementById('modalRankTag').className = `rank-tag rank-${rank.name}`;
-                    document.getElementById('modalPoin').innerText = m.total_poin || 0;
+                    document.getElementById('modalPoin').innerText = m.poin_bulan_ini || 0;
                 }
             } else {
                 document.getElementById('rankDisplay').classList.add('hidden');
@@ -371,7 +384,6 @@
 
         function closeMemberModal() { document.getElementById('memberModal').classList.remove('active'); }
 
-        // Simpan / Update Data
         document.getElementById('memberForm').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('memberId').value;
@@ -380,7 +392,6 @@
             const pass = document.getElementById('m_password').value;
             const originalData = id !== 'NEW' ? membersData.find(x => x.id === id) : null;
 
-            // Validasi Hak Akses Pustakawan
             if (myRole === 'pustakawan' && id !== 'NEW') {
                 if (originalData && originalData.nis !== myNis && originalData.role === 'pustakawan' && newRole === 'anggota') {
                     notify('Gagal: Demosi dilarang!', false); return;
@@ -420,7 +431,6 @@
             }
         };
 
-        // Fungsi Hapus (Hanya Admin)
         async function askDelete() {
             if(myRole !== 'admin') return;
             if(confirm("Apakah Anda yakin ingin menghapus anggota ini secara permanen?")) {
@@ -434,7 +444,6 @@
             }
         }
 
-        // Toast Notification System
         function notify(text, success = null) {
             const t = document.getElementById('toast');
             document.getElementById('toastText').innerText = text;
@@ -444,14 +453,12 @@
             }
         }
 
-        // Kontrol Navigasi
         function changePage(s) { 
             currentPage += s; 
             if(currentPage < 0) currentPage = 0;
             loadMembers(); 
         }
 
-        // Jalankan saat load
         window.onload = loadMembers;
     </script>
 </body>
