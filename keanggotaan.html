@@ -27,7 +27,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             font-size: 14px; margin: 0; 
             padding-top: env(titlebar-area-inset-top, 20px);
-            overflow-x: hidden; /* Mencegah scroll horizontal di body */
+            overflow-x: hidden;
         }
         
         h1, h2, h3 { font-family: 'Outfit', sans-serif; }
@@ -47,11 +47,10 @@
             display: grid; grid-template-columns: 80px 150px 1fr 100px 120px 100px;
             align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-soft);
             transition: background 0.2s ease; cursor: pointer; background: var(--snow-card);
-            position: relative;
-            width: 100%; /* Pastikan lebar tetap */
+            position: relative; width: 100%;
         }
 
-        /* FIX HOVER: Menggunakan box-shadow dalam agar tidak memicu scroll horizontal */
+        /* Hover tanpa geser horizontal */
         .list-row:hover { 
             background: var(--ice-light); 
             box-shadow: inset 4px 0 0 0 var(--ice-blue);
@@ -66,7 +65,6 @@
             position: sticky; top: 0; z-index: 40;
         }
 
-        /* Rank Badge Styling */
         .rank-tag {
             font-size: 8px; font-weight: 900; letter-spacing: 0.05em; padding: 2px 6px;
             border-radius: 4px; text-transform: uppercase; width: fit-content;
@@ -88,6 +86,7 @@
             background: #f1f5f9 !important; border: 1px solid var(--border-soft) !important; 
             padding: 12px 16px !important; width: 100%; border-radius: 8px !important;
         }
+        .browser-input:disabled, .browser-select:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .bottom-sheet { 
             position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px);
@@ -179,7 +178,7 @@
                 </div>
                 <div>
                     <div id="modalRankTag" class="rank-tag mb-1">Warrior</div>
-                    <div class="text-xl font-black text-slate-800 uppercase tracking-tight">Kolektor Literasi</div>
+                    <div class="text-xl font-black text-slate-800 uppercase tracking-tight">Status Aktivitas</div>
                     <p class="text-[10px] text-slate-400 font-bold uppercase">Total Poin: <span id="modalPoin" class="text-blue-600">0</span></p>
                 </div>
             </div>
@@ -187,7 +186,7 @@
             <form id="memberForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                 <input type="hidden" id="memberId">
                 <div class="md:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">NIS</label>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">NIS (Username)</label>
                     <input type="text" id="m_nis" required class="browser-input font-bold">
                 </div>
                 <div class="md:col-span-2">
@@ -196,11 +195,7 @@
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Role</label>
-                    <select id="m_role" class="browser-select font-bold">
-                        <option value="anggota">Anggota</option>
-                        <option value="pustakawan">Pustakawan</option>
-                        <option value="admin">Admin</option>
-                    </select>
+                    <select id="m_role" class="browser-select font-bold"></select>
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Jenjang</label>
@@ -215,8 +210,8 @@
                     <input type="text" id="m_kamar" class="browser-input uppercase">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Password</label>
-                    <input type="password" id="m_password" placeholder="Isi untuk ubah" class="browser-input">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block tracking-widest">Ganti Password</label>
+                    <input type="password" id="m_password" placeholder="Kosongkan jika tidak diubah" class="browser-input">
                 </div>
             </form>
         </div>
@@ -229,6 +224,7 @@
 
         const myRole = (sessionStorage.getItem('userRole') || 'anggota').toLowerCase();
         const myName = sessionStorage.getItem('userName') || 'User';
+        const myNis = sessionStorage.getItem('userNis');
 
         document.getElementById('displayUserName').innerText = myName;
         document.getElementById('displayUserRole').innerText = myRole.toUpperCase();
@@ -237,6 +233,7 @@
 
         function getRankInfo(points) {
             const p = parseInt(points) || 0;
+            // Gambar dipanggil langsung dari folder root yang sama dengan file HTML
             if (p >= 100) return { name: 'Mythic', img: 'Mythic.jpg' };
             if (p >= 50)  return { name: 'Legend', img: 'Legend.jpg' };
             if (p >= 25)  return { name: 'Epic', img: 'Epic.jpg' };
@@ -251,7 +248,6 @@
                 const from = currentPage * itemsPerPage;
                 const to = from + itemsPerPage - 1;
 
-                // ORDER BY updated_at DESC: Menampilkan data terbaru yang diupdate di paling atas
                 let req = client.from('anggota')
                             .select('*', { count: 'exact' })
                             .order('updated_at', { ascending: false }) 
@@ -280,7 +276,7 @@
                 <div onclick="openMemberModal('${m.id}')" class="list-row">
                     <div class="flex justify-center">
                         <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden shadow-sm">
-                            <img src="img/ranks/${rank.img}" onerror="this.src='https://ui-avatars.com/api/?name=${m.nama}'" class="w-full h-full object-cover">
+                            <img src="${rank.img}" onerror="this.src='https://ui-avatars.com/api/?name=${m.nama}'" class="w-full h-full object-cover">
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">
@@ -299,24 +295,50 @@
             const form = document.getElementById('memberForm');
             form.reset();
             document.getElementById('memberId').value = id;
+            
+            const roleSelect = document.getElementById('m_role');
+            const passInput = document.getElementById('m_password');
             const deleteBtn = document.getElementById('btnDeleteMember');
+
+            // Generate Role Options
+            let roleOptions = `<option value="anggota">Anggota</option><option value="pustakawan">Pustakawan</option>`;
+            if(myRole === 'admin') roleOptions += `<option value="admin">Admin</option>`;
+            roleSelect.innerHTML = roleOptions;
+
+            // Reset States
+            roleSelect.disabled = false;
+            passInput.disabled = false;
+            passInput.placeholder = "Isi untuk ubah password";
 
             if(id !== 'NEW') {
                 const m = membersData.find(x => x.id === id);
                 if(m) {
                     document.getElementById('m_nis').value = m.nis || '';
                     document.getElementById('m_nama').value = m.nama || '';
-                    document.getElementById('m_role').value = m.role || 'anggota';
+                    roleSelect.value = m.role || 'anggota';
                     document.getElementById('m_jenjang').value = m.jenjang || 'SLTP';
                     document.getElementById('m_kamar').value = m.kamar || '';
                     
+                    if(myRole === 'pustakawan') {
+                        deleteBtn.classList.add('hidden');
+                        if (m.nis !== myNis && m.role === 'pustakawan') {
+                            roleSelect.disabled = true;
+                            passInput.disabled = true;
+                            passInput.placeholder = "Dibatasi Admin";
+                        } else if (m.nis !== myNis && m.role === 'anggota') {
+                            roleSelect.disabled = false; 
+                            passInput.disabled = true;
+                        }
+                    } else if (myRole === 'admin') {
+                        deleteBtn.classList.remove('hidden');
+                    }
+
                     const rank = getRankInfo(m.total_poin || 0);
                     document.getElementById('rankDisplay').classList.remove('hidden');
-                    document.getElementById('modalRankImg').src = `img/ranks/${rank.img}`;
+                    document.getElementById('modalRankImg').src = rank.img;
                     document.getElementById('modalRankTag').innerText = rank.name;
                     document.getElementById('modalRankTag').className = `rank-tag rank-${rank.name}`;
                     document.getElementById('modalPoin').innerText = m.total_poin || 0;
-                    deleteBtn.classList.remove('hidden');
                 }
             } else {
                 document.getElementById('rankDisplay').classList.add('hidden');
@@ -330,27 +352,50 @@
         document.getElementById('memberForm').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('memberId').value;
+            const targetNis = document.getElementById('m_nis').value;
+            const newRole = document.getElementById('m_role').value;
+            const pass = document.getElementById('m_password').value;
+            const originalData = id !== 'NEW' ? membersData.find(x => x.id === id) : null;
+
+            if (myRole === 'pustakawan' && id !== 'NEW') {
+                if (originalData && originalData.nis !== myNis && originalData.role === 'pustakawan' && newRole === 'anggota') {
+                    notify('Error: Tidak bisa demosi rekan!', false);
+                    return;
+                }
+                if (targetNis !== myNis && pass !== "") {
+                    notify('Error: Bukan hak Anda!', false);
+                    return;
+                }
+            }
+
             const payload = {
-                nis: document.getElementById('m_nis').value,
+                nis: targetNis,
                 nama: document.getElementById('m_nama').value,
-                role: document.getElementById('m_role').value,
+                role: newRole,
                 jenjang: document.getElementById('m_jenjang').value,
                 kamar: document.getElementById('m_kamar').value,
-                updated_at: new Date().toISOString() // Update timestamp
+                updated_at: new Date().toISOString()
             };
             
-            const pass = document.getElementById('m_password').value;
             if(pass) payload.password = pass;
 
-            notify('Menyimpan...');
-            const res = id === 'NEW' ? await client.from('anggota').insert([payload]) : await client.from('anggota').update(payload).eq('id', id);
+            notify('Sedang menyimpan...');
+            const res = id === 'NEW' ? 
+                await client.from('anggota').insert([payload]) : 
+                await client.from('anggota').update(payload).eq('id', id);
 
-            if(!res.error) { closeMemberModal(); loadMembers(); notify('Berhasil!', true); }
-            else { alert(res.error.message); }
+            if(!res.error) { 
+                closeMemberModal(); 
+                loadMembers(); 
+                notify('Berhasil!', true); 
+            } else { 
+                alert(res.error.message); 
+            }
         };
 
         async function askDelete() {
-            if(confirm("Hapus Anggota?")) {
+            if(myRole !== 'admin') return;
+            if(confirm("Hapus data ini?")) {
                 const id = document.getElementById('memberId').value;
                 await client.from('anggota').delete().eq('id', id);
                 closeMemberModal(); loadMembers(); notify('Terhapus', true);
