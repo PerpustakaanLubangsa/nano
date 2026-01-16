@@ -7,10 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; overflow: hidden; }
-        .brand-font { font-family: 'Cinzel', serif; }
         
         .sidebar-gradient { 
             background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
@@ -45,14 +44,22 @@
             transition: opacity 0.3s ease;
         }
 
+        /* Rank Display */
+        .rank-box {
+            width: 100px; height: 100px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+        .rank-img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* Countdown */
         .countdown-container {
             position: fixed; bottom: 1.5rem; right: 1.5rem;
             width: 50px; height: 50px; z-index: 100;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
         }
         .countdown-svg { width: 40px; height: 40px; transform: rotate(-90deg); }
         .countdown-bg { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 3; }
@@ -81,17 +88,20 @@
 <body class="flex h-screen overflow-hidden">
 
     <aside class="w-72 h-full sidebar-gradient flex flex-col z-50">
-        <div class="p-6 flex items-center gap-4 shrink-0">
-            <div class="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                <i class="fa-solid fa-book-open-reader text-lg"></i>
+        <nav class="flex-1 overflow-y-auto custom-scrollbar px-5 py-8">
+            
+            <div class="mb-10 flex flex-col items-center text-center px-4">
+                <div id="rankContainer" class="rank-box">
+                    <i class="fa-solid fa-user text-4xl text-slate-600"></i>
+                </div>
+                
+                <div class="w-full">
+                    <p id="staffNameDisplay" class="text-sm font-extrabold text-slate-100 truncate uppercase tracking-tight">Loading...</p>
+                    <p id="rankNameDisplay" class="text-[10px] font-bold uppercase tracking-[0.15em] mt-1 text-slate-500">Scanning...</p>
+                    <p id="roleDisplay" class="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-600 mt-2">Role</p>
+                </div>
             </div>
-            <div>
-                <h1 class="brand-font text-[8px] tracking-[0.4em] text-blue-400 font-bold leading-none uppercase mb-1">Perpustakaan</h1>
-                <h2 class="brand-font text-xl text-white font-bold uppercase tracking-tight">Lubangsa</h2>
-            </div>
-        </div>
 
-        <nav class="flex-1 overflow-y-auto custom-scrollbar px-5 pb-8">
             <div onclick="loadPage('beranda.html', this)" class="sidebar-item active">
                 <i class="fa-solid fa-grip-vertical w-5 text-center"></i> Beranda
             </div>
@@ -99,6 +109,9 @@
             <p class="nav-label">Absensi & SDM</p>
             <div onclick="loadPage('absensi.html', this)" class="sidebar-item">
                 <i class="fa-solid fa-fingerprint w-5 text-center"></i> Buka Absensi
+            </div>
+            <div id="menuManajemenAbsen" onclick="loadPage('manajemen-absensi.html', this)" class="sidebar-item hidden">
+                <i class="fa-solid fa-calendar-check w-5 text-center"></i> Manajemen Absen
             </div>
             <div onclick="loadPage('rekap.html', this)" class="sidebar-item">
                 <i class="fa-solid fa-chart-line w-5 text-center"></i> Rekapitulasi
@@ -134,26 +147,11 @@
                 <i class="fa-solid fa-barcode w-5 text-center"></i> Barcode
             </div>
 
-            <p class="nav-label">Akun Sistem</p>
-            <div class="px-3 py-4 bg-slate-900/40 rounded-2xl mb-3 border border-white/5">
-                <div class="flex items-center gap-3">
-                    <div id="userAvatar" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700 font-bold uppercase">
-                        </div>
-                    <div class="overflow-hidden">
-                        <p id="staffNameDisplay" class="text-[11px] font-bold text-slate-100 truncate uppercase tracking-tighter italic">Pustakawan</p>
-                        <div class="flex items-center gap-1.5">
-                            <span class="relative flex h-1.5 w-1.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                            </span>
-                            <p id="roleDisplay" class="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">Role</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-12 mb-6">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-[9px] uppercase tracking-[0.2em] border border-rose-500/20">
+                    <i class="fa-solid fa-power-off"></i> Keluar Sistem
+                </button>
             </div>
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-[9px] uppercase tracking-[0.2em] border border-rose-500/20">
-                <i class="fa-solid fa-power-off"></i> Keluar
-            </button>
         </nav>
     </aside>
 
@@ -182,27 +180,80 @@
     </div>
 
     <script>
-        // --- PROTEKSI HALAMAN ---
-        const userRole = sessionStorage.getItem('userRole');
-        if (sessionStorage.getItem('isLoggedIn') !== 'true' || (userRole !== 'pustakawan' && userRole !== 'admin')) {
-            window.location.replace('login.html');
-        }
-
-        // --- KONFIGURASI ---
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
         const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
         const client = supabase.createClient(SB_URL, SB_KEY);
-        const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        const userRole = (sessionStorage.getItem('userRole') || '').toLowerCase();
+        const userName = sessionStorage.getItem('userName');
+
+        if (isLoggedIn !== 'true') window.location.replace('login.html');
+
+        async function initDashboard() {
+            if (!userName) return;
+            document.getElementById('staffNameDisplay').textContent = userName;
+            document.getElementById('roleDisplay').textContent = userRole;
+
+            if (userRole === 'admin') {
+                const menu = document.getElementById('menuManajemenAbsen');
+                if(menu) menu.classList.remove('hidden');
+            }
+
+            await calculateRanking();
+            startCountdown();
+        }
+
+        async function calculateRanking() {
+            try {
+                const now = new Date();
+                const startOfYear = `${now.getFullYear()}-01-01`;
+
+                const { data: masterPetugas } = await client.from('petugas_master').select('nama');
+                const { data: jadwal } = await client.from('jadwal_detail').select('*');
+                const { data: rekap } = await client.from('rekap_absensi').select('*').gte('tanggal', startOfYear);
+
+                const weeksElapsed = Math.ceil((now - new Date(startOfYear)) / (7 * 24 * 60 * 60 * 1000));
+
+                let performaList = masterPetugas.map(p => {
+                    const logs = rekap.filter(r => r.nama === p.nama);
+                    const hadir = logs.filter(l => l.status === 'Hadir').length;
+                    const shiftPerMinggu = jadwal.filter(j => j.nama === p.nama).length;
+                    const totalTarget = shiftPerMinggu * weeksElapsed;
+                    const score = totalTarget > 0 ? (hadir / totalTarget) * 100 : 0;
+                    return { nama: p.nama, score: score, isAktif: shiftPerMinggu > 0 };
+                });
+
+                const rankingGlobal = performaList.filter(p => p.isAktif).sort((a, b) => b.score - a.score);
+                const userIndex = rankingGlobal.findIndex(p => p.nama === userName);
+                const pos = userIndex + 1;
+
+                const container = document.getElementById('rankContainer');
+                const rankText = document.getElementById('rankNameDisplay');
+
+                if (userIndex === -1) {
+                    container.innerHTML = `<i class="fa-solid fa-user text-4xl text-slate-600"></i>`;
+                    rankText.textContent = "Unranked";
+                    return;
+                }
+
+                let rankImg, rankLabel, rankColor;
+                if (pos === 1) { rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; }
+                else if (pos === 2) { rankImg = "Legend.jpg"; rankLabel = "Legend"; rankColor = "#f59e0b"; }
+                else if (pos === 3) { rankImg = "Epic.jpg"; rankLabel = "Epic"; rankColor = "#a855f7"; }
+                else if (pos <= 5) { rankImg = "Grandmaster.jpg"; rankLabel = "Grandmaster"; rankColor = "#38bdf8"; }
+                else { rankImg = "Warrior.jpg"; rankLabel = "Warrior"; rankColor = "#94a3b8"; }
+
+                container.innerHTML = `<img src="${rankImg}" class="rank-img" alt="${rankLabel}">`;
+                rankText.innerHTML = `${rankLabel} <span class="text-[8px] opacity-50 ml-1">#${pos}</span>`;
+                rankText.style.color = rankColor;
+            } catch (e) { console.error(e); }
+        }
+
+        // NAVIGATION & MONITORING LOGIC
+        const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         let timeLeft = 30;
         let monitorInterval;
-
-        // --- RENDER PROFIL ---
-        const storedName = sessionStorage.getItem('userName') || 'Pustakawan';
-        document.getElementById('staffNameDisplay').textContent = storedName;
-        document.getElementById('roleDisplay').textContent = userRole || 'Staff';
-        // Ambil inisial nama untuk avatar
-        document.getElementById('userAvatar').textContent = storedName.charAt(0);
 
         function loadPage(page, element) {
             const frame = document.getElementById('contentFrame');
@@ -211,7 +262,6 @@
                 frame.src = page;
                 frame.onload = () => frame.style.opacity = '1';
             }, 250);
-            
             document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
             element.classList.add('active');
         }
@@ -219,25 +269,18 @@
         function startCountdown() {
             timeLeft = 30;
             const fullDash = 113;
-            updateCircle(fullDash); 
             if (monitorInterval) clearInterval(monitorInterval);
-
             monitorInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('countdownNumber').innerText = timeLeft;
                 let offset = (timeLeft / 30) * fullDash;
-                updateCircle(offset);
-
+                const bar = document.getElementById('progressProgress');
+                if(bar) bar.style.strokeDashoffset = offset;
                 if (timeLeft <= 0) {
                     clearInterval(monitorInterval);
                     monitorAttendance();
                 }
             }, 1000);
-        }
-
-        function updateCircle(offset) {
-            const bar = document.getElementById('progressProgress');
-            if(bar) bar.style.strokeDashoffset = offset;
         }
 
         async function monitorAttendance() {
@@ -246,31 +289,20 @@
                 const hariIni = HARI_MAP[now.getDay()];
                 const jamMenit = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
                 const tglSekarang = now.toISOString().split('T')[0];
-
                 const { data: allShifts } = await client.from('jam_master').select('*');
                 const currentShift = allShifts?.find(s => {
                     const [mulai, selesai] = s.waktu.split(' - ');
                     return jamMenit >= mulai && jamMenit <= selesai;
                 });
-
                 if (!currentShift) { resumeMonitoring(); return; }
-
                 const { data: jadwal } = await client.from('jadwal_detail').select('nama').eq('hari', hariIni).eq('shift', currentShift.waktu);
                 const { data: rekap } = await client.from('rekap_absensi').select('nama').eq('tanggal', tglSekarang).eq('shift', currentShift.label);
-
-                const totalHarus = jadwal ? jadwal.length : 0;
-                const totalSudah = rekap ? rekap.length : 0;
-
-                if (totalHarus > 0 && totalSudah < totalHarus) {
-                    document.getElementById('alertMessage').innerText = `${totalHarus - totalSudah} PETUGAS BELUM ABSEN PADA SHIFT ${currentShift.label}`;
+                if (jadwal && rekap && rekap.length < jadwal.length) {
+                    document.getElementById('alertMessage').innerText = `${jadwal.length - rekap.length} PETUGAS BELUM ABSEN SHIFT ${currentShift.label}`;
                     document.getElementById('alertModal').classList.remove('hidden');
                     document.getElementById('countdownCircle').classList.add('hidden');
-                } else {
-                    resumeMonitoring();
-                }
-            } catch (error) {
-                resumeMonitoring();
-            }
+                } else { resumeMonitoring(); }
+            } catch (e) { resumeMonitoring(); }
         }
 
         function closeAlert() {
@@ -279,22 +311,15 @@
         }
 
         function resumeMonitoring() {
-            const circle = document.getElementById('countdownCircle');
-            if (circle) {
-                circle.classList.remove('hidden');
-                circle.style.opacity = "1";
-            }
+            document.getElementById('countdownCircle').classList.remove('hidden');
             startCountdown();
         }
 
         function logout() {
-            if(confirm('Apakah Anda yakin ingin keluar?')) {
-                sessionStorage.clear();
-                window.location.replace('login.html');
-            }
+            if(confirm('Keluar sistem?')) { sessionStorage.clear(); window.location.replace('login.html'); }
         }
 
-        window.onload = startCountdown;
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
