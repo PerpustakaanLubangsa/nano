@@ -207,38 +207,45 @@
                 const now = new Date();
                 const startOfYear = `${now.getFullYear()}-01-01`;
 
-                const { data: jadwal } = await client.from('jadwal_detail').select('*');
+                const { data: jadwal } = await client.from('jadwal_detail').select('*').eq('nama', userName);
                 const { data: rekap } = await client.from('rekap_absensi').select('*').eq('nama', userName).gte('tanggal', startOfYear);
-
-                const diff = now - new Date(startOfYear);
-                const weeksElapsed = Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
-
-                const shiftPerMinggu = jadwal.filter(j => j.nama === userName).length;
-                const totalTarget = shiftPerMinggu * weeksElapsed;
-                const hadir = rekap ? rekap.filter(l => l.status === 'Hadir').length : 0;
-                
-                const score = totalTarget > 0 ? (hadir / totalTarget) * 100 : 0;
 
                 const container = document.getElementById('rankContainer');
                 const rankText = document.getElementById('rankNameDisplay');
 
                 let rankImg, rankLabel, rankColor;
 
-                // LOGIKA RANK TERBARU (Sesuai Threshold yang diminta)
-                if (score > 70) { 
-                    rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; 
-                } 
-                else if (score >= 50) { 
-                    rankImg = "Legend.jpg"; rankLabel = "Legend"; rankColor = "#f59e0b"; 
-                } 
-                else if (score >= 20) { 
-                    rankImg = "Epic.jpg"; rankLabel = "Epic"; rankColor = "#a855f7"; 
-                } 
-                else if (score >= 10) { 
-                    rankImg = "Grandmaster.jpg"; rankLabel = "Grandmaster"; rankColor = "#38bdf8"; 
-                } 
-                else { 
-                    rankImg = "Warrior.jpg"; rankLabel = "Warrior"; rankColor = "#94a3b8"; 
+                // LOGIKA: JIKA TIDAK ADA DATA DI TABEL JADWAL (BUKAN ABSENSI KOSONG)
+                if (!jadwal || jadwal.length === 0) {
+                    rankImg = "Atasan.jpg"; 
+                    rankLabel = "Atasan"; 
+                    rankColor = "#ffffff";
+                } else {
+                    // MENGHITUNG SKOR BERDASARKAN ABSENSI
+                    const diff = now - new Date(startOfYear);
+                    const weeksElapsed = Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+                    
+                    const shiftPerMinggu = jadwal.length;
+                    const totalTarget = shiftPerMinggu * weeksElapsed;
+                    const hadir = rekap ? rekap.filter(l => l.status === 'Hadir').length : 0;
+                    
+                    const score = totalTarget > 0 ? (hadir / totalTarget) * 100 : 0;
+
+                    if (score > 70) { 
+                        rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; 
+                    } 
+                    else if (score >= 50) { 
+                        rankImg = "Legend.jpg"; rankLabel = "Legend"; rankColor = "#f59e0b"; 
+                    } 
+                    else if (score >= 20) { 
+                        rankImg = "Epic.jpg"; rankLabel = "Epic"; rankColor = "#a855f7"; 
+                    } 
+                    else if (score >= 10) { 
+                        rankImg = "Grandmaster.jpg"; rankLabel = "Grandmaster"; rankColor = "#38bdf8"; 
+                    } 
+                    else { 
+                        rankImg = "Warrior.jpg"; rankLabel = "Warrior"; rankColor = "#94a3b8"; 
+                    }
                 }
 
                 container.innerHTML = `<img src="${rankImg}" class="rank-img" alt="${rankLabel}">`;
@@ -251,7 +258,6 @@
             }
         }
 
-        // NAVIGATION & MONITORING LOGIC (Sama seperti sebelumnya)
         const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         let timeLeft = 30;
         let monitorInterval;
