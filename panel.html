@@ -136,6 +136,9 @@
             <div onclick="loadPage('log-pengunjung.html', this)" class="sidebar-item">
                 <i class="fa-solid fa-user-check w-5 text-center"></i> Log Pengunjung
             </div>
+            <div id="menuBrowser" onclick="loadPage('browser.html', this)" class="sidebar-item hidden">
+                <i class="fa-solid fa-globe w-5 text-center"></i> Browser
+            </div>
 
             <p class="nav-label">Atribut</p>
             <div onclick="loadPage('label.html', this)" class="sidebar-item">
@@ -194,8 +197,11 @@
             document.getElementById('roleDisplay').textContent = userRole;
 
             if (userRole === 'admin') {
-                const menu = document.getElementById('menuManajemenAbsen');
-                if(menu) menu.classList.remove('hidden');
+                const menuAbsen = document.getElementById('menuManajemenAbsen');
+                if(menuAbsen) menuAbsen.classList.remove('hidden');
+
+                const menuBrowser = document.getElementById('menuBrowser');
+                if(menuBrowser) menuBrowser.classList.remove('hidden');
             }
 
             await calculateRanking();
@@ -224,7 +230,7 @@
 
                 let rankImg, rankLabel, rankColor;
 
-                // LOGIKA RANK TERBARU (Sesuai Threshold yang diminta)
+                // LOGIKA RANK TERBARU
                 if (score > 70) { 
                     rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; 
                 } 
@@ -251,7 +257,6 @@
             }
         }
 
-        // NAVIGATION & MONITORING LOGIC (Sama seperti sebelumnya)
         const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         let timeLeft = 30;
         let monitorInterval;
