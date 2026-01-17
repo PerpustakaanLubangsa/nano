@@ -43,6 +43,15 @@
         }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .role-badge {
+            font-size: 8px;
+            padding: 1px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-left: 5px;
+        }
+        .role-admin { background: #fee2e2; color: #ef4444; }
+        .role-pustakawan { background: #dcfce7; color: #22c55e; }
     </style>
 </head>
 <body class="flex">
@@ -55,16 +64,14 @@
 
         <div class="mb-10">
             <div class="flex justify-between items-end mb-4">
-                <h2 class="text-xs font-black uppercase text-slate-800 tracking-widest">Data Pustakawan</h2>
+                <h2 class="text-xs font-black uppercase text-slate-800 tracking-widest">Data Pustakawan & Admin</h2>
             </div>
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="namaBaru" placeholder="Nama Baru..." class="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-none border border-slate-100 focus:border-blue-400">
-                <button onclick="tambahMasterNama()" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-[10px] uppercase">Add</button>
-            </div>
+            <p class="text-[9px] text-slate-400 mb-2 font-bold uppercase italic">* Mengambil data dari tabel Anggota</p>
+            
             <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 border-bottom border-slate-100">
-                        <tr><th class="p-4 text-[9px] font-bold text-slate-400 uppercase">Nama</th><th class="p-4 w-10"></th></tr>
+                        <tr><th class="p-4 text-[9px] font-bold text-slate-400 uppercase">Nama & Role</th><th class="p-4 w-10"></th></tr>
                     </thead>
                     <tbody id="tableNama" class="text-xs font-bold text-slate-600"></tbody>
                 </table>
@@ -122,13 +129,24 @@
             await loadJadwalExisting();
         }
 
+        // FUNGSI INI DIUBAH: Mengambil dari tabel anggota dengan filter role
         async function loadMasterNama() {
-            let { data } = await client.from('petugas_master').select('*').order('nama');
+            let { data, error } = await client
+                .from('anggota')
+                .select('id, nama, role')
+                .or('role.eq.pustakawan,role.eq.admin')
+                .order('nama');
+            
+            if (error) console.error(error);
+            
             masterNama = data || [];
             document.getElementById('tableNama').innerHTML = masterNama.map(n => `
                 <tr class="border-t border-slate-50">
-                    <td class="p-4">${n.nama}</td>
-                    <td class="p-4 text-right"><button onclick="showConfirm('Hapus petugas ${n.nama}?', () => executeHapusMasterNama(${n.id}))" class="text-red-300 hover:text-red-500">×</button></td>
+                    <td class="p-4 flex items-center">
+                        ${n.nama}
+                        <span class="role-badge role-${n.role.toLowerCase()}">${n.role}</span>
+                    </td>
+                    <td class="p-4 text-right"></td>
                 </tr>
             `).join('');
         }
@@ -206,16 +224,6 @@
             await loadJadwalExisting();
         }
 
-        async function tambahMasterNama() {
-            const nama = document.getElementById('namaBaru').value;
-            if(!nama) return;
-            await client.from('petugas_master').insert([{ nama }]);
-            document.getElementById('namaBaru').value = '';
-            await loadMasterNama();
-            renderBoard();
-            await loadJadwalExisting();
-        }
-
         async function tambahMasterShift() {
             const label = document.getElementById('labelShift').value;
             const waktu = document.getElementById('waktuShift').value;
@@ -239,13 +247,6 @@
 
         function closeConfirm() {
             document.getElementById('modalConfirm').classList.add('hidden');
-        }
-
-        async function executeHapusMasterNama(id) {
-            await client.from('petugas_master').delete().eq('id', id);
-            await loadMasterNama();
-            renderBoard();
-            await loadJadwalExisting();
         }
 
         async function executeHapusMasterShift(id) {
