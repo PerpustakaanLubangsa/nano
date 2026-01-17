@@ -11,6 +11,10 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; overflow: hidden; }
         
+        /* Sidebar Styling */
+        #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 18rem; }
+        #sidebar.collapsed { width: 5rem; }
+
         .sidebar-gradient { 
             background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
             border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -23,6 +27,7 @@
             font-weight: 600; font-size: 0.75rem;
             text-transform: uppercase; letter-spacing: 0.05em;
             margin-bottom: 0.25rem;
+            white-space: nowrap;
         }
         .sidebar-item:hover { background-color: rgba(255, 255, 255, 0.03); color: #38bdf8; }
         .sidebar-item.active {
@@ -31,15 +36,19 @@
             box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.4);
         }
 
+        .collapsed .sidebar-item { justify-content: center; padding: 0.75rem 0; gap: 0; }
+        .collapsed .sidebar-item span, .collapsed .nav-label, .collapsed #profileSection { display: none; }
+
         .nav-label { 
             font-size: 0.65rem; font-weight: 800; color: #475569; 
             margin: 1.5rem 0 0.5rem 1rem; text-transform: uppercase; letter-spacing: 0.15em; 
         }
 
+        /* Iframe styling: NO ROUNDED CORNERS */
         #contentFrame { 
             width: 100%; height: 100vh; border: none; 
             background-color: #f8fafc; 
-            border-radius: 2.5rem 0 0 2.5rem;
+            border-radius: 0; /* Diubah menjadi kotak */
             box-shadow: -20px 0 25px -5px rgba(0, 0, 0, 0.4);
             transition: opacity 0.3s ease;
         }
@@ -49,8 +58,18 @@
             display: flex; align-items: center; justify-content: center;
             margin-bottom: 0.5rem;
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+            transition: width 0.3s, height 0.3s;
         }
+        .collapsed .rank-box { width: 40px; height: 40px; margin-bottom: 0; }
         .rank-img { width: 100%; height: 100%; object-fit: contain; }
+
+        .toggle-btn {
+            position: absolute; right: -12px; top: 32px;
+            width: 24px; height: 24px; background: #2563eb;
+            color: white; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; cursor: pointer;
+            z-index: 100; font-size: 0.7rem; border: 2px solid #020617;
+        }
 
         .countdown-container {
             position: fixed; bottom: 1.5rem; right: 1.5rem;
@@ -85,7 +104,11 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-72 h-full sidebar-gradient flex flex-col z-50">
+    <aside id="sidebar" class="relative sidebar-gradient h-full flex flex-col z-50">
+        <div onclick="toggleSidebar()" class="toggle-btn" id="sidebarBtn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+
         <nav class="flex-1 overflow-y-auto custom-scrollbar px-5 py-8">
             
             <div class="mb-10 flex flex-col items-center text-center px-4">
@@ -93,7 +116,7 @@
                     <i class="fa-solid fa-circle-notch fa-spin text-4xl text-slate-600"></i>
                 </div>
                 
-                <div class="w-full">
+                <div class="w-full" id="profileSection">
                     <p id="staffNameDisplay" class="text-sm font-extrabold text-slate-100 truncate uppercase tracking-tight">Loading...</p>
                     <p id="rankNameDisplay" class="text-[10px] font-bold uppercase tracking-[0.15em] mt-1 text-slate-500">Scanning...</p>
                     <p id="roleDisplay" class="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-600 mt-2">Role</p>
@@ -101,53 +124,53 @@
             </div>
 
             <div onclick="loadPage('beranda.html', this)" class="sidebar-item active">
-                <i class="fa-solid fa-grip-vertical w-5 text-center"></i> Beranda
+                <i class="fa-solid fa-grip-vertical w-5 text-center"></i> <span>Beranda</span>
             </div>
             
             <p class="nav-label">Absensi & SDM</p>
             <div onclick="loadPage('absensi.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-fingerprint w-5 text-center"></i> Buka Absensi
+                <i class="fa-solid fa-fingerprint w-5 text-center"></i> <span>Buka Absensi</span>
             </div>
             <div id="menuManajemenAbsen" onclick="loadPage('manajemen-absensi.html', this)" class="sidebar-item hidden">
-                <i class="fa-solid fa-calendar-check w-5 text-center"></i> Manajemen Absen
+                <i class="fa-solid fa-calendar-check w-5 text-center"></i> <span>Manajemen Absen</span>
             </div>
             <div onclick="loadPage('rekap.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-chart-line w-5 text-center"></i> Rekapitulasi
+                <i class="fa-solid fa-chart-line w-5 text-center"></i> <span>Rekapitulasi</span>
             </div>
 
             <p class="nav-label">Sirkulasi</p>
             <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-right-left w-5 text-center"></i> Transaksi
+                <i class="fa-solid fa-right-left w-5 text-center"></i> <span>Transaksi</span>
             </div>
             <div onclick="loadPage('daftar-peminjam.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-user-clock w-5 text-center"></i> Peminjam
+                <i class="fa-solid fa-user-clock w-5 text-center"></i> <span>Peminjam</span>
             </div>
             <div onclick="loadPage('daftar-keterlambatan.html', this)" class="sidebar-item text-rose-300">
-                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Keterlambatan
+                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span>Keterlambatan</span>
             </div>
 
             <p class="nav-label">Katalog & Data</p>
             <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-box-archive w-5 text-center"></i> Bibliografi
+                <i class="fa-solid fa-box-archive w-5 text-center"></i> <span>Bibliografi</span>
             </div>
             <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-users-gear w-5 text-center"></i> Keanggotaan
+                <i class="fa-solid fa-users-gear w-5 text-center"></i> <span>Keanggotaan</span>
             </div>
             <div onclick="loadPage('log-pengunjung.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-user-check w-5 text-center"></i> Log Pengunjung
+                <i class="fa-solid fa-user-check w-5 text-center"></i> <span>Log Pengunjung</span>
             </div>
 
             <p class="nav-label">Atribut</p>
             <div onclick="loadPage('label.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-tags w-5 text-center"></i> Label Buku
+                <i class="fa-solid fa-tags w-5 text-center"></i> <span>Label Buku</span>
             </div>
             <div onclick="loadPage('barcode.html', this)" class="sidebar-item">
-                <i class="fa-solid fa-barcode w-5 text-center"></i> Barcode
+                <i class="fa-solid fa-barcode w-5 text-center"></i> <span>Barcode</span>
             </div>
 
             <div class="mt-12 mb-6">
                 <button onclick="logout()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-[9px] uppercase tracking-[0.2em] border border-rose-500/20">
-                    <i class="fa-solid fa-power-off"></i> Keluar Sistem
+                    <i class="fa-solid fa-power-off"></i> <span id="logoutText">Keluar Sistem</span>
                 </button>
             </div>
         </nav>
@@ -179,7 +202,7 @@
 
     <script>
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
-        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; // Gunakan Key Anda
+        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC'; 
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         const isLoggedIn = sessionStorage.getItem('isLoggedIn');
@@ -187,6 +210,22 @@
         const userName = sessionStorage.getItem('userName');
 
         if (isLoggedIn !== 'true') window.location.replace('login.html');
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const btn = document.getElementById('sidebarBtn');
+            const logoutText = document.getElementById('logoutText');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+                logoutText.style.display = 'none';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+                logoutText.style.display = 'inline';
+            }
+        }
 
         async function initDashboard() {
             if (!userName) return;
@@ -215,37 +254,23 @@
 
                 let rankImg, rankLabel, rankColor;
 
-                // LOGIKA: JIKA TIDAK ADA DATA DI TABEL JADWAL (BUKAN ABSENSI KOSONG)
                 if (!jadwal || jadwal.length === 0) {
                     rankImg = "Atasan.jpg"; 
                     rankLabel = "Atasan"; 
                     rankColor = "#ffffff";
                 } else {
-                    // MENGHITUNG SKOR BERDASARKAN ABSENSI
                     const diff = now - new Date(startOfYear);
                     const weeksElapsed = Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
-                    
                     const shiftPerMinggu = jadwal.length;
                     const totalTarget = shiftPerMinggu * weeksElapsed;
                     const hadir = rekap ? rekap.filter(l => l.status === 'Hadir').length : 0;
-                    
                     const score = totalTarget > 0 ? (hadir / totalTarget) * 100 : 0;
 
-                    if (score > 70) { 
-                        rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; 
-                    } 
-                    else if (score >= 50) { 
-                        rankImg = "Legend.jpg"; rankLabel = "Legend"; rankColor = "#f59e0b"; 
-                    } 
-                    else if (score >= 20) { 
-                        rankImg = "Epic.jpg"; rankLabel = "Epic"; rankColor = "#a855f7"; 
-                    } 
-                    else if (score >= 10) { 
-                        rankImg = "Grandmaster.jpg"; rankLabel = "Grandmaster"; rankColor = "#38bdf8"; 
-                    } 
-                    else { 
-                        rankImg = "Warrior.jpg"; rankLabel = "Warrior"; rankColor = "#94a3b8"; 
-                    }
+                    if (score > 70) { rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; } 
+                    else if (score >= 50) { rankImg = "Legend.jpg"; rankLabel = "Legend"; rankColor = "#f59e0b"; } 
+                    else if (score >= 20) { rankImg = "Epic.jpg"; rankLabel = "Epic"; rankColor = "#a855f7"; } 
+                    else if (score >= 10) { rankImg = "Grandmaster.jpg"; rankLabel = "Grandmaster"; rankColor = "#38bdf8"; } 
+                    else { rankImg = "Warrior.jpg"; rankLabel = "Warrior"; rankColor = "#94a3b8"; }
                 }
 
                 container.innerHTML = `<img src="${rankImg}" class="rank-img" alt="${rankLabel}">`;
@@ -279,7 +304,8 @@
             if (monitorInterval) clearInterval(monitorInterval);
             monitorInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('countdownNumber').innerText = timeLeft;
+                const numEl = document.getElementById('countdownNumber');
+                if(numEl) numEl.innerText = timeLeft;
                 let offset = (timeLeft / 30) * fullDash;
                 const bar = document.getElementById('progressProgress');
                 if(bar) bar.style.strokeDashoffset = offset;
