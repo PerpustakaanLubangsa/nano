@@ -18,6 +18,10 @@
             --snow-text: #1e293b;
         }
         body { 
+            background-image: url('bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             background-color: var(--snow-bg); 
             color: var(--snow-text); 
             font-family: 'Plus Jakarta Sans', sans-serif; 
@@ -194,21 +198,21 @@
         canvas.width = width;
         canvas.height = height;
         snowflakes = [];
-        for (let i = 0; i < 150; i++) { // Jumlah salju lebat
+        for (let i = 0; i < 80; i++) { // Mengurangi jumlah salju agar lebih ringan
             snowflakes.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                r: Math.random() * 3 + 1, // Ukuran bervariasi
-                d: Math.random() * 1, // Densitas
-                v: Math.random() * 1.5 + 0.5, // Kecepatan jatuh
-                w: Math.random() * 1 - 0.5 // Ayunan angin
+                r: Math.random() * 2 + 0.5, // Ukuran lebih kecil
+                d: Math.random() * 1,
+                v: Math.random() * 1.0 + 0.3, // Kecepatan lebih lambat
+                w: Math.random() * 0.5 - 0.25 // Ayunan lebih tenang
             });
         }
     }
 
     function drawSnow() {
         ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = 'rgba(200, 220, 255, 0.6)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.beginPath();
         for (let i = 0; i < snowflakes.length; i++) {
             let p = snowflakes[i];
@@ -225,7 +229,7 @@
             p.y += p.v;
             p.x += p.w;
             if (p.y > height) {
-                snowflakes[i] = { x: Math.random() * width, y: -10, r: p.r, d: p.d, v: p.v, w: p.w };
+                snowflakes[i] = { x: Math.random() * width, y: -5, r: p.r, d: p.d, v: p.v, w: p.w };
             }
         }
     }
