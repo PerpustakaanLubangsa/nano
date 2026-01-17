@@ -208,6 +208,8 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let dataAnggota = [], dataBiblio = [], activeIdx = -1, searchTimer;
+        // Variable untuk menyimpan referensi data asli saat dipilih dari pencarian
+        let selectedMemberNIS = null;
 
         async function initData() {
             const statusIcon = document.getElementById('syncStatus');
@@ -285,6 +287,7 @@
             const found = source.find(s => s.nis?.toString() === val || s.nama?.toLowerCase() === val.toLowerCase());
             if (found) {
                 input.value = found.nama;
+                selectedMemberNIS = found.nis; // Simpan NIS asli untuk pembaruan
                 document.getElementById('inputKamar').value = found.kamar || '';
                 document.getElementById('inputJenjang').value = found.jenjang || '';
             }
@@ -301,6 +304,7 @@
             const data = JSON.parse(drop.dataset.current)[idx];
             if (inputId === 'inputNama') {
                 document.getElementById('inputNama').value = data.nama;
+                selectedMemberNIS = data.nis; // Simpan NIS asli
                 document.getElementById('inputKamar').value = data.kamar || '';
                 document.getElementById('inputJenjang').value = data.jenjang || '';
             } else {
@@ -350,22 +354,43 @@
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             const name = document.getElementById('inputNama').value;
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>SINKRON...';
+            const currentBuku = document.getElementById('inputBuku').value;
+            
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPERBARUI...';
 
             const payload = {
                 nama: name, 
                 kamar: document.getElementById('inputKamar').value,
                 jenjang: document.getElementById('inputJenjang').value,
-                judul_buku: document.getElementById('inputBuku').value,
+                judul_buku: currentBuku,
                 kategori: document.getElementById('inputKategori').value,
                 aktivitas: document.getElementById('inputAktivitas').value,
                 created_at: new Date().toISOString()
             };
 
             try {
+                // 1. UPDATE DATA MASTER ANGGOTA (Berdasarkan Nama/NIS)
+                // Menggunakan upsert: jika NIS/Nama ada, perbarui jenjang & kamar
+                await client.from('anggota').upsert({
+                    nama: payload.nama,
+                    nis: selectedMemberNIS || null,
+                    kamar: payload.kamar,
+                    jenjang: payload.jenjang
+                }, { onConflict: 'nama' });
+
+                // 2. UPDATE DATA MASTER BUKU (Berdasarkan Judul)
+                // Jika judul buku sudah ada, perbarui kategorinya
+                await client.from('biblio').upsert({
+                    judul: payload.judul_buku,
+                    kategori: payload.kategori
+                }, { onConflict: 'judul' });
+
+                // 3. SIMPAN LOG AKTIVITAS
                 const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
                 if (logErr) throw logErr;
 
+                // Tampilkan Modal Pencapaian
                 const a = await fetchAch(name);
                 if (a) {
                     const rc = getRank(a.rB); 
@@ -387,7 +412,7 @@
                 }
             } catch (err) { 
                 console.error(err);
-                alert("Sinkronisasi gagal!"); 
+                alert("Sinkronisasi & Pembaruan gagal!"); 
                 btn.disabled = false; 
                 btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
             }
