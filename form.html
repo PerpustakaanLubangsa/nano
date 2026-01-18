@@ -258,7 +258,6 @@
             bindSmartSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
             bindSmartSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
             
-            // Tambahkan listener untuk auto-submit
             const allInputs = document.querySelectorAll('#guestForm input, #guestForm select');
             allInputs.forEach(el => {
                 el.addEventListener('change', checkAutoSubmit);
@@ -271,12 +270,9 @@
         function checkAutoSubmit() {
             const form = document.getElementById('guestForm');
             const btn = document.getElementById('btnSubmit');
-            // Cek jika tombol sedang tidak loading dan form valid secara HTML5
             if (!btn.disabled && form.checkValidity()) {
-                // Pastikan dropdown tidak sedang terbuka (user sedang memilih)
                 const drops = document.querySelectorAll('.drop-box');
                 const anyDropOpen = Array.from(drops).some(d => d.style.display === 'block');
-                
                 if (!anyDropOpen) {
                     form.requestSubmit();
                 }
@@ -338,7 +334,7 @@
                 selectedMemberNIS = found.nis;
                 document.getElementById('inputKamar').value = found.kamar || '';
                 document.getElementById('inputJenjang').value = found.jenjang || '';
-                checkAutoSubmit(); // Cek lagi setelah autofill
+                checkAutoSubmit();
             }
             document.getElementById('dropNama').style.display = 'none';
         }
@@ -361,7 +357,7 @@
                 document.getElementById('inputKategori').value = data.kategori || '';
             }
             drop.style.display = 'none'; activeIdx = -1;
-            checkAutoSubmit(); // Trigger submit setelah memilih dari dropdown
+            checkAutoSubmit();
         }
 
         function getRank(rankStr) {
@@ -373,11 +369,18 @@
             return { n: 'Warrior', i: 'Warrior.jpg' };
         }
 
+        // FUNGSI UNTUK MENGAMBIL DATA PERINGKAT DARI data_pengunjung
         async function fetchAch(name) {
-            const { data } = await client.from('log_aktivitas').select('*');
-            if (!data) return null;
-            const my = data.filter(h => h.nama === name);
+            // Ambil data dari log_aktivitas untuk history personal
+            const { data: myHistory } = await client.from('log_aktivitas').select('*').eq('nama', name);
+            // Ambil data dari data_pengunjung untuk penentuan peringkat global
+            const { data: globalStats } = await client.from('data_pengunjung').select('*');
+            
+            if (!globalStats) return null;
+            
             const now = new Date();
+            const personal = myHistory || [];
+
             const ranker = (list, filter = () => true) => {
                 const filtered = list.filter(filter);
                 const s = filtered.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
@@ -385,12 +388,13 @@
                 const p = sorted.findIndex(x => x[0] === name);
                 return p !== -1 ? `#${p + 1}` : '-';
             };
+
             return {
-                b: my.filter(h => h.aktivitas === 'Baca').length,
-                p: my.filter(h => h.aktivitas === 'Pinjam').length,
-                l: [...new Set(my.map(h => h.judul_buku))].reverse().slice(0, 5),
-                rA: ranker(data),
-                rB: ranker(data, h => {
+                b: personal.filter(h => h.aktivitas === 'Baca').length,
+                p: personal.filter(h => h.aktivitas === 'Pinjam').length,
+                l: [...new Set(personal.map(h => h.judul_buku))].reverse().slice(0, 5),
+                rA: ranker(globalStats), // Peringkat sepanjang masa dari data_pengunjung
+                rB: ranker(globalStats, h => { // Peringkat bulan ini dari data_pengunjung
                     const d = new Date(h.created_at);
                     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 })
@@ -432,11 +436,9 @@
                 const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
                 if (logErr) throw logErr;
 
-                // TAMPILKAN MODAL RATING DULU
                 document.getElementById('ratingJudul').innerText = currentBuku;
                 document.getElementById('ratingModal').style.display = 'flex';
                 
-                // Siapkan data Rank di balik layar
                 const a = await fetchAch(name);
                 if (a) {
                     const rc = getRank(a.rB); 
@@ -471,11 +473,8 @@
             stars.forEach(star => {
                 star.onclick = async () => {
                     const val = parseInt(star.dataset.value);
-                    
-                    // Efek visual bintang terpilih
                     stars.forEach(s => s.classList.toggle('active', s.dataset.value <= val));
 
-                    // Update Rating di Tabel Biblio
                     const { data: buku } = await client.from('biblio').select('rating_total, rating_count').eq('judul', judulBuku).single();
                     if (buku) {
                         const t = (buku.rating_total || 0) + val;
@@ -487,7 +486,6 @@
                         }).eq('judul', judulBuku);
                     }
 
-                    // LANGSUNG PINDAH KE MODAL RANK
                     document.getElementById('ratingModal').style.display = 'none';
                     document.getElementById('customModal').style.display = 'flex';
                 };
