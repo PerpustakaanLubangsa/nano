@@ -37,18 +37,18 @@
         }
 
         .collapsed .sidebar-item { justify-content: center; padding: 0.75rem 0; gap: 0; }
-        .collapsed .sidebar-item span, .collapsed .nav-label, .collapsed #profileSection { display: none; }
+        .collapsed .sidebar-item span, .collapsed .nav-label, .collapsed #profileSection, .collapsed #netSpeed { display: none; }
 
         .nav-label { 
             font-size: 0.65rem; font-weight: 800; color: #475569; 
             margin: 1.5rem 0 0.5rem 1rem; text-transform: uppercase; letter-spacing: 0.15em; 
         }
 
-        /* Iframe styling: NO ROUNDED CORNERS */
+        /* Iframe styling */
         #contentFrame { 
             width: 100%; height: 100vh; border: none; 
             background-color: #f8fafc; 
-            border-radius: 0; /* Diubah menjadi kotak */
+            border-radius: 0; 
             box-shadow: -20px 0 25px -5px rgba(0, 0, 0, 0.4);
             transition: opacity 0.3s ease;
         }
@@ -110,7 +110,6 @@
         </div>
 
         <nav class="flex-1 overflow-y-auto custom-scrollbar px-5 py-8">
-            
             <div class="mb-10 flex flex-col items-center text-center px-4">
                 <div id="rankContainer" class="rank-box">
                     <i class="fa-solid fa-circle-notch fa-spin text-4xl text-slate-600"></i>
@@ -169,11 +168,24 @@
             </div>
 
             <div class="mt-12 mb-6">
-                <button onclick="logout()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-[9px] uppercase tracking-[0.2em] border border-rose-500/20">
+                <button onclick="showLogoutModal()" class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-[9px] uppercase tracking-[0.2em] border border-rose-500/20">
                     <i class="fa-solid fa-power-off"></i> <span id="logoutText">Keluar Sistem</span>
                 </button>
             </div>
         </nav>
+
+        <div id="netSpeed" class="px-6 py-2 border-t border-white/5 bg-black/40">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div id="speedDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span id="speedValue" class="text-[9px] font-mono font-bold text-emerald-500 uppercase">0 Mbps</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="netType" class="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">Wifi</span>
+                    <span id="pingValue" class="text-[8px] text-slate-500 font-mono italic">0ms</span>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <main class="flex-1 relative bg-[#020617]">
@@ -189,6 +201,21 @@
             <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">Belum Absen!</h2>
             <p id="alertMessage" class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed"></p>
             <button onclick="closeAlert()" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all">Saya Mengerti</button>
+        </div>
+    </div>
+
+    <div id="logoutModal" class="fixed inset-0 z-[999] hidden flex items-center justify-center p-6">
+        <div class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm"></div>
+        <div class="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl">
+            <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-door-open text-slate-600 text-3xl"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">Konfirmasi Keluar</h2>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Sesi kerja Anda akan berakhir. Pastikan semua data sudah tersimpan.</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeLogoutModal()" class="py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-200 transition-all">Batal</button>
+                <button onclick="confirmLogout()" class="py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/30">Ya, Keluar</button>
+            </div>
         </div>
     </div>
 
@@ -227,6 +254,37 @@
             }
         }
 
+        // Real-time Network Monitor
+        function updateNetworkInfo() {
+            const speedValue = document.getElementById('speedValue');
+            const speedDot = document.getElementById('speedDot');
+            const netType = document.getElementById('netType');
+            const pingValue = document.getElementById('pingValue');
+            
+            if (navigator.connection) {
+                const conn = navigator.connection;
+                const mbps = conn.downlink;
+                const rtt = conn.rtt; // Round Trip Time (Ping estimate)
+                const type = conn.effectiveType; // 4g, 3g, etc.
+
+                speedValue.textContent = mbps + " Mbps";
+                pingValue.textContent = rtt + "ms";
+                netType.textContent = type;
+                
+                if (mbps < 1 || rtt > 200) {
+                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse";
+                    speedValue.className = "text-[9px] font-mono font-bold text-rose-500 uppercase";
+                } else if (mbps < 5) {
+                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
+                    speedValue.className = "text-[9px] font-mono font-bold text-amber-500 uppercase";
+                } else {
+                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+                    speedValue.className = "text-[9px] font-mono font-bold text-emerald-500 uppercase";
+                }
+            }
+        }
+        setInterval(updateNetworkInfo, 2000);
+
         async function initDashboard() {
             if (!userName) return;
             document.getElementById('staffNameDisplay').textContent = userName;
@@ -239,6 +297,7 @@
 
             await calculateRanking();
             startCountdown();
+            updateNetworkInfo();
         }
 
         async function calculateRanking() {
@@ -352,8 +411,17 @@
             startCountdown();
         }
 
-        function logout() {
-            if(confirm('Keluar sistem?')) { sessionStorage.clear(); window.location.replace('login.html'); }
+        function showLogoutModal() {
+            document.getElementById('logoutModal').classList.remove('hidden');
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').classList.add('hidden');
+        }
+
+        function confirmLogout() {
+            sessionStorage.clear();
+            window.location.replace('login.html');
         }
 
         window.onload = initDashboard;
