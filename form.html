@@ -72,7 +72,7 @@
         }
         .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
 
-        #customModal {
+        #customModal, #ratingModal {
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
             display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px); padding: 20px;
         }
@@ -85,9 +85,35 @@
         .modal-footer { padding: 1rem 1.5rem; background: white; border-top: 1px solid #f1f5f9; }
 
         .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 12px; }
+
+        .star-rating { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .star-rating i { font-size: 2rem; cursor: pointer; color: #e2e8f0; transition: 0.2s; }
+        .star-rating i:hover, .star-rating i.active { color: #f59e0b; transform: scale(1.2); }
     </style>
 </head>
 <body onload="initData()">
+
+    <div id="ratingModal">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-600">
+                    <i class="fa-solid fa-book-open-reader text-2xl"></i>
+                </div>
+                <h3 class="font-extrabold text-slate-800 text-lg">BAGAIMANA BUKUNYA?</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Berikan rating untuk koleksi ini</p>
+                <p id="ratingJudul" class="text-sm font-bold text-sky-600 italic truncate"></p>
+                
+                <div class="star-rating" id="starContainer">
+                    <i class="fa-solid fa-star" data-value="1"></i>
+                    <i class="fa-solid fa-star" data-value="2"></i>
+                    <i class="fa-solid fa-star" data-value="3"></i>
+                    <i class="fa-solid fa-star" data-value="4"></i>
+                    <i class="fa-solid fa-star" data-value="5"></i>
+                </div>
+                <p class="text-[9px] text-slate-400 italic">Pilihan Anda membantu menentukan peringkat buku di OPAC</p>
+            </div>
+        </div>
+    </div>
 
     <div id="customModal">
         <div class="modal-content">
@@ -208,7 +234,6 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let dataAnggota = [], dataBiblio = [], activeIdx = -1, searchTimer;
-        // Variable untuk menyimpan referensi data asli saat dipilih dari pencarian
         let selectedMemberNIS = null;
 
         async function initData() {
@@ -232,7 +257,30 @@
 
             bindSmartSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
             bindSmartSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
+            
+            // Tambahkan listener untuk auto-submit
+            const allInputs = document.querySelectorAll('#guestForm input, #guestForm select');
+            allInputs.forEach(el => {
+                el.addEventListener('change', checkAutoSubmit);
+                el.addEventListener('input', checkAutoSubmit);
+            });
+
             statusIcon.classList.remove('fa-spin');
+        }
+
+        function checkAutoSubmit() {
+            const form = document.getElementById('guestForm');
+            const btn = document.getElementById('btnSubmit');
+            // Cek jika tombol sedang tidak loading dan form valid secara HTML5
+            if (!btn.disabled && form.checkValidity()) {
+                // Pastikan dropdown tidak sedang terbuka (user sedang memilih)
+                const drops = document.querySelectorAll('.drop-box');
+                const anyDropOpen = Array.from(drops).some(d => d.style.display === 'block');
+                
+                if (!anyDropOpen) {
+                    form.requestSubmit();
+                }
+            }
         }
 
         function bindSmartSearch(inputId, dropId, source, keys) {
@@ -287,9 +335,10 @@
             const found = source.find(s => s.nis?.toString() === val || s.nama?.toLowerCase() === val.toLowerCase());
             if (found) {
                 input.value = found.nama;
-                selectedMemberNIS = found.nis; // Simpan NIS asli untuk pembaruan
+                selectedMemberNIS = found.nis;
                 document.getElementById('inputKamar').value = found.kamar || '';
                 document.getElementById('inputJenjang').value = found.jenjang || '';
+                checkAutoSubmit(); // Cek lagi setelah autofill
             }
             document.getElementById('dropNama').style.display = 'none';
         }
@@ -304,7 +353,7 @@
             const data = JSON.parse(drop.dataset.current)[idx];
             if (inputId === 'inputNama') {
                 document.getElementById('inputNama').value = data.nama;
-                selectedMemberNIS = data.nis; // Simpan NIS asli
+                selectedMemberNIS = data.nis;
                 document.getElementById('inputKamar').value = data.kamar || '';
                 document.getElementById('inputJenjang').value = data.jenjang || '';
             } else {
@@ -312,6 +361,7 @@
                 document.getElementById('inputKategori').value = data.kategori || '';
             }
             drop.style.display = 'none'; activeIdx = -1;
+            checkAutoSubmit(); // Trigger submit setelah memilih dari dropdown
         }
 
         function getRank(rankStr) {
@@ -324,12 +374,10 @@
         }
 
         async function fetchAch(name) {
-            const { data } = await client.from('data_pengunjung').select('*');
+            const { data } = await client.from('log_aktivitas').select('*');
             if (!data) return null;
-            
             const my = data.filter(h => h.nama === name);
             const now = new Date();
-            
             const ranker = (list, filter = () => true) => {
                 const filtered = list.filter(filter);
                 const s = filtered.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
@@ -337,7 +385,6 @@
                 const p = sorted.findIndex(x => x[0] === name);
                 return p !== -1 ? `#${p + 1}` : '-';
             };
-
             return {
                 b: my.filter(h => h.aktivitas === 'Baca').length,
                 p: my.filter(h => h.aktivitas === 'Pinjam').length,
@@ -370,8 +417,6 @@
             };
 
             try {
-                // 1. UPDATE DATA MASTER ANGGOTA (Berdasarkan Nama/NIS)
-                // Menggunakan upsert: jika NIS/Nama ada, perbarui jenjang & kamar
                 await client.from('anggota').upsert({
                     nama: payload.nama,
                     nis: selectedMemberNIS || null,
@@ -379,22 +424,22 @@
                     jenjang: payload.jenjang
                 }, { onConflict: 'nama' });
 
-                // 2. UPDATE DATA MASTER BUKU (Berdasarkan Judul)
-                // Jika judul buku sudah ada, perbarui kategorinya
                 await client.from('biblio').upsert({
                     judul: payload.judul_buku,
                     kategori: payload.kategori
                 }, { onConflict: 'judul' });
 
-                // 3. SIMPAN LOG AKTIVITAS
                 const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
                 if (logErr) throw logErr;
 
-                // Tampilkan Modal Pencapaian
+                // TAMPILKAN MODAL RATING DULU
+                document.getElementById('ratingJudul').innerText = currentBuku;
+                document.getElementById('ratingModal').style.display = 'flex';
+                
+                // Siapkan data Rank di balik layar
                 const a = await fetchAch(name);
                 if (a) {
                     const rc = getRank(a.rB); 
-                    
                     document.getElementById('rankImg').src = rc.i;
                     document.getElementById('rankLabel').innerText = rc.n;
                     document.getElementById('profNama').innerText = name;
@@ -407,17 +452,49 @@
                         `<div class="text-[11px] text-slate-600 truncate bg-blue-50/50 p-2 rounded-lg border border-blue-100"><i class="fa-solid fa-circle-check text-sky-500 mr-2"></i>${b}</div>`
                     ).join('') || '<div class="text-[10px] text-slate-400">Belum ada riwayat</div>';
                     
-                    document.getElementById('customModal').style.display = 'flex';
-                    document.getElementById('modalAction').onclick = () => location.reload();
+                    setupRatingStars(payload.judul_buku);
                 }
+
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
+
             } catch (err) { 
                 console.error(err);
-                alert("Sinkronisasi & Pembaruan gagal!"); 
+                alert("Sinkronisasi gagal!"); 
                 btn.disabled = false; 
                 btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
             }
         };
 
+        function setupRatingStars(judulBuku) {
+            const stars = document.querySelectorAll('#starContainer i');
+            stars.forEach(star => {
+                star.onclick = async () => {
+                    const val = parseInt(star.dataset.value);
+                    
+                    // Efek visual bintang terpilih
+                    stars.forEach(s => s.classList.toggle('active', s.dataset.value <= val));
+
+                    // Update Rating di Tabel Biblio
+                    const { data: buku } = await client.from('biblio').select('rating_total, rating_count').eq('judul', judulBuku).single();
+                    if (buku) {
+                        const t = (buku.rating_total || 0) + val;
+                        const c = (buku.rating_count || 0) + 1;
+                        await client.from('biblio').update({
+                            rating_total: t,
+                            rating_count: c,
+                            rating_avg: t / c
+                        }).eq('judul', judulBuku);
+                    }
+
+                    // LANGSUNG PINDAH KE MODAL RANK
+                    document.getElementById('ratingModal').style.display = 'none';
+                    document.getElementById('customModal').style.display = 'flex';
+                };
+            });
+        }
+
+        document.getElementById('modalAction').onclick = () => location.reload();
         window.onclick = (e) => { if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); };
     </script>
 </body>
