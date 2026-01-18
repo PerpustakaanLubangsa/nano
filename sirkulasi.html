@@ -64,9 +64,18 @@
         <h4 class="text-sm font-extrabold mb-2 text-slate-800">Konfirmasi</h4>
         <p id="modal-text" class="text-[11px] text-slate-500 mb-6"></p>
         <div class="flex gap-2">
-            <button onclick="closeModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button onclick="closeModal('modal-confirm')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
             <button id="modal-confirm-btn" class="flex-1 py-3 btn-snow-primary rounded-xl font-bold text-[10px]">YA, PROSES</button>
         </div>
+    </div>
+</div>
+
+<div id="modal-alert" class="modal-container">
+    <div class="glass w-full max-w-[280px] p-7 text-center border-t-4 border-rose-500">
+        <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl"><i class="fas fa-exclamation-triangle"></i></div>
+        <h4 id="alert-title" class="text-xs font-black mb-2 text-slate-800 uppercase tracking-wider">Perhatian</h4>
+        <p id="alert-text" class="text-[10px] font-bold text-slate-500 mb-6 leading-relaxed"></p>
+        <button onclick="closeModal('modal-alert')" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-[10px]">MENGERTI</button>
     </div>
 </div>
 
@@ -75,7 +84,7 @@
         <h4 class="text-sm font-extrabold mb-4 text-center">Jatuh Tempo Baru</h4>
         <input type="date" id="customDatePicker" class="w-full p-3 rounded-xl outline-none text-xs font-bold mb-4">
         <div class="flex gap-2">
-            <button onclick="closeDateModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button onclick="closeModal('modal-date')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
             <button id="saveDateBtn" class="flex-1 py-3 btn-snow-primary rounded-xl font-bold text-[10px]">SIMPAN</button>
         </div>
     </div>
@@ -174,7 +183,15 @@
     let mainResults = [], bukuResults = [];
 
     window.onload = () => document.getElementById("inputMain").focus();
+    
     function showToast(m) { const t = document.createElement('div'); t.className = 'toast-msg shadow-2xl'; t.textContent = m; document.getElementById('toast-container').innerHTML = ''; document.getElementById('toast-container').appendChild(t); setTimeout(() => t.remove(), 2500); }
+    
+    function showAlert(title, text) {
+        document.getElementById("alert-title").textContent = title;
+        document.getElementById("alert-text").textContent = text;
+        document.getElementById("modal-alert").style.display = 'flex';
+    }
+
     function debounce(func, timeout = 400) { return (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => func.apply(this, args), timeout); }; }
     function showLoading(container, text) { container.innerHTML = `<div class="loading-item"><div class="spinner"></div><span>MENCARI "${text.toUpperCase()}"...</span></div>`; container.classList.remove('hidden'); }
 
@@ -229,12 +246,10 @@
     inB.addEventListener('input', () => { const q = inB.value.trim(); if(q.length < 1) return lsB.classList.add('hidden'); showLoading(lsB, q); processBukuSearch(q); });
 
     const processBukuSearch = debounce(async (q) => {
-        // SYSTEM: Jalankan pembersihan reservasi expired sebelum menampilkan data
         await cleanExpiredReservations();
 
         const { data: bukuData } = await client.from('cari_buku_view').select('*').or(`judul.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).limit(20);
         const kodes = bukuData?.map(b => b.kode_eksemplar) || [];
-        // Ambil reservasi yang masih valid saja
         const { data: resData } = await client.from('reservasi').select('kode_eksemplar').in('kode_eksemplar', kodes).in('status', ['SIAP', 'MENUNGGU']);
         const resSet = new Set(resData?.map(r => r.kode_eksemplar));
 
@@ -266,7 +281,6 @@
     async function handleSimpan() {
         const btn = document.getElementById("btnProses"); btn.disabled = true;
 
-        // SYSTEM: Bersihkan lagi sebelum final simpan untuk memastikan integritas data
         await cleanExpiredReservations();
 
         const { data: checkStok } = await client.from('sirkulasi').select('id').eq('kode_eksemplar', selectedBuku.kode).eq('status', 'DIPINJAM').maybeSingle();
@@ -275,10 +289,9 @@
         const { data: listReservasi } = await client.from('reservasi').select('*').eq('kode_eksemplar', selectedBuku.kode).in('status', ['SIAP', 'MENUNGGU']);
 
         if (listReservasi && listReservasi.length > 0) {
-            // Karena sudah di-clean di atas, reservasi yang ada di sini pasti masih valid (siap) atau menunggu
             const resAktif = listReservasi[0]; 
             if (selectedAnggota.nis !== resAktif.nis) {
-                alert(`⛔ AKSES DITOLAK!\n\nBuku ini telah dipesan oleh siswa lain (NIS: ${resAktif.nis}).\n\nSiswa lain tidak boleh meminjam selama buku dalam status reservasi.`);
+                showAlert("AKSES DITOLAK", `Buku ini telah dipesan oleh siswa lain (NIS: ${resAktif.nis}). Peminjaman tidak diizinkan.`);
                 btn.disabled = false; return;
             } else {
                 await client.from('reservasi').delete().eq('id', resAktif.id);
@@ -296,7 +309,7 @@
         }]).select();
         
         if(!error) { currentLoanId = data[0].id; showToast("Berhasil Disimpan"); showSuccessCard(selectedAnggota.nama, selectedBuku.judul, selectedBuku.kode, tk, false, selectedBuku.penulis); }
-        else { alert("Error: " + error.message); btn.disabled = false; }
+        else { showAlert("ERROR", error.message); btn.disabled = false; }
     }
 
     function showSuccessCard(nama, judul, kode, tglKembali, isActive, penulis) {
@@ -323,7 +336,7 @@
     function openConfirm(txt, cb) {
         const modal = document.getElementById("modal-confirm"); const btn = document.getElementById("modal-confirm-btn");
         document.getElementById("modal-text").textContent = txt; modal.style.display = 'flex'; setTimeout(() => btn.focus(), 50);
-        btn.onclick = async () => { btn.disabled = true; await cb(); btn.disabled = false; closeModal(); };
+        btn.onclick = async () => { btn.disabled = true; await cb(); btn.disabled = false; closeModal('modal-confirm'); };
     }
 
     function openDateModal() {
@@ -332,7 +345,7 @@
         document.getElementById("saveDateBtn").onclick = async () => {
             const nd = document.getElementById("customDatePicker").value; if(!nd) return;
             const { error } = await client.from('sirkulasi').update({ tgl_kembali: nd }).eq('id', currentLoanId);
-            if(!error) { showToast("Tanggal Diperbarui"); renderDenda(nd); closeDateModal(); }
+            if(!error) { showToast("Tanggal Diperbarui"); renderDenda(nd); closeModal('modal-date'); }
         };
     }
 
@@ -347,8 +360,7 @@
         if(!error) { showToast("Memproses.."); setTimeout(resetKeAwal, 800); }
     }
 
-    function closeModal() { document.getElementById("modal-confirm").style.display = 'none'; }
-    function closeDateModal() { document.getElementById("modal-date").style.display = 'none'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function resetKeAwal() { location.reload(); }
 
     // Keyboard Navigation & Enter Handling
@@ -383,9 +395,12 @@
         if(items[currentFocus]) { items[currentFocus].classList.add('selected'); items[currentFocus].scrollIntoView({block:'nearest'}); }
     }
 
-    // Modal Close on Esc
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeModal(); closeDateModal(); }
+        if (e.key === 'Escape') { 
+            closeModal('modal-confirm'); 
+            closeModal('modal-date'); 
+            closeModal('modal-alert'); 
+        }
         const card = document.getElementById('success-card');
         if (!card.classList.contains('hidden') && !["INPUT", "SELECT"].includes(document.activeElement.tagName)) {
             if (e.key === '1') document.getElementById('btnPerpanjang').click();
