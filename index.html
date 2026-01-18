@@ -31,10 +31,15 @@
         .search-input-group input { flex: 1; padding: 12px 20px; border: none; outline: none; font-size: 16px; font-weight: 500; }
 
         .main-content { flex: 1; padding-top: 20px; padding-bottom: 80px; position: relative; z-index: 10; }
-        .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; }
+        .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; position: relative; }
         .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 14px; margin-bottom: 12px; background: #f8fafc; }
         
+        /* Bintang Styling */
+        .stars-container { display: flex; gap: 2px; color: #fbbf24; margin-bottom: 4px; }
+        .star-sm { font-size: 10px; }
+        .star-md { font-size: 14px; }
+
         #pagination { display: flex; justify-content: center; gap: 8px; margin-top: 50px; }
         .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 700; color: #64748b; }
         .page-link.active { background: var(--accent) !important; color: white !important; }
@@ -103,6 +108,7 @@
             <div class="w-full md:w-[65%] p-8 overflow-y-auto">
                 <div class="flex justify-end mb-2"><button onclick="closeModal()"><i class="fa-solid fa-xmark text-xl text-slate-300 hover:text-slate-500"></i></button></div>
                 <div class="mb-6">
+                    <div id="modalStars" class="stars-container mb-2"></div>
                     <h2 id="modalJudul" class="text-2xl font-extrabold text-slate-800 leading-tight mb-2 uppercase"></h2>
                     <p id="modalPenulis" class="text-blue-600 font-bold text-sm uppercase tracking-wide"></p>
                 </div>
@@ -188,12 +194,29 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
+        function generateStars(ratingValue = 0, size = 'sm') {
+            const count = Math.round(ratingValue) || 0;
+            let starsHtml = `<div class="stars-container">`;
+            for (let i = 0; i < 5; i++) {
+                if (i < count) {
+                    starsHtml += `<i class="fa-solid fa-star star-${size}"></i>`;
+                } else {
+                    starsHtml += `<i class="fa-regular fa-star star-${size} opacity-30"></i>`;
+                }
+            }
+            starsHtml += `</div>`;
+            return starsHtml;
+        }
+
         async function fetchPage(page, query = '') {
             document.getElementById('progressBar').style.width = '40%';
             try {
-                let bibQuery = client.from('biblio').select('id, judul, penulis, sampul_url, updated_at', { count: 'exact' });
+                let bibQuery = client.from('biblio').select('id, judul, penulis, sampul_url, rating_avg, updated_at', { count: 'exact' });
                 if (query) bibQuery = bibQuery.or(`judul.ilike.%${query}%,penulis.ilike.%${query}%`);
-                const { data, count, error } = await bibQuery.order('updated_at', { ascending: false }).range((page-1)*perPage, page*perPage-1);
+                const { data, count, error } = await bibQuery
+                    .order('rating_avg', { ascending: false, nullsFirst: false })
+                    .order('updated_at', { ascending: false })
+                    .range((page-1)*perPage, page*perPage-1);
                 totalRecords = count; currentPage = page;
                 renderUI(data); renderPagination();
                 document.getElementById('progressBar').style.width = '100%';
@@ -205,9 +228,11 @@
             const grid = document.getElementById('catalogGrid'); grid.innerHTML = '';
             document.getElementById('countVal').innerText = totalRecords;
             data.forEach(item => {
+                const stars = generateStars(item.rating_avg, 'sm'); 
                 grid.innerHTML += `
                 <div class="book-card" onclick="openModal('${item.id}')">
                     <img src="${item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover'}" class="book-img" loading="lazy">
+                    ${stars}
                     <h3 class="font-bold text-[11px] leading-tight line-clamp-2 uppercase mb-1">${item.judul}</h3>
                     <p class="text-[9px] text-slate-400 font-bold truncate">${item.penulis || 'ANONIM'}</p>
                 </div>`;
@@ -221,6 +246,7 @@
                 const borrowed = circData ? circData.map(c => c.kode_eksemplar) : [];
 
                 document.getElementById('modalCover').src = item.sampul_url || '';
+                document.getElementById('modalStars').innerHTML = generateStars(item.rating_avg, 'md');
                 document.getElementById('modalJudul').innerText = item.judul;
                 document.getElementById('modalPenulis').innerText = item.penulis || 'ANONIM';
                 document.getElementById('modalIsbn').innerText = item.isbn_issn || '-';
@@ -253,23 +279,18 @@
             const inputArea = document.getElementById('reservationInputArea');
             const statusArea = document.getElementById('reservationStatusArea');
             const btnSubmit = document.getElementById('btnSubmitBooking');
-            
             document.getElementById('bookingModal').classList.replace('hidden', 'flex');
-            
             try {
                 const { data: circ } = await client.from('sirkulasi').select('nama_anggota, tgl_kembali').eq('kode_eksemplar', kode).eq('status', 'DIPINJAM').maybeSingle();
                 const d = new Date(circ?.tgl_kembali);
                 document.getElementById('curPeminjamNama').innerText = circ?.nama_anggota || '-';
                 document.getElementById('curPeminjamTempo').innerText = circ ? d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'short'}) : '-';
                 document.getElementById('ruleDayText').innerText = circ ? d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'short'}) : 'Segera';
-
-                // CEK RESERVASI: Gunakan kolom nama_pemesan (standard baru) atau nama_peminjam (standard lama)
                 const { data: res } = await client.from('reservasi').select('*').eq('kode_eksemplar', kode).maybeSingle();
-                
                 if (res) {
                     inputArea.classList.add('hidden');
                     statusArea.classList.remove('hidden');
-                    document.getElementById('bookedByText').innerText = "Dipesan oleh: " + (res.nama_pemesan || res.nama_peminjam || "Anggota");
+                    document.getElementById('bookedByText').innerText = "Dipesan oleh: " + (res.nama_pemesan || "Anggota");
                     btnSubmit.classList.add('hidden');
                 } else {
                     inputArea.classList.remove('hidden');
@@ -278,12 +299,10 @@
                     btnSubmit.disabled = false;
                     btnSubmit.innerHTML = 'Pesan Buku Ini';
                 }
-                
                 document.getElementById('resNisVal').value = '';
                 document.getElementById('peminjamNis').value = '';
                 document.getElementById('infoAnggotaBox').classList.add('hidden');
                 window.selectedBookingKode = kode;
-
             } catch (e) { showToast('Gagal memuat data antrean'); }
         }
 
@@ -314,27 +333,19 @@
             const btn = document.getElementById('btnSubmitBooking');
             const nis = document.getElementById('resNisVal').value;
             const nama = document.getElementById('resNama').innerText;
-
             if (!nis) return showToast('Pilih identitas Anda!', 'error');
-
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
-
-            // Hitung Batas Pesan (H+2)
             const dt = new Date();
             dt.setDate(dt.getDate() + 2);
             const batasPesan = dt.toISOString().split('T')[0];
-
             try {
-                // SINKRONISASI: Kita kirim ke kedua kemungkinan nama kolom agar tidak error null
                 const { error } = await client.from('reservasi').insert([{ 
                     kode_eksemplar: window.selectedBookingKode, 
-                    nama_pemesan: nama,      // Kolom baru
-                    nama_peminjam: nama,     // Kolom lama (untuk menghindari error null value)
+                    nama_pemesan: nama, 
                     nis: nis,
                     batas_pesan: batasPesan
                 }]);
-                
                 if (error) throw error;
                 showToast('Pesanan berhasil terdaftar!');
                 setTimeout(() => openBookingModal(window.selectedBookingKode), 1000);
