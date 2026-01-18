@@ -16,116 +16,46 @@
         
         body { background-color: var(--bg-body); color: #1e293b; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* --- HERO SECTION --- */
         .hero-section { 
-            height: 60vh; 
-            min-height: 400px;
-            width: 100%; 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 58, 138, 0.85)), 
-                        url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=2000'); 
-            background-size: cover; 
-            background-position: center;
-            background-attachment: fixed;
-            /* Membuat lengkungan bawah yang halus */
-            margin-bottom: 60px; 
+            height: 60vh; min-height: 400px; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; 
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 58, 138, 0.85)), url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=2000'); 
+            background-size: cover; background-position: center; background-attachment: fixed; margin-bottom: 60px; 
         }
 
-        .hero-section::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 80px;
-            background: var(--bg-body);
-            clip-path: ellipse(60% 100% at 50% 100%);
-        }
+        .hero-section::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: var(--bg-body); clip-path: ellipse(60% 100% at 50% 100%); }
+        .hero-title { font-size: clamp(2.2rem, 7vw, 4rem); font-weight: 800; color: white; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.5rem; text-shadow: 0 10px 20px rgba(0,0,0,0.2); }
 
-        .hero-title { 
-            font-size: clamp(2.2rem, 7vw, 4rem); 
-            font-weight: 800; 
-            color: white; 
-            letter-spacing: -0.04em; 
-            line-height: 1.1; 
-            margin-bottom: 1.5rem; 
-            text-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
+        .search-container { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; z-index: 100; }
+        .search-input-group { background: white; padding: 8px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); display: flex; align-items: center; border: 1px solid #e2e8f0; transition: all 0.3s ease; }
+        .search-input-group:focus-within { transform: translateY(-2px) scale(1.01); border-color: var(--accent); }
+        .search-input-group input { flex: 1; padding: 12px 20px; border: none; outline: none; font-size: 16px; font-weight: 500; }
 
-        .search-container { 
-            position: absolute; 
-            bottom: -30px; /* Setengah di luar hero */
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 90%; 
-            max-width: 800px; 
-            z-index: 100; 
-        }
-
-        .search-input-group { 
-            background: white; 
-            padding: 8px; 
-            border-radius: 24px; 
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); 
-            display: flex; 
-            align-items: center; 
-            border: 1px solid #e2e8f0; 
-            transition: all 0.3s ease;
-        }
-
-        .search-input-group:focus-within {
-            transform: translateY(-2px) scale(1.01);
-            box-shadow: 0 25px 50px rgba(37, 99, 235, 0.15);
-            border-color: var(--accent);
-        }
-
-        .search-input-group input { 
-            flex: 1; 
-            padding: 12px 20px; 
-            border: none; 
-            outline: none; 
-            font-size: 16px; 
-            color: #1e293b; 
-            font-weight: 500;
-        }
-
-        /* --- CONTENT --- */
-        .main-content { 
-            flex: 1; 
-            padding-top: 20px; /* Padding dikurangi karena sudah ada margin-bottom di hero */
-            padding-bottom: 80px; 
-            position: relative; 
-            z-index: 10; 
-        }
-
-        .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; position: relative; }
+        .main-content { flex: 1; padding-top: 20px; padding-bottom: 80px; position: relative; z-index: 10; }
+        .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; }
         .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 14px; margin-bottom: 12px; background: #f8fafc; }
         
         #pagination { display: flex; justify-content: center; gap: 8px; margin-top: 50px; }
-        .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; color: #64748b; font-weight: 700; border: 1px solid #e2e8f0; cursor: pointer; }
-        .page-link.active { background: var(--accent) !important; color: white !important; border-color: var(--accent) !important; pointer-events: none; }
+        .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 700; color: #64748b; }
+        .page-link.active { background: var(--accent) !important; color: white !important; }
         
-        footer { background: #0f172a; color: #94a3b8; padding: 50px 0; text-align: center; margin-top: auto; border-top: 1px solid #1e293b; }
-        .footer-nav { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .footer-btn { padding: 8px 16px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: 1px solid #1e293b; color: #64748b; text-decoration: none; transition: 0.3s; }
-        .footer-btn:hover:not(.btn-disabled) { background: #1e293b; color: white; border-color: #3b82f6; }
-        .btn-disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(1); border-style: dashed !important; }
-        
+        footer { background: #0f172a; color: #94a3b8; padding: 50px 0; text-align: center; }
+        .footer-btn { padding: 8px 16px; border-radius: 10px; font-size: 10px; font-weight: 700; border: 1px solid #1e293b; color: #64748b; text-decoration: none; }
+        .btn-disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
+
         #progressBar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0%; transition: width 0.3s; z-index: 1000; }
         
-        .modal-scroll-area::-webkit-scrollbar { width: 4px; }
-        .modal-scroll-area::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .info-table td { padding: 6px 0; font-size: 12px; vertical-align: top; border-bottom: 1px solid #f8fafc; }
-        .info-label { color: #94a3b8; font-weight: 600; width: 120px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-value { color: #1e293b; font-weight: 700; }
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; font-weight: 700; z-index: 1000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        .suggestion-item:hover { background-color: #f1f5f9; cursor: pointer; }
+        .info-label { color: #94a3b8; font-weight: 600; width: 120px; text-transform: uppercase; font-size: 11px; }
+        .info-value { color: #1e293b; font-weight: 700; font-size: 12px; }
     </style>
 </head>
 <body>
     <div id="progressBar"></div>
+    <div id="toast"><i class="fa-solid fa-circle-check text-emerald-400"></i> <span id="toastMsg">Berhasil</span></div>
     
     <header class="hero-section">
         <div class="text-center px-4 relative z-20 -translate-y-4">
@@ -133,18 +63,14 @@
                 <span class="text-blue-100 text-[10px] font-bold uppercase tracking-[0.2em]">Pusat Perpustakaan Digital</span>
             </div>
             <h1 class="hero-title">Perpustakaan <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-300">Lubangsa</span></h1>
-            <p class="text-white/70 max-w-xl mx-auto text-sm md:text-base font-medium">
-                Temukan ribuan koleksi buku dengan akses cepat dan mudah.
-            </p>
+            <p class="text-white/70 max-w-xl mx-auto text-sm font-medium">Temukan ribuan koleksi buku dengan akses cepat dan mudah.</p>
         </div>
         
         <div class="search-container">
             <div class="search-input-group">
                 <div class="pl-4 text-blue-500"><i class="fa-solid fa-magnifying-glass"></i></div>
                 <input type="text" id="searchInput" placeholder="Cari judul buku atau nama penulis...">
-                <button onclick="fetchPage(1, document.getElementById('searchInput').value)" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-md active:scale-95">
-                    CARI
-                </button>
+                <button onclick="fetchPage(1, document.getElementById('searchInput').value)" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-md active:scale-95">CARI</button>
             </div>
         </div>
     </header>
@@ -155,16 +81,14 @@
                 <h2 class="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">Katalog Koleksi</h2>
                 <div class="h-1 w-8 bg-blue-500 rounded-full"></div>
             </div>
-            <div class="text-[10px] font-bold text-slate-400 uppercase">
-                Hasil: <span id="countVal" class="text-blue-600 font-black">0</span> Item
-            </div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase">Hasil: <span id="countVal" class="text-blue-600 font-black">0</span> Item</div>
         </div>
         <div id="catalogGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
         <div id="pagination"></div>
     </main>
 
     <footer>
-        <div class="footer-nav">
+        <div class="flex justify-center gap-4">
             <a href="dual-page.html" id="btnDualPage" class="footer-btn">Dual Page</a>
             <a href="login.html" class="footer-btn">Admin Login</a>
         </div>
@@ -176,31 +100,75 @@
             <div class="w-full md:w-[35%] bg-slate-50 p-8 flex items-center justify-center border-r border-slate-100">
                 <img id="modalCover" class="w-full max-w-[240px] rounded-xl shadow-2xl object-cover aspect-[3/4.5]">
             </div>
-            <div class="w-full md:w-[65%] p-8 overflow-y-auto modal-scroll-area">
-                <div class="flex justify-end mb-2">
-                    <button onclick="closeModal()" class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-                        <i class="fa-solid fa-xmark text-xl text-slate-400"></i>
-                    </button>
-                </div>
+            <div class="w-full md:w-[65%] p-8 overflow-y-auto">
+                <div class="flex justify-end mb-2"><button onclick="closeModal()"><i class="fa-solid fa-xmark text-xl text-slate-300 hover:text-slate-500"></i></button></div>
                 <div class="mb-6">
                     <h2 id="modalJudul" class="text-2xl font-extrabold text-slate-800 leading-tight mb-2 uppercase"></h2>
                     <p id="modalPenulis" class="text-blue-600 font-bold text-sm uppercase tracking-wide"></p>
                 </div>
-                <div class="bg-slate-50 rounded-2xl p-6 mb-6 border border-slate-100">
-                    <table class="w-full info-table">
-                        <tr><td class="info-label">ISBN / ISSN</td><td id="modalIsbn" class="info-value">-</td></tr>
-                        <tr><td class="info-label">Penerbit</td><td id="modalPenerbit" class="info-value">-</td></tr>
-                        <tr><td class="info-label">Tahun Terbit</td><td id="modalTahun" class="info-value">-</td></tr>
-                        <tr><td class="info-label">Lokasi Rak</td><td id="modalRak" class="info-value text-blue-600 font-black">-</td></tr>
+                <div class="bg-slate-50 rounded-2xl p-6 mb-6">
+                    <table class="w-full">
+                        <tr><td class="info-label py-1">ISBN / ISSN</td><td id="modalIsbn" class="info-value"></td></tr>
+                        <tr><td class="info-label py-1">Penerbit</td><td id="modalPenerbit" class="info-value"></td></tr>
+                        <tr><td class="info-label py-1">Tahun</td><td id="modalTahun" class="info-value"></td></tr>
+                        <tr><td class="info-label py-1">Lokasi Rak</td><td id="modalRak" class="info-value text-blue-600"></td></tr>
                     </table>
                 </div>
-                <div class="mb-8">
-                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Sinopsis</h4>
-                    <div id="modalAbstrak" class="text-sm text-slate-600 leading-relaxed border-l-4 border-blue-500 pl-4 bg-blue-50/30 py-3 rounded-lg"></div>
-                </div>
-                <div>
-                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Status</h4>
+                <div class="mb-6">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase mb-2">Status Koleksi</h4>
                     <div id="modalEksList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bookingModal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden">
+            <div class="bg-blue-600 p-6 text-white text-center">
+                <h3 class="text-xl font-extrabold">Reservasi Antrean</h3>
+                <p class="text-blue-100 text-[10px] uppercase font-bold mt-1">Sistem Perpustakaan Lubangsa</p>
+            </div>
+            
+            <div class="p-8 space-y-5">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                        <h4 class="text-[9px] font-black text-rose-400 uppercase mb-1">Peminjam Saat Ini</h4>
+                        <p id="curPeminjamNama" class="text-[11px] font-bold text-slate-800 truncate">-</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                        <h4 class="text-[9px] font-black text-blue-400 uppercase mb-1">Tempo Kembali</h4>
+                        <p id="curPeminjamTempo" class="text-[11px] font-bold text-slate-800">-</p>
+                    </div>
+                </div>
+
+                <div id="reservationInputArea" class="space-y-4">
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
+                        <p class="text-[10px] text-amber-900 leading-relaxed">
+                            Buku kembali pada <b id="ruleDayText">...</b>. Pesanan berlaku 48 jam (2 hari) setelah buku tersedia.
+                        </p>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="peminjamNis" autocomplete="off" onkeyup="searchAnggotaSuggestion(this.value)" placeholder="Ketik NIS atau Nama Anda..." class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none font-semibold text-sm">
+                        <div id="suggestionBox" class="absolute z-[120] top-full left-0 right-0 bg-white border border-slate-200 rounded-xl mt-1 shadow-xl max-h-48 overflow-y-auto hidden"></div>
+                    </div>
+                    <div id="infoAnggotaBox" class="hidden bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300">
+                        <p id="resNama" class="text-xs font-bold text-slate-800"></p>
+                        <p id="resKamar" class="text-[10px] text-blue-600 font-bold"></p>
+                        <input type="hidden" id="resNisVal">
+                    </div>
+                </div>
+
+                <div id="reservationStatusArea" class="hidden bg-blue-50 p-6 rounded-[2rem] border border-blue-100 text-center">
+                    <div class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                    <h4 class="text-xs font-black text-blue-800 uppercase mb-1">Buku Sudah Dipesan</h4>
+                    <p id="bookedByText" class="text-[11px] font-bold text-blue-600"></p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeBookingModal()" class="flex-1 py-4 text-slate-400 font-bold text-xs uppercase hover:text-slate-600 transition-colors">Tutup</button>
+                    <button id="btnSubmitBooking" onclick="submitBooking()" class="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/30 active:scale-95 transition-all">Pesan Buku Ini</button>
                 </div>
             </div>
         </div>
@@ -212,39 +180,29 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         let totalRecords = 0, perPage = 24, currentPage = 1;
 
-        function checkStatus() {
-            const btn = document.getElementById('btnDualPage');
-            if (window.self !== window.top) {
-                btn.classList.add('btn-disabled');
-                btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Dual Page Aktif';
-                btn.onclick = (e) => e.preventDefault();
-            }
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
         async function fetchPage(page, query = '') {
-            const pb = document.getElementById('progressBar'); 
-            pb.style.width = '40%';
+            document.getElementById('progressBar').style.width = '40%';
             try {
                 let bibQuery = client.from('biblio').select('id, judul, penulis, sampul_url, updated_at', { count: 'exact' });
-                if (query) { bibQuery = bibQuery.or(`judul.ilike.%${query}%,penulis.ilike.%${query}%`); }
-                
-                const { data, count, error } = await bibQuery
-                    .order('updated_at', { ascending: false })
-                    .range((page-1)*perPage, page*perPage-1);
-                
-                if (error) throw error;
-                totalRecords = count; 
-                currentPage = page;
-                renderUI(data); 
-                renderPagination();
-                pb.style.width = '100%'; 
-                setTimeout(() => pb.style.width = '0%', 300);
-            } catch (e) { pb.style.width = '0%'; console.error(e); }
+                if (query) bibQuery = bibQuery.or(`judul.ilike.%${query}%,penulis.ilike.%${query}%`);
+                const { data, count, error } = await bibQuery.order('updated_at', { ascending: false }).range((page-1)*perPage, page*perPage-1);
+                totalRecords = count; currentPage = page;
+                renderUI(data); renderPagination();
+                document.getElementById('progressBar').style.width = '100%';
+                setTimeout(() => document.getElementById('progressBar').style.width = '0%', 300);
+            } catch (e) { document.getElementById('progressBar').style.width = '0%'; }
         }
 
         function renderUI(data) {
-            const grid = document.getElementById('catalogGrid'); 
-            grid.innerHTML = '';
+            const grid = document.getElementById('catalogGrid'); grid.innerHTML = '';
             document.getElementById('countVal').innerText = totalRecords;
             data.forEach(item => {
                 grid.innerHTML += `
@@ -257,62 +215,156 @@
         }
 
         async function openModal(id) {
-            const pb = document.getElementById('progressBar'); 
-            pb.style.width = '30%';
             try {
-                const { data: item, error } = await client.from('biblio').select('*, ekslempar(*)').eq('id', id).single();
-                if (error) throw error;
+                const { data: item } = await client.from('biblio').select('*, ekslempar(*)').eq('id', id).single();
                 const { data: circData } = await client.from('sirkulasi').select('kode_eksemplar').eq('status', 'DIPINJAM');
                 const borrowed = circData ? circData.map(c => c.kode_eksemplar) : [];
 
-                document.getElementById('modalCover').src = item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover';
+                document.getElementById('modalCover').src = item.sampul_url || '';
                 document.getElementById('modalJudul').innerText = item.judul;
                 document.getElementById('modalPenulis').innerText = item.penulis || 'ANONIM';
                 document.getElementById('modalIsbn').innerText = item.isbn_issn || '-';
                 document.getElementById('modalPenerbit').innerText = item.penerbit || '-';
                 document.getElementById('modalTahun').innerText = item.tahun_terbit || '-';
-                document.getElementById('modalAbstrak').innerText = item.abstrak || 'Sinopsis belum tersedia.';
+                
                 const eks = item.ekslempar || [];
-                document.getElementById('modalRak').innerText = eks.length > 0 ? (eks[0].lokasi_rak || 'LUBANGSA') : '-';
-
-                document.getElementById('modalEksList').innerHTML = eks.map(e => `
-                    <div class="bg-white p-3 rounded-xl flex justify-between items-center text-[10px] border border-slate-200 shadow-sm">
+                document.getElementById('modalRak').innerText = eks[0]?.lokasi_rak || '-';
+                document.getElementById('modalEksList').innerHTML = eks.map(e => {
+                    const isBorrowed = borrowed.includes(e.kode);
+                    return `
+                    <div class="bg-white p-3 rounded-xl flex justify-between items-center text-[10px] border border-slate-200">
                         <div class="flex flex-col">
                             <span class="font-black text-slate-800">${e.kode}</span>
                             <span class="text-[8px] text-slate-400 uppercase font-bold">${e.lokasi_rak || 'PERPUSTAKAAN'}</span>
                         </div>
-                        <span class="px-2 py-1 rounded-lg font-black uppercase text-[8px] ${borrowed.includes(e.kode) ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}">
-                            ${borrowed.includes(e.kode) ? 'Dipinjam' : 'Tersedia'}
-                        </span>
-                    </div>`).join('');
-                document.getElementById('detailModal').classList.replace('hidden', 'flex'); 
-                document.body.style.overflow = 'hidden';
-                pb.style.width = '100%'; 
-                setTimeout(() => pb.style.width = '0%', 300);
-            } catch (e) { console.error(e); pb.style.width = '0%'; }
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 rounded-lg font-black uppercase text-[8px] ${isBorrowed ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}">
+                                ${isBorrowed ? 'Dipinjam' : 'Tersedia'}
+                            </span>
+                            ${isBorrowed ? `<button onclick="openBookingModal('${e.kode}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold text-[9px]">PESAN</button>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('detailModal').classList.replace('hidden', 'flex');
+            } catch (e) { showToast('Gagal memuat detail', 'error'); }
+        }
+
+        async function openBookingModal(kode) {
+            const inputArea = document.getElementById('reservationInputArea');
+            const statusArea = document.getElementById('reservationStatusArea');
+            const btnSubmit = document.getElementById('btnSubmitBooking');
+            
+            document.getElementById('bookingModal').classList.replace('hidden', 'flex');
+            
+            try {
+                const { data: circ } = await client.from('sirkulasi').select('nama_anggota, tgl_kembali').eq('kode_eksemplar', kode).eq('status', 'DIPINJAM').maybeSingle();
+                const d = new Date(circ?.tgl_kembali);
+                document.getElementById('curPeminjamNama').innerText = circ?.nama_anggota || '-';
+                document.getElementById('curPeminjamTempo').innerText = circ ? d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'short'}) : '-';
+                document.getElementById('ruleDayText').innerText = circ ? d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'short'}) : 'Segera';
+
+                // CEK RESERVASI: Gunakan kolom nama_pemesan (standard baru) atau nama_peminjam (standard lama)
+                const { data: res } = await client.from('reservasi').select('*').eq('kode_eksemplar', kode).maybeSingle();
+                
+                if (res) {
+                    inputArea.classList.add('hidden');
+                    statusArea.classList.remove('hidden');
+                    document.getElementById('bookedByText').innerText = "Dipesan oleh: " + (res.nama_pemesan || res.nama_peminjam || "Anggota");
+                    btnSubmit.classList.add('hidden');
+                } else {
+                    inputArea.classList.remove('hidden');
+                    statusArea.classList.add('hidden');
+                    btnSubmit.classList.remove('hidden');
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = 'Pesan Buku Ini';
+                }
+                
+                document.getElementById('resNisVal').value = '';
+                document.getElementById('peminjamNis').value = '';
+                document.getElementById('infoAnggotaBox').classList.add('hidden');
+                window.selectedBookingKode = kode;
+
+            } catch (e) { showToast('Gagal memuat data antrean'); }
+        }
+
+        let searchTimeout;
+        async function searchAnggotaSuggestion(val) {
+            const box = document.getElementById('suggestionBox');
+            if (val.length < 2) { box.classList.add('hidden'); return; }
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const { data } = await client.from('anggota').select('nis, nama, kamar').or(`nis.ilike.%${val}%,nama.ilike.%${val}%`).limit(5);
+                if (data?.length > 0) {
+                    box.innerHTML = data.map(a => `<div onclick="selectAnggota('${a.nis}', '${a.nama}', '${a.kamar}')" class="suggestion-item p-3 border-b border-slate-50 last:border-0"><p class="text-xs font-bold">${a.nama}</p><p class="text-[10px] text-slate-400">NIS: ${a.nis} • ${a.kamar}</p></div>`).join('');
+                    box.classList.remove('hidden');
+                } else { box.classList.add('hidden'); }
+            }, 300);
+        }
+
+        function selectAnggota(nis, nama, kamar) {
+            document.getElementById('resNama').innerText = nama;
+            document.getElementById('resKamar').innerText = "Kamar: " + kamar;
+            document.getElementById('resNisVal').value = nis;
+            document.getElementById('peminjamNis').value = nama;
+            document.getElementById('infoAnggotaBox').classList.remove('hidden');
+            document.getElementById('suggestionBox').classList.add('hidden');
+        }
+
+        async function submitBooking() {
+            const btn = document.getElementById('btnSubmitBooking');
+            const nis = document.getElementById('resNisVal').value;
+            const nama = document.getElementById('resNama').innerText;
+
+            if (!nis) return showToast('Pilih identitas Anda!', 'error');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
+
+            // Hitung Batas Pesan (H+2)
+            const dt = new Date();
+            dt.setDate(dt.getDate() + 2);
+            const batasPesan = dt.toISOString().split('T')[0];
+
+            try {
+                // SINKRONISASI: Kita kirim ke kedua kemungkinan nama kolom agar tidak error null
+                const { error } = await client.from('reservasi').insert([{ 
+                    kode_eksemplar: window.selectedBookingKode, 
+                    nama_pemesan: nama,      // Kolom baru
+                    nama_peminjam: nama,     // Kolom lama (untuk menghindari error null value)
+                    nis: nis,
+                    batas_pesan: batasPesan
+                }]);
+                
+                if (error) throw error;
+                showToast('Pesanan berhasil terdaftar!');
+                setTimeout(() => openBookingModal(window.selectedBookingKode), 1000);
+            } catch (e) { 
+                showToast('Gagal: ' + e.message); 
+                btn.disabled = false; 
+                btn.innerHTML = 'Pesan Buku Ini';
+            }
         }
 
         function renderPagination() {
-            const container = document.getElementById('pagination'); 
-            container.innerHTML = '';
-            const totalPages = Math.ceil(totalRecords / perPage); 
-            if (totalPages <= 1) return;
+            const container = document.getElementById('pagination'); container.innerHTML = '';
+            const totalPages = Math.ceil(totalRecords / perPage); if (totalPages <= 1) return;
             for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, Math.max(1, currentPage-2)+4); i++) {
-                const btn = document.createElement('button'); 
+                const btn = document.createElement('button');
                 btn.className = `page-link ${i === currentPage ? 'active' : ''}`;
-                btn.innerText = i; 
-                btn.onclick = () => { 
-                    fetchPage(i, document.getElementById('searchInput').value); 
-                    window.scrollTo({top: 0, behavior:'smooth'}); 
-                };
+                btn.innerText = i; btn.onclick = () => { fetchPage(i, document.getElementById('searchInput').value); window.scrollTo({top:0, behavior:'smooth'}); };
                 container.appendChild(btn);
             }
         }
 
         function closeModal() { document.getElementById('detailModal').classList.replace('flex', 'hidden'); document.body.style.overflow = 'auto'; }
+        function closeBookingModal() { document.getElementById('bookingModal').classList.replace('flex', 'hidden'); }
+        window.onclick = (e) => { 
+            if (e.target.id === 'detailModal') closeModal(); 
+            if (e.target.id === 'bookingModal') closeBookingModal();
+            if (!e.target.closest('#peminjamNis')) document.getElementById('suggestionBox').classList.add('hidden');
+        };
+        window.onload = () => { fetchPage(1); if(window.self !== window.top) document.getElementById('btnDualPage').classList.add('btn-disabled'); };
         document.getElementById('searchInput').onkeydown = (e) => { if (e.key === 'Enter') fetchPage(1, e.target.value); };
-        window.onclick = (e) => { if (e.target.id === 'detailModal') closeModal(); };
-        window.onload = () => { fetchPage(1); checkStatus(); };
     </script>
 </body>
 </html>
