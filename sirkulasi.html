@@ -28,43 +28,11 @@
             display: flex; justify-content: center; padding-top: 20px; height: 100vh; overflow: hidden; 
         }
         
-        /* Snow Overlay */
-        #snow-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .glass { 
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--snow-border); 
-            box-shadow: 0 10px 25px rgba(148, 163, 184, 0.1); 
-            border-radius: 24px; 
-            position: relative;
-            z-index: 10;
-        }
-        input { 
-            background: var(--snow-input) !important; 
-            color: var(--snow-text) !important; 
-            border: 2px solid transparent !important; 
-            transition: all 0.2s;
-        }
-        input:focus { 
-            border-color: #bfdbfe !important; 
-            background: #fff !important; 
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-        }
-        .autocomplete-list { 
-            position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 1000; 
-            background: #fff; border: 1px solid var(--snow-border); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.05); border-radius: 18px; 
-            max-height: 280px; overflow-y: auto; padding: 6px; 
-        }
+        #snow-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); border: 1px solid var(--snow-border); box-shadow: 0 10px 25px rgba(148, 163, 184, 0.1); border-radius: 24px; position: relative; z-index: 10; }
+        input { background: var(--snow-input) !important; color: var(--snow-text) !important; border: 2px solid transparent !important; transition: all 0.2s; }
+        input:focus { border-color: #bfdbfe !important; background: #fff !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
+        .autocomplete-list { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 1000; background: #fff; border: 1px solid var(--snow-border); box-shadow: 0 15px 35px rgba(0,0,0,0.05); border-radius: 18px; max-height: 280px; overflow-y: auto; padding: 6px; }
         .autocomplete-item { padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-radius: 14px; margin-bottom: 2px; }
         .autocomplete-item:hover, .autocomplete-item.selected { background: #f8fafc; }
         .autocomplete-item.selected { background: #eff6ff !important; color: #1d4ed8; }
@@ -76,32 +44,18 @@
         .has-loan { background: #fffbeb !important; border: 1px solid #fde68a; }
         .has-loan b { color: #b45309 !important; }
         
-        .modal-container { 
-            position: fixed; inset: 0; z-index: 100; display: none; 
-            align-items: center; justify-content: center; background: rgba(241, 245, 249, 0.8); 
-            backdrop-filter: blur(4px);
-        }
+        .modal-container { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: rgba(241, 245, 249, 0.8); backdrop-filter: blur(4px); }
         .hidden { display: none !important; }
-        .toast-msg { 
-            background: #0f172a; color: white; padding: 12px 24px; 
-            border-radius: 16px; font-size: 11px; font-weight: 700; 
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; 
-        }
+        .toast-msg { background: #0f172a; color: white; padding: 12px 24px; border-radius: 16px; font-size: 11px; font-weight: 700; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; }
         .btn-snow-primary { background: #3b82f6; color: white; transition: transform 0.1s; }
         .btn-snow-primary:active { transform: scale(0.98); }
-        .badge-kamar {
-            padding: 2px 8px; background: #f1f5f9; color: #64748b; 
-            border-radius: 6px; font-size: 9px; font-weight: 800; text-transform: uppercase;
-        }
-        .kb-shortcut {
-            font-size: 8px; opacity: 0.6; border: 1px solid currentColor; padding: 0px 4px; border-radius: 4px; margin-left: 4px;
-        }
+        .badge-kamar { padding: 2px 8px; background: #f1f5f9; color: #64748b; border-radius: 6px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+        .kb-shortcut { font-size: 8px; opacity: 0.6; border: 1px solid currentColor; padding: 0px 4px; border-radius: 4px; margin-left: 4px; }
     </style>
 </head>
 <body>
 
 <canvas id="snow-canvas"></canvas>
-
 <div id="toast-container"></div>
 
 <div id="modal-confirm" class="modal-container">
@@ -187,63 +141,31 @@
 </div>
 
 <script>
-    /* SNOW EFFECT ENGINE */
+    /* SNOW ENGINE */
     const canvas = document.getElementById('snow-canvas');
     const ctx = canvas.getContext('2d');
     let width, height, snowflakes = [];
-
     function initSnow() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
+        width = window.innerWidth; height = window.innerHeight;
+        canvas.width = width; canvas.height = height;
         snowflakes = [];
-        for (let i = 0; i < 80; i++) { // Mengurangi jumlah salju agar lebih ringan
-            snowflakes.push({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                r: Math.random() * 2 + 0.5, // Ukuran lebih kecil
-                d: Math.random() * 1,
-                v: Math.random() * 1.0 + 0.3, // Kecepatan lebih lambat
-                w: Math.random() * 0.5 - 0.25 // Ayunan lebih tenang
-            });
-        }
+        for (let i = 0; i < 80; i++) { snowflakes.push({ x: Math.random() * width, y: Math.random() * height, r: Math.random() * 2 + 0.5, d: Math.random() * 1, v: Math.random() * 1.0 + 0.3, w: Math.random() * 0.5 - 0.25 }); }
     }
-
     function drawSnow() {
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.beginPath();
-        for (let i = 0; i < snowflakes.length; i++) {
-            let p = snowflakes[i];
-            ctx.moveTo(p.x, p.y);
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
-        }
-        ctx.fill();
-        updateSnow();
+        ctx.clearRect(0, 0, width, height); ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; ctx.beginPath();
+        for (let i = 0; i < snowflakes.length; i++) { let p = snowflakes[i]; ctx.moveTo(p.x, p.y); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true); }
+        ctx.fill(); updateSnow();
     }
-
     function updateSnow() {
         for (let i = 0; i < snowflakes.length; i++) {
-            let p = snowflakes[i];
-            p.y += p.v;
-            p.x += p.w;
-            if (p.y > height) {
-                snowflakes[i] = { x: Math.random() * width, y: -5, r: p.r, d: p.d, v: p.v, w: p.w };
-            }
+            let p = snowflakes[i]; p.y += p.v; p.x += p.w;
+            if (p.y > height) snowflakes[i] = { x: Math.random() * width, y: -5, r: p.r, d: p.d, v: p.v, w: p.w };
         }
     }
+    function animateSnow() { drawSnow(); requestAnimationFrame(animateSnow); }
+    window.addEventListener('resize', initSnow); initSnow(); animateSnow();
 
-    function animateSnow() {
-        drawSnow();
-        requestAnimationFrame(animateSnow);
-    }
-
-    window.addEventListener('resize', initSnow);
-    initSnow();
-    animateSnow();
-
-    /* APP LOGIC */
+    /* APP CORE */
     const S_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
     const client = supabase.createClient(S_URL, S_KEY);
@@ -252,62 +174,23 @@
     let mainResults = [], bukuResults = [];
 
     window.onload = () => document.getElementById("inputMain").focus();
+    function showToast(m) { const t = document.createElement('div'); t.className = 'toast-msg shadow-2xl'; t.textContent = m; document.getElementById('toast-container').innerHTML = ''; document.getElementById('toast-container').appendChild(t); setTimeout(() => t.remove(), 2500); }
+    function debounce(func, timeout = 400) { return (...args) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => func.apply(this, args), timeout); }; }
+    function showLoading(container, text) { container.innerHTML = `<div class="loading-item"><div class="spinner"></div><span>MENCARI "${text.toUpperCase()}"...</span></div>`; container.classList.remove('hidden'); }
 
-    function showToast(m) {
-        const t = document.createElement('div'); t.className = 'toast-msg shadow-2xl'; t.textContent = m;
-        document.getElementById('toast-container').innerHTML = '';
-        document.getElementById('toast-container').appendChild(t);
-        setTimeout(() => t.remove(), 2500);
+    /* SYSTEM: CLEAN EXPIRED RESERVATIONS */
+    async function cleanExpiredReservations() {
+        const now = new Date().toISOString();
+        const { error } = await client.from('reservasi').delete().lt('expired_at', now).eq('status', 'SIAP');
+        if(error) console.error("Auto-clean error:", error);
     }
-
-    function debounce(func, timeout = 400) {
-        return (...args) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => func.apply(this, args), timeout);
-        };
-    }
-
-    function showLoading(container, text) {
-        container.innerHTML = `
-            <div class="loading-item">
-                <div class="spinner"></div>
-                <span>MENCARI "${text.toUpperCase()}"...</span>
-            </div>
-        `;
-        container.classList.remove('hidden');
-    }
-
-    window.addEventListener('keydown', (e) => {
-        const mC = document.getElementById('modal-confirm'), mD = document.getElementById('modal-date');
-        if (mC.style.display === 'flex') {
-            if (e.key === 'Enter') document.getElementById('modal-confirm-btn').click();
-            if (e.key === 'Escape') closeModal();
-        } else if (mD.style.display === 'flex') {
-            if (e.key === 'Enter') document.getElementById('saveDateBtn').click();
-            if (e.key === 'Escape') closeDateModal();
-        } else {
-            if (["INPUT", "SELECT"].includes(document.activeElement.tagName)) return;
-            const card = document.getElementById('success-card');
-            if (!card.classList.contains('hidden')) {
-                if (e.key === '1') document.getElementById('btnPerpanjang').click();
-                if (e.key === '2') resetKeAwal();
-                if (e.key === '3') document.getElementById('btnKembali').click();
-            }
-        }
-    });
 
     const inM = document.getElementById("inputMain"), lsM = document.getElementById("listMain");
-    inM.addEventListener('input', () => {
-        const q = inM.value.trim();
-        if(q.length < 2) return lsM.classList.add('hidden');
-        showLoading(lsM, q);
-        processMainSearch(q);
-    });
+    inM.addEventListener('input', () => { const q = inM.value.trim(); if(q.length < 2) return lsM.classList.add('hidden'); showLoading(lsM, q); processMainSearch(q); });
 
     const processMainSearch = debounce(async (q) => {
         const { data: members } = await client.from('anggota').select('nis, nama, kamar').or(`nama.ilike.%${q}%,nis.ilike.%${q}%,kamar.ilike.%${q}%`).limit(15);
         const { data: activeLoans } = await client.from('sirkulasi').select('*').or(`judul_buku.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).eq('status', 'DIPINJAM').limit(10);
-        
         const nises = members?.map(m => m.nis) || [];
         const { data: loansByNis } = await client.from('sirkulasi').select('nis').in('nis', nises).eq('status', 'DIPINJAM');
         const nisBorrowingSet = new Set(loansByNis?.map(l => l.nis));
@@ -316,19 +199,8 @@
         let results = [];
         if(activeLoans) {
             activeLoans.forEach(loan => {
-                results.push({
-                    type: 'LOAN',
-                    matchPriority: (loan.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2,
-                    data: loan,
-                    html: `
-                        <div class="flex-1">
-                            <div class="flex justify-between items-center">
-                                <b class="text-xs text-amber-700">${loan.kode_eksemplar}</b>
-                                <span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">SEDANG DIPINJAM</span>
-                            </div>
-                            <div class="uppercase text-slate-800 font-extrabold text-[10px] truncate">${loan.nama_anggota}</div>
-                            <div class="text-[9px] text-slate-400 font-medium truncate italic">${loan.judul_buku}</div>
-                        </div>`
+                results.push({ type: 'LOAN', matchPriority: (loan.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2, data: loan, 
+                    html: `<div class="flex-1"><div class="flex justify-between items-center"><b class="text-xs text-amber-700">${loan.kode_eksemplar}</b><span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">SEDANG DIPINJAM</span></div><div class="uppercase text-slate-800 font-extrabold text-[10px] truncate">${loan.nama_anggota}</div><div class="text-[9px] text-slate-400 font-medium truncate italic">${loan.judul_buku}</div></div>`
                 });
             });
         }
@@ -336,21 +208,8 @@
             members.forEach(a => {
                 if(activeLoans?.some(al => al.nis === a.nis)) return;
                 const isBorrowing = nisBorrowingSet.has(a.nis);
-                results.push({
-                    type: 'MEMBER',
-                    matchPriority: (a.nis.toLowerCase() === q.toLowerCase()) ? 1 : 2,
-                    data: a,
-                    html: `
-                        <div class="flex-1">
-                            <div class="flex justify-between items-center">
-                                <b class="text-xs">${a.nis}</b>
-                                <div class="flex gap-1">
-                                    ${isBorrowing ? '<span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">PINJAM</span>' : ''}
-                                    ${a.kamar ? `<span class="badge-kamar">KM: ${a.kamar}</span>` : ''}
-                                </div>
-                            </div>
-                            <div class="uppercase text-slate-400 font-bold text-[10px] tracking-tight">${a.nama}</div>
-                        </div>`
+                results.push({ type: 'MEMBER', matchPriority: (a.nis.toLowerCase() === q.toLowerCase()) ? 1 : 2, data: a,
+                    html: `<div class="flex-1"><div class="flex justify-between items-center"><b class="text-xs">${a.nis}</b><div class="flex gap-1">${isBorrowing ? '<span class="text-[8px] bg-amber-200 text-amber-800 px-1.5 rounded font-black">PINJAM</span>' : ''}${a.kamar ? `<span class="badge-kamar">KM: ${a.kamar}</span>` : ''}</div></div><div class="uppercase text-slate-400 font-bold text-[10px] tracking-tight">${a.nama}</div></div>`
                 });
             });
         }
@@ -358,136 +217,90 @@
         mainResults = results;
         if(results.length) {
             results.forEach((res) => {
-                const d = document.createElement('div');
-                d.className = 'autocomplete-item' + (res.type === 'LOAN' || nisBorrowingSet.has(res.data.nis) ? ' has-loan' : '');
-                d.innerHTML = res.html;
-                d.onclick = () => {
-                    if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar });
-                    else checkActiveLoan(res.data);
-                };
+                const d = document.createElement('div'); d.className = 'autocomplete-item' + (res.type === 'LOAN' || nisBorrowingSet.has(res.data.nis) ? ' has-loan' : '');
+                d.innerHTML = res.html; d.onclick = () => { if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar }); else checkActiveLoan(res.data); };
                 lsM.appendChild(d);
             });
             lsM.classList.remove('hidden');
-        } else {
-            lsM.innerHTML = '<div class="loading-item text-red-400">DATA TIDAK DITEMUKAN</div>';
-        }
+        } else { lsM.innerHTML = '<div class="loading-item text-red-400">DATA TIDAK DITEMUKAN</div>'; }
     });
 
     const inB = document.getElementById("inputBuku"), lsB = document.getElementById("listBuku");
-    inB.addEventListener('input', () => {
-        const q = inB.value.trim();
-        if(q.length < 1) return lsB.classList.add('hidden');
-        showLoading(lsB, q);
-        processBukuSearch(q);
-    });
+    inB.addEventListener('input', () => { const q = inB.value.trim(); if(q.length < 1) return lsB.classList.add('hidden'); showLoading(lsB, q); processBukuSearch(q); });
 
     const processBukuSearch = debounce(async (q) => {
-        const { data } = await client.from('cari_buku_view').select('*').or(`judul.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).limit(20);
+        // SYSTEM: Jalankan pembersihan reservasi expired sebelum menampilkan data
+        await cleanExpiredReservations();
+
+        const { data: bukuData } = await client.from('cari_buku_view').select('*').or(`judul.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`).limit(20);
+        const kodes = bukuData?.map(b => b.kode_eksemplar) || [];
+        // Ambil reservasi yang masih valid saja
+        const { data: resData } = await client.from('reservasi').select('kode_eksemplar').in('kode_eksemplar', kodes).in('status', ['SIAP', 'MENUNGGU']);
+        const resSet = new Set(resData?.map(r => r.kode_eksemplar));
+
         lsB.innerHTML = '';
-        if(data?.length) {
-            let results = data.map(b => ({
-                data: b,
-                matchPriority: (b.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2
-            }));
+        if(bukuData?.length) {
+            let results = bukuData.map(b => ({ data: b, isReserved: resSet.has(b.kode_eksemplar), matchPriority: (b.kode_eksemplar.toLowerCase() === q.toLowerCase()) ? 1 : 2 }));
             results.sort((a, b) => a.matchPriority - b.matchPriority);
             bukuResults = results;
             results.forEach(res => {
-                const b = res.data;
-                const isExact = res.matchPriority === 1;
-                const d = document.createElement('div'); 
-                d.className = 'autocomplete-item';
-                d.innerHTML = `
-                    <div>
-                        <b class="text-xs ${isExact ? 'text-emerald-600 bg-emerald-50 px-1 rounded' : 'text-blue-600'}">${b.kode_eksemplar}</b><br>
-                        <div class="uppercase text-slate-700 font-bold text-[11px] leading-tight">${b.judul}</div>
-                        <div class="text-[9px] text-slate-400 font-medium italic">${b.penulis || '-'}</div>
-                    </div>`;
-                d.onclick = () => { 
-                    selectedBuku = { kode: b.kode_eksemplar, judul: b.judul, penulis: b.penulis }; 
-                    tampilkanBuku(); 
-                    lsB.classList.add('hidden'); 
-                };
+                const b = res.data; const isExact = res.matchPriority === 1; const d = document.createElement('div'); d.className = 'autocomplete-item';
+                d.innerHTML = `<div class="flex-1"><div class="flex justify-between items-center mb-0.5"><b class="text-xs ${isExact ? 'text-emerald-600 bg-emerald-50 px-1 rounded' : 'text-blue-600'}">${b.kode_eksemplar}</b>${res.isReserved ? '<span class="text-[8px] bg-rose-100 text-rose-600 px-1.5 rounded font-black uppercase">Dipesan</span>' : ''}</div><div class="uppercase text-slate-700 font-bold text-[11px] leading-tight">${b.judul}</div><div class="text-[9px] text-slate-400 font-medium italic">${b.penulis || '-'}</div></div>`;
+                d.onclick = () => { selectedBuku = { kode: b.kode_eksemplar, judul: b.judul, penulis: b.penulis }; tampilkanBuku(); lsB.classList.add('hidden'); };
                 lsB.appendChild(d);
             });
             lsB.classList.remove('hidden');
-        } else {
-            lsB.innerHTML = '<div class="loading-item text-red-400">BUKU TIDAK DITEMUKAN</div>';
-        }
+        } else { lsB.innerHTML = '<div class="loading-item text-red-400">BUKU TIDAK DITEMUKAN</div>'; }
     });
 
     async function checkActiveLoan(a) {
         selectedAnggota = a; lsM.classList.add('hidden');
         const { data: s } = await client.from('sirkulasi').select('*').eq('nis', a.nis).eq('status', 'DIPINJAM').maybeSingle();
-        if(s) { 
-            currentLoanId = s.id; 
-            showSuccessCard(a.nama, s.judul_buku, s.kode_eksemplar, s.tgl_kembali, true, s.penulis); 
-        }
+        if(s) { currentLoanId = s.id; showSuccessCard(a.nama, s.judul_buku, s.kode_eksemplar, s.tgl_kembali, true, s.penulis); }
         else { tampilkanInputDetail(); }
     }
 
-    function tampilkanInputDetail() {
-        document.getElementById("main-input-area").classList.add('hidden');
-        document.getElementById("displayNis").textContent = selectedAnggota.nis + (selectedAnggota.kamar ? ` • KAMAR ${selectedAnggota.kamar}` : '');
-        document.getElementById("displayNama").textContent = selectedAnggota.nama;
-        document.getElementById("summary-detail").classList.remove('hidden');
-        setTimeout(() => inB.focus(), 100);
-    }
-
-    function tampilkanBuku() {
-        document.getElementById("resJudul").innerHTML = `${selectedBuku.judul}<span class="block text-[9px] text-blue-400 font-medium italic mt-0.5">${selectedBuku.penulis || ''}</span>`;
-        document.getElementById("resKode").textContent = selectedBuku.kode;
-        document.getElementById("bukuTerpilihBox").classList.remove('hidden');
-        const btn = document.getElementById("btnProses"); btn.disabled = false;
-        setTimeout(() => btn.focus(), 50);
-    }
+    function tampilkanInputDetail() { document.getElementById("main-input-area").classList.add('hidden'); document.getElementById("displayNis").textContent = selectedAnggota.nis + (selectedAnggota.kamar ? ` • KAMAR ${selectedAnggota.kamar}` : ''); document.getElementById("displayNama").textContent = selectedAnggota.nama; document.getElementById("summary-detail").classList.remove('hidden'); setTimeout(() => inB.focus(), 100); }
+    function tampilkanBuku() { document.getElementById("resJudul").innerHTML = `${selectedBuku.judul}<span class="block text-[9px] text-blue-400 font-medium italic mt-0.5">${selectedBuku.penulis || ''}</span>`; document.getElementById("resKode").textContent = selectedBuku.kode; document.getElementById("bukuTerpilihBox").classList.remove('hidden'); const btn = document.getElementById("btnProses"); btn.disabled = false; setTimeout(() => btn.focus(), 50); }
 
     async function handleSimpan() {
-        const btn = document.getElementById("btnProses"); 
-        btn.disabled = true;
+        const btn = document.getElementById("btnProses"); btn.disabled = true;
 
-        const { data: checkStok } = await client.from('sirkulasi')
-            .select('id')
-            .eq('kode_eksemplar', selectedBuku.kode)
-            .eq('status', 'DIPINJAM')
-            .maybeSingle();
+        // SYSTEM: Bersihkan lagi sebelum final simpan untuk memastikan integritas data
+        await cleanExpiredReservations();
 
-        if(checkStok) {
-            showToast("Gagal: Buku sedang dipinjam!");
-            btn.disabled = false;
-            return;
+        const { data: checkStok } = await client.from('sirkulasi').select('id').eq('kode_eksemplar', selectedBuku.kode).eq('status', 'DIPINJAM').maybeSingle();
+        if(checkStok) { showToast("Gagal: Buku sedang dipinjam!"); btn.disabled = false; return; }
+
+        const { data: listReservasi } = await client.from('reservasi').select('*').eq('kode_eksemplar', selectedBuku.kode).in('status', ['SIAP', 'MENUNGGU']);
+
+        if (listReservasi && listReservasi.length > 0) {
+            // Karena sudah di-clean di atas, reservasi yang ada di sini pasti masih valid (siap) atau menunggu
+            const resAktif = listReservasi[0]; 
+            if (selectedAnggota.nis !== resAktif.nis) {
+                alert(`⛔ AKSES DITOLAK!\n\nBuku ini telah dipesan oleh siswa lain (NIS: ${resAktif.nis}).\n\nSiswa lain tidak boleh meminjam selama buku dalam status reservasi.`);
+                btn.disabled = false; return;
+            } else {
+                await client.from('reservasi').delete().eq('id', resAktif.id);
+            }
         }
 
         const tp = new Date().toISOString().split('T')[0];
-        const tkDate = new Date(); 
-        tkDate.setDate(tkDate.getDate() + 4); 
+        const tkDate = new Date(); tkDate.setDate(tkDate.getDate() + 4); 
         const tk = tkDate.toISOString().split('T')[0];
 
         const { data, error } = await client.from('sirkulasi').insert([{
-            nis: selectedAnggota.nis, 
-            nama_anggota: selectedAnggota.nama,
-            kamar: selectedAnggota.kamar,
-            kode_eksemplar: selectedBuku.kode, 
-            judul_buku: selectedBuku.judul,
-            penulis: selectedBuku.penulis,
-            status: 'DIPINJAM', 
-            tgl_pinjam: tp, 
-            tgl_kembali: tk
+            nis: selectedAnggota.nis, nama_anggota: selectedAnggota.nama, kamar: selectedAnggota.kamar,
+            kode_eksemplar: selectedBuku.kode, judul_buku: selectedBuku.judul, penulis: selectedBuku.penulis,
+            status: 'DIPINJAM', tgl_pinjam: tp, tgl_kembali: tk
         }]).select();
         
-        if(!error) { 
-            currentLoanId = data[0].id; 
-            showToast("Berhasil Disimpan"); 
-            showSuccessCard(selectedAnggota.nama, selectedBuku.judul, selectedBuku.kode, tk, false, selectedBuku.penulis); 
-        } else {
-            alert("Error: " + error.message);
-            btn.disabled = false;
-        }
+        if(!error) { currentLoanId = data[0].id; showToast("Berhasil Disimpan"); showSuccessCard(selectedAnggota.nama, selectedBuku.judul, selectedBuku.kode, tk, false, selectedBuku.penulis); }
+        else { alert("Error: " + error.message); btn.disabled = false; }
     }
 
     function showSuccessCard(nama, judul, kode, tglKembali, isActive, penulis) {
-        document.getElementById("main-input-area").classList.add('hidden');
-        document.getElementById("summary-detail").classList.add('hidden');
-        document.getElementById("success-card").classList.remove('hidden');
+        document.getElementById("main-input-area").classList.add('hidden'); document.getElementById("summary-detail").classList.add('hidden'); document.getElementById("success-card").classList.remove('hidden');
         document.getElementById("statusTitle").textContent = isActive ? "Pinjaman Aktif" : "Peminjaman Berhasil";
         document.getElementById("iconStatus").className = `w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center ${isActive ? 'bg-amber-500 shadow-amber-100':'bg-emerald-500 shadow-emerald-100'}`;
         document.getElementById("iconStatus").innerHTML = `<i class="fas ${isActive ? 'fa-clock':'fa-check-double'}"></i>`;
@@ -509,8 +322,7 @@
 
     function openConfirm(txt, cb) {
         const modal = document.getElementById("modal-confirm"); const btn = document.getElementById("modal-confirm-btn");
-        document.getElementById("modal-text").textContent = txt;
-        modal.style.display = 'flex'; setTimeout(() => btn.focus(), 50);
+        document.getElementById("modal-text").textContent = txt; modal.style.display = 'flex'; setTimeout(() => btn.focus(), 50);
         btn.onclick = async () => { btn.disabled = true; await cb(); btn.disabled = false; closeModal(); };
     }
 
@@ -525,64 +337,40 @@
     }
 
     async function handlePerpanjang() {
-        const dDate = new Date(); 
-        dDate.setDate(dDate.getDate() + 4); 
-        const d = dDate.toISOString().split('T')[0];
+        const dDate = new Date(); dDate.setDate(dDate.getDate() + 4); const d = dDate.toISOString().split('T')[0];
         const { error } = await client.from('sirkulasi').update({ tgl_kembali: d }).eq('id', currentLoanId);
         if(!error) { showToast("Perpanjangan Berhasil"); renderDenda(d); }
     }
 
     async function handleKembali() {
         const { error } = await client.from('sirkulasi').delete().eq('id', currentLoanId);
-        if(!error) { 
-            showToast("Memproses.."); 
-            setTimeout(resetKeAwal, 800); 
-        }
+        if(!error) { showToast("Memproses.."); setTimeout(resetKeAwal, 800); }
     }
 
     function closeModal() { document.getElementById("modal-confirm").style.display = 'none'; }
     function closeDateModal() { document.getElementById("modal-date").style.display = 'none'; }
     function resetKeAwal() { location.reload(); }
 
+    // Keyboard Navigation & Enter Handling
     [inM, inB].forEach(inp => {
         inp.addEventListener('keydown', (e) => {
             const listId = inp.id === 'inputMain' ? 'listMain' : 'listBuku';
             const results = inp.id === 'inputMain' ? mainResults : bukuResults;
             const listEl = document.getElementById(listId);
             const items = listEl.getElementsByClassName('autocomplete-item');
-            
             if(e.key === 'ArrowDown') { currentFocus++; highlight(items); }
             else if(e.key === 'ArrowUp') { currentFocus--; highlight(items); }
             else if(e.key === 'Enter') {
                 e.preventDefault();
-                if(currentFocus > -1 && items[currentFocus]) {
-                    items[currentFocus].click();
-                } else if(results.length > 0) {
-                    const topMatch = results[0];
-                    const q = inp.value.trim().toLowerCase();
+                if(currentFocus > -1 && items[currentFocus]) { items[currentFocus].click(); }
+                else if(results.length > 0) {
+                    const topMatch = results[0]; const q = inp.value.trim().toLowerCase();
                     if(inp.id === 'inputMain') {
-                        let matches = results.filter(r => 
-                            (r.type === 'LOAN' && r.data.kode_eksemplar.toLowerCase() === q) || 
-                            (r.type === 'MEMBER' && r.data.nis.toLowerCase() === q)
-                        );
-                        if(matches.length > 1) {
-                            showToast("Pilih Salah Satu");
-                            lsM.classList.remove('hidden');
-                        } else if(matches.length === 1) {
-                            const res = matches[0];
-                            if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar });
-                            else checkActiveLoan(res.data);
-                        } else {
-                            showToast("Data tidak ditemukan");
-                        }
+                        let matches = results.filter(r => (r.type === 'LOAN' && r.data.kode_eksemplar.toLowerCase() === q) || (r.type === 'MEMBER' && r.data.nis.toLowerCase() === q));
+                        if(matches.length === 1) { const res = matches[0]; if(res.type === 'LOAN') checkActiveLoan({ nis: res.data.nis, nama: res.data.nama_anggota, kamar: res.data.kamar }); else checkActiveLoan(res.data); }
+                        else if(matches.length > 1) { showToast("Pilih Salah Satu"); lsM.classList.remove('hidden'); }
                     } else {
-                        if(topMatch.data.kode_eksemplar.toLowerCase() === q) {
-                            selectedBuku = { kode: topMatch.data.kode_eksemplar, judul: topMatch.data.judul, penulis: topMatch.data.penulis };
-                            tampilkanBuku();
-                            lsB.classList.add('hidden');
-                        } else {
-                            showToast("Data tidak ditemukan");
-                        }
+                        if(topMatch.data.kode_eksemplar.toLowerCase() === q) { selectedBuku = { kode: topMatch.data.kode_eksemplar, judul: topMatch.data.judul, penulis: topMatch.data.penulis }; tampilkanBuku(); lsB.classList.add('hidden'); }
                     }
                 }
             }
@@ -590,15 +378,21 @@
     });
 
     function highlight(items) {
-        if(!items.length) return;
-        for(let x of items) x.classList.remove('selected');
-        if(currentFocus >= items.length) currentFocus = 0;
-        if(currentFocus < 0) currentFocus = items.length - 1;
-        if(items[currentFocus]) { 
-            items[currentFocus].classList.add('selected'); 
-            items[currentFocus].scrollIntoView({block:'nearest'}); 
-        }
+        if(!items.length) return; for(let x of items) x.classList.remove('selected');
+        if(currentFocus >= items.length) currentFocus = 0; if(currentFocus < 0) currentFocus = items.length - 1;
+        if(items[currentFocus]) { items[currentFocus].classList.add('selected'); items[currentFocus].scrollIntoView({block:'nearest'}); }
     }
+
+    // Modal Close on Esc
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeModal(); closeDateModal(); }
+        const card = document.getElementById('success-card');
+        if (!card.classList.contains('hidden') && !["INPUT", "SELECT"].includes(document.activeElement.tagName)) {
+            if (e.key === '1') document.getElementById('btnPerpanjang').click();
+            if (e.key === '2') resetKeAwal();
+            if (e.key === '3') document.getElementById('btnKembali').click();
+        }
+    });
 </script>
 </body>
 </html>
