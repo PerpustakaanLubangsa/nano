@@ -19,7 +19,9 @@
         .main-container { position: relative; z-index: 10; }
 
         .table-container { 
-            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7); 
+            /* Optimasi: dikurangi sedikit blurnya jika terasa berat di mobile */
+            backdrop-filter: blur(8px); 
             border-radius: 20px; box-shadow: 0 8px 32px rgba(148, 163, 184, 0.2); 
             border: 1px solid rgba(255, 255, 255, 0.8); overflow: hidden; 
         }
@@ -148,6 +150,7 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let allLogs = [];
+        let archiveCheckTimeout;
 
         async function fetchLogs() {
             const { data, error } = await client.from('log_aktivitas').select('*').order('created_at', { ascending: false });
@@ -160,36 +163,39 @@
         }
 
         async function checkArchiveStatus() {
+            if (archiveCheckTimeout) clearTimeout(archiveCheckTimeout);
+            
             const btn = document.getElementById('btnArsip');
             const icon = document.getElementById('arsipIcon');
 
-            // Cek jumlah data di tabel arsip
-            const { count: archiveCount } = await client
-                .from('data_pengunjung')
-                .select('*', { count: 'exact', head: true });
+            try {
+                const { count: archiveCount } = await client
+                    .from('data_pengunjung')
+                    .select('*', { count: 'exact', head: true });
 
-            if (allLogs.length > 0 && archiveCount >= allLogs.length) {
-                // Semua data sudah ada di arsip
-                btn.disabled = true;
-                btn.classList.replace('text-emerald-500', 'text-slate-300');
-                btn.classList.remove('sync-active');
-                icon.className = "fa-solid fa-circle-check";
-                btn.title = "Semua data telah terarsip otomatis di server.";
-            } else {
-                // Ada data baru yang sedang/perlu diproses oleh trigger
-                btn.disabled = false;
-                btn.classList.replace('text-slate-300', 'text-emerald-500');
-                btn.classList.add('sync-active');
-                icon.className = "fa-solid fa-cloud-arrow-up fa-bounce";
-                btn.title = "Server sedang melakukan pengarsipan otomatis...";
-                // Re-check dalam 3 detik untuk update status icon
-                setTimeout(checkArchiveStatus, 3000);
+                if (allLogs.length > 0 && archiveCount >= allLogs.length) {
+                    btn.disabled = true;
+                    btn.classList.replace('text-emerald-500', 'text-slate-300');
+                    btn.classList.remove('sync-active');
+                    icon.className = "fa-solid fa-circle-check";
+                    btn.title = "Semua data telah terarsip otomatis di server.";
+                } else {
+                    btn.disabled = false;
+                    btn.classList.replace('text-slate-300', 'text-emerald-500');
+                    btn.classList.add('sync-active');
+                    icon.className = "fa-solid fa-cloud-arrow-up fa-bounce";
+                    btn.title = "Server sedang melakukan pengarsipan otomatis...";
+                    archiveCheckTimeout = setTimeout(checkArchiveStatus, 5000); // Interval dinaikkan ke 5 detik agar lebih ringan
+                }
+            } catch (e) {
+                console.error("Archive check failed", e);
             }
         }
 
         function renderTable(logs) {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = logs.map(log => {
+            // Optimasi: Menggunakan DocumentFragment atau join sekaligus untuk mengurangi repaint
+            const rows = logs.map(log => {
                 const date = new Date(log.created_at).toLocaleString('id-ID', {
                     day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
                 }).replace(',', '');
@@ -206,32 +212,59 @@
                     </tr>
                 `;
             }).join('');
+            tbody.innerHTML = rows;
         }
 
+        // OPTIMASI: Menggunakan requestAnimationFrame untuk salju yang super smooth
         function initSnow() {
             const canvas = document.getElementById('snow-canvas');
             const ctx = canvas.getContext('2d');
             let width, height, particles;
+
             function resize() {
-                width = window.innerWidth; height = window.innerHeight;
-                canvas.width = width; canvas.height = height;
+                width = window.innerWidth; 
+                height = window.innerHeight;
+                canvas.width = width; 
+                canvas.height = height;
                 particles = [];
-                for (let i = 0; i < 100; i++) {
-                    particles.push({ x: Math.random() * width, y: Math.random() * height, r: Math.random() * 3 + 1, d: Math.random() * 1 });
+                const particleCount = width < 768 ? 50 : 100; // Kurangi jumlah salju di layar kecil
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push({ 
+                        x: Math.random() * width, 
+                        y: Math.random() * height, 
+                        r: Math.random() * 3 + 1, 
+                        d: Math.random() * 1 
+                    });
                 }
             }
+
             function draw() {
-                ctx.clearRect(0, 0, width, height); ctx.fillStyle = 'white'; ctx.beginPath();
-                for (let p of particles) { ctx.moveTo(p.x, p.y); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true); }
-                ctx.fill(); update();
+                ctx.clearRect(0, 0, width, height); 
+                ctx.fillStyle = 'white'; 
+                ctx.beginPath();
+                for (let p of particles) { 
+                    ctx.moveTo(p.x, p.y); 
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true); 
+                }
+                ctx.fill();
+                update();
+                requestAnimationFrame(draw); // Ini kunci agar tidak lag
             }
+
             function update() {
                 for (let p of particles) {
-                    p.y += Math.cos(p.d) + 1 + p.r / 2; p.x += Math.sin(p.d) * 2;
-                    if (p.x > width + 5 || p.x < -5 || p.y > height) { p.x = Math.random() * width; p.y = -10; }
+                    p.y += Math.cos(p.d) + 1 + p.r / 2; 
+                    p.x += Math.sin(p.d) * 2;
+                    if (p.x > width + 5 || p.x < -5 || p.y > height) { 
+                        p.x = Math.random() * width; 
+                        p.y = -10; 
+                    }
                 }
             }
-            window.addEventListener('resize', resize); resize(); setInterval(draw, 33);
+
+            window.addEventListener('resize', resize); 
+            resize(); 
+            requestAnimationFrame(draw);
         }
 
         function showModal({type, title, desc, primaryText, showCancel, callback}) {
@@ -243,32 +276,70 @@
             document.getElementById('btnPrimary').className = type === 'danger' ? 'btn-confirm bg-red-500' : 'btn-confirm';
             document.getElementById('btnSecondary').style.display = showCancel ? 'block' : 'none';
             modal.style.display = 'flex';
-            document.getElementById('btnPrimary').onclick = async () => { modal.style.display = 'none'; if(callback) await callback(); };
+            document.getElementById('btnPrimary').onclick = async () => { 
+                modal.style.display = 'none'; 
+                if(callback) await callback(); 
+            };
             document.getElementById('btnSecondary').onclick = () => modal.style.display = 'none';
         }
 
         function filterData() {
             const q = document.getElementById('search').value.toLowerCase();
-            renderTable(allLogs.filter(l => l.nama.toLowerCase().includes(q) || l.judul_buku.toLowerCase().includes(q)));
+            const filtered = allLogs.filter(l => 
+                l.nama.toLowerCase().includes(q) || 
+                l.judul_buku.toLowerCase().includes(q) ||
+                (l.kamar && l.kamar.toLowerCase().includes(q))
+            );
+            renderTable(filtered);
         }
 
         function confirmDeleteRow(id) {
-            showModal({ type: 'danger', title: 'Hapus Data?', desc: 'Data riwayat ini akan hilang permanen.', primaryText: 'Hapus', showCancel: true, callback: async () => { await client.from('log_aktivitas').delete().match({ id: id }); fetchLogs(); } });
+            showModal({ 
+                type: 'danger', 
+                title: 'Hapus Data?', 
+                desc: 'Data riwayat ini akan hilang permanen.', 
+                primaryText: 'Hapus', 
+                showCancel: true, 
+                callback: async () => { 
+                    await client.from('log_aktivitas').delete().match({ id: id }); 
+                    fetchLogs(); 
+                } 
+            });
         }
 
         function confirmDeleteAll() {
-            showModal({ type: 'danger', title: 'Bersihkan Log?', desc: 'Semua riwayat di halaman ini akan dihapus.', primaryText: 'Ya, Bersihkan', showCancel: true, callback: async () => { await client.from('log_aktivitas').delete().neq('nama', '___'); fetchLogs(); } });
+            showModal({ 
+                type: 'danger', 
+                title: 'Bersihkan Log?', 
+                desc: 'Semua riwayat di halaman ini akan dihapus.', 
+                primaryText: 'Ya, Bersihkan', 
+                showCancel: true, 
+                callback: async () => { 
+                    await client.from('log_aktivitas').delete().neq('nama', '___'); 
+                    fetchLogs(); 
+                } 
+            });
         }
 
         function copyTableNotify() {
+            const table = document.getElementById("reportTable");
             const actionCols = document.querySelectorAll('.no-copy');
+            
+            // Sembunyikan kolom opsi sementara
             actionCols.forEach(col => col.style.display = 'none');
+            
             const range = document.createRange();
-            range.selectNode(document.getElementById("reportTable"));
+            range.selectNode(table);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
-            document.execCommand("copy");
-            showModal({ type: 'success', title: 'Berhasil Salin', desc: 'Data sudah siap ditempel di tabel Excel.', primaryText: 'Tutup' });
+            
+            try {
+                document.execCommand("copy");
+                showModal({ type: 'success', title: 'Berhasil Salin', desc: 'Data sudah siap ditempel di tabel Excel.', primaryText: 'Tutup' });
+            } catch (err) {
+                console.error("Gagal menyalin", err);
+            }
+            
             window.getSelection().removeAllRanges();
             actionCols.forEach(col => col.style.display = '');
         }
