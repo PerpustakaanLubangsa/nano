@@ -13,11 +13,9 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: #f8fafc; 
             overflow-x: hidden;
-            /* Optimasi scrolling untuk iframe */
             -webkit-overflow-scrolling: touch;
         }
         
-        /* SEARCH BAR - DIHAPUS BLUR AGAR RINGAN */
         .floating-search-container {
             position: fixed;
             top: 15px;
@@ -38,21 +36,23 @@
             padding: 8px 16px;
         }
 
-        /* AREA KONTEN */
         .content-area { 
             padding-top: 85px; 
             padding-bottom: 80px; 
         }
 
-        /* KARTU RAK - OPTIMASI HARDWARE */
+        /* OPTIMASI RENDER */
+        #rakList {
+            contain: content;
+        }
+
         .rak-card { 
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.1s ease, border-color 0.1s ease;
             border: 1px solid #f1f5f9;
             cursor: pointer;
             background: white;
-            /* Memaksa optimasi GPU */
             will-change: transform;
-            contain: layout;
+            backface-visibility: hidden; /* Mengunci rendering pada GPU */
         }
 
         .rak-card:active {
@@ -64,11 +64,9 @@
             background-color: #eff6ff !important; 
         }
 
-        /* TOMBOL AKSI - SEDERHANA */
         .action-btns { opacity: 0.3; }
         .rak-card:hover .action-btns { opacity: 1; }
 
-        /* TOMBOL TAMBAH - LEBIH KECIL & RINGAN */
         .btn-plus-mini { 
             position: fixed; 
             bottom: 1rem; 
@@ -102,8 +100,7 @@
     </div>
 
     <main class="content-area max-w-md mx-auto px-4">
-        <div id="rakList" class="space-y-2">
-            </div>
+        <div id="rakList" class="space-y-2"></div>
     </main>
 
     <button onclick="toggleAdmin()" class="btn-plus-mini">
@@ -136,6 +133,7 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let allData = [];
+        let debounceTimer;
 
         function selectRack(kodeRak) {
             window.parent.postMessage({ type: 'SELECT_RACK', kodeRak: kodeRak }, "*");
@@ -164,7 +162,6 @@
             `).join('');
         }
 
-        // Listener Query dari Parent (Sangat Ringan)
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'SEARCH_INIT') {
                 const inputSearch = document.getElementById('ddcInput');
@@ -173,37 +170,41 @@
             }
         });
 
-        // Input Handler (Optimasi Auto-Scroll)
+        // INPUT HANDLER DENGAN DEBOUNCE & OPTIMIZED SCROLL
         document.getElementById('ddcInput').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
             const val = e.target.value.trim();
             const clearBtn = document.getElementById('clearBtn');
             
-            // Batch remove classes (lebih cepat)
-            const cards = document.querySelectorAll('.rak-card');
-            for(let card of cards) card.classList.remove('highlight');
-
             if (val.length > 0) clearBtn.classList.remove('hidden');
             else clearBtn.classList.add('hidden');
 
-            if (val.length >= 2) {
-                let inputNum = parseInt(val.substring(0, 3).padEnd(3, '0'));
-                let closest = allData.reduce((prev, curr) => {
-                    return (Math.abs(parseInt(curr.kode_awal) - inputNum) < Math.abs(parseInt(prev.kode_awal) - inputNum) ? curr : prev);
-                });
+            debounceTimer = setTimeout(() => {
+                // Batch remove highlights
+                const activeHighlights = document.querySelectorAll('.rak-card.highlight');
+                activeHighlights.forEach(card => card.classList.remove('highlight'));
 
-                if (closest) {
-                    const targetEl = document.getElementById(`rak-${closest.id}`);
-                    targetEl.classList.add('highlight');
+                if (val.length >= 2) {
+                    let inputNum = parseInt(val.substring(0, 3).padEnd(3, '0'));
                     
-                    // Gunakan requestAnimationFrame untuk scroll yang tidak mengganggu rendering
-                    requestAnimationFrame(() => {
-                        window.scrollTo({ 
-                            top: targetEl.offsetTop - 80, 
-                            behavior: 'auto' // 'auto' jauh lebih ringan daripada 'smooth' di dalam iframe
-                        });
+                    let closest = allData.reduce((prev, curr) => {
+                        return (Math.abs(parseInt(curr.kode_awal) - inputNum) < Math.abs(parseInt(prev.kode_awal) - inputNum) ? curr : prev);
                     });
+
+                    if (closest) {
+                        const targetEl = document.getElementById(`rak-${closest.id}`);
+                        targetEl.classList.add('highlight');
+                        
+                        // ScrollIntoView lebih hemat daya di iframe daripada manual scrollTo
+                        requestAnimationFrame(() => {
+                            targetEl.scrollIntoView({ 
+                                behavior: 'auto', 
+                                block: 'center' 
+                            });
+                        });
+                    }
                 }
-            }
+            }, 100); // Delay 100ms untuk performa
         });
 
         function clearSearch() {
