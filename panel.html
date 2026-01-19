@@ -11,8 +11,12 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; overflow: hidden; }
         
-        /* Sidebar Styling */
-        #sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 18rem; }
+        /* Sidebar Optimization: Use transform for better performance */
+        #sidebar { 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            width: 18rem; 
+            will-change: width;
+        }
         #sidebar.collapsed { width: 5rem; }
 
         .sidebar-gradient { 
@@ -21,13 +25,12 @@
         }
         
         .sidebar-item {
-            color: #94a3b8; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #94a3b8; cursor: pointer; transition: all 0.2s ease;
             display: flex; align-items: center; gap: 0.85rem;
             padding: 0.75rem 1.25rem; border-radius: 0.75rem;
             font-weight: 600; font-size: 0.75rem;
             text-transform: uppercase; letter-spacing: 0.05em;
-            margin-bottom: 0.25rem;
-            white-space: nowrap;
+            margin-bottom: 0.25rem; white-space: nowrap;
         }
         .sidebar-item:hover { background-color: rgba(255, 255, 255, 0.03); color: #38bdf8; }
         .sidebar-item.active {
@@ -37,20 +40,22 @@
         }
 
         .collapsed .sidebar-item { justify-content: center; padding: 0.75rem 0; gap: 0; }
-        .collapsed .sidebar-item span, .collapsed .nav-label, .collapsed #profileSection, .collapsed #netSpeed { display: none; }
+        .collapsed .sidebar-item span, .collapsed .nav-label, .collapsed #profileSection, .collapsed #netSpeed { 
+            display: none; 
+        }
 
         .nav-label { 
             font-size: 0.65rem; font-weight: 800; color: #475569; 
             margin: 1.5rem 0 0.5rem 1rem; text-transform: uppercase; letter-spacing: 0.15em; 
         }
 
-        /* Iframe styling */
+        /* Iframe performance */
         #contentFrame { 
             width: 100%; height: 100vh; border: none; 
             background-color: #f8fafc; 
-            border-radius: 0; 
             box-shadow: -20px 0 25px -5px rgba(0, 0, 0, 0.4);
             transition: opacity 0.3s ease;
+            will-change: opacity;
         }
 
         .rank-box {
@@ -58,7 +63,7 @@
             display: flex; align-items: center; justify-content: center;
             margin-bottom: 0.5rem;
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
-            transition: width 0.3s, height 0.3s;
+            transition: all 0.3s ease;
         }
         .collapsed .rank-box { width: 40px; height: 40px; margin-bottom: 0; }
         .rank-img { width: 100%; height: 100%; object-fit: contain; }
@@ -71,6 +76,7 @@
             z-index: 100; font-size: 0.7rem; border: 2px solid #020617;
         }
 
+        /* Countdown performance */
         .countdown-container {
             position: fixed; bottom: 1.5rem; right: 1.5rem;
             width: 50px; height: 50px; z-index: 100;
@@ -79,27 +85,22 @@
             border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
         }
         .countdown-svg { width: 40px; height: 40px; transform: rotate(-90deg); }
-        .countdown-bg { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 3; }
         .countdown-bar {
             fill: none; stroke: #38bdf8; stroke-width: 3;
             stroke-linecap: round; stroke-dasharray: 113;
             stroke-dashoffset: 113; transition: stroke-dashoffset 1s linear;
+            will-change: stroke-dashoffset;
         }
-        .countdown-text { position: absolute; font-size: 9px; font-weight: 700; color: #38bdf8; }
 
         @keyframes ring {
-            0% { transform: rotate(0); }
-            10% { transform: rotate(15deg); }
-            20% { transform: rotate(-15deg); }
-            30% { transform: rotate(15deg); }
-            40% { transform: rotate(-15deg); }
-            50% { transform: rotate(0); }
+            0%, 100% { transform: rotate(0); }
+            10%, 30% { transform: rotate(15deg); }
+            20%, 40% { transform: rotate(-15deg); }
         }
-        .animate-ring { animation: ring 1.5s infinite; }
+        .animate-ring { animation: ring 1.5s infinite; will-change: transform; }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -178,10 +179,10 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div id="speedDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span id="speedValue" class="text-[9px] font-mono font-bold text-emerald-500 uppercase">0 Mbps</span>
+                    <span id="speedValue" class="text-[9px] font-mono font-bold text-emerald-500 uppercase">Detecting</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span id="netType" class="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">Wifi</span>
+                    <span id="netType" class="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">-</span>
                     <span id="pingValue" class="text-[8px] text-slate-500 font-mono italic">0ms</span>
                 </div>
             </div>
@@ -221,10 +222,10 @@
 
     <div class="countdown-container" id="countdownCircle">
         <svg class="countdown-svg">
-            <circle class="countdown-bg" cx="20" cy="20" r="18"></circle>
+            <circle class="fill-none stroke-white/5 stroke-[3]" cx="20" cy="20" r="18"></circle>
             <circle id="progressProgress" class="countdown-bar" cx="20" cy="20" r="18"></circle>
         </svg>
-        <div id="countdownNumber" class="countdown-text">30</div>
+        <div id="countdownNumber" class="countdown-text absolute text-[9px] font-bold text-sky-400">30</div>
     </div>
 
     <script>
@@ -244,46 +245,39 @@
             const logoutText = document.getElementById('logoutText');
             
             sidebar.classList.toggle('collapsed');
-            
-            if (sidebar.classList.contains('collapsed')) {
-                btn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-                logoutText.style.display = 'none';
-            } else {
-                btn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-                logoutText.style.display = 'inline';
-            }
+            btn.innerHTML = sidebar.classList.contains('collapsed') ? 
+                '<i class="fa-solid fa-chevron-right"></i>' : '<i class="fa-solid fa-chevron-left"></i>';
+            logoutText.style.display = sidebar.classList.contains('collapsed') ? 'none' : 'inline';
         }
 
-        // Real-time Network Monitor
+        // Optimized Network Monitoring (Event Based)
         function updateNetworkInfo() {
             const speedValue = document.getElementById('speedValue');
             const speedDot = document.getElementById('speedDot');
             const netType = document.getElementById('netType');
             const pingValue = document.getElementById('pingValue');
             
-            if (navigator.connection) {
-                const conn = navigator.connection;
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
                 const mbps = conn.downlink;
-                const rtt = conn.rtt; // Round Trip Time (Ping estimate)
-                const type = conn.effectiveType; // 4g, 3g, etc.
+                const rtt = conn.rtt;
+                const type = conn.effectiveType;
 
                 speedValue.textContent = mbps + " Mbps";
                 pingValue.textContent = rtt + "ms";
                 netType.textContent = type;
                 
-                if (mbps < 1 || rtt > 200) {
-                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse";
-                    speedValue.className = "text-[9px] font-mono font-bold text-rose-500 uppercase";
-                } else if (mbps < 5) {
-                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
-                    speedValue.className = "text-[9px] font-mono font-bold text-amber-500 uppercase";
-                } else {
-                    speedDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
-                    speedValue.className = "text-[9px] font-mono font-bold text-emerald-500 uppercase";
-                }
+                let colorClass = "emerald-500";
+                if (mbps < 1 || rtt > 200) colorClass = "rose-500";
+                else if (mbps < 5) colorClass = "amber-500";
+
+                speedDot.className = `w-1.5 h-1.5 rounded-full bg-${colorClass} animate-pulse`;
+                speedValue.className = `text-[9px] font-mono font-bold text-${colorClass} uppercase`;
             }
         }
-        setInterval(updateNetworkInfo, 2000);
+        // Listen to changes instead of constant interval
+        if (navigator.connection) navigator.connection.addEventListener('change', updateNetworkInfo);
+        setInterval(updateNetworkInfo, 10000); // Back up check every 10s
 
         async function initDashboard() {
             if (!userName) return;
@@ -305,24 +299,21 @@
                 const now = new Date();
                 const startOfYear = `${now.getFullYear()}-01-01`;
 
-                const { data: jadwal } = await client.from('jadwal_detail').select('*').eq('nama', userName);
-                const { data: rekap } = await client.from('rekap_absensi').select('*').eq('nama', userName).gte('tanggal', startOfYear);
+                const [jadwalRes, rekapRes] = await Promise.all([
+                    client.from('jadwal_detail').select('*').eq('nama', userName),
+                    client.from('rekap_absensi').select('*').eq('nama', userName).gte('tanggal', startOfYear)
+                ]);
 
                 const container = document.getElementById('rankContainer');
                 const rankText = document.getElementById('rankNameDisplay');
-
                 let rankImg, rankLabel, rankColor;
 
-                if (!jadwal || jadwal.length === 0) {
-                    rankImg = "Atasan.jpg"; 
-                    rankLabel = "Atasan"; 
-                    rankColor = "#ffffff";
+                if (!jadwalRes.data || jadwalRes.data.length === 0) {
+                    rankImg = "Atasan.jpg"; rankLabel = "Atasan"; rankColor = "#ffffff";
                 } else {
-                    const diff = now - new Date(startOfYear);
-                    const weeksElapsed = Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
-                    const shiftPerMinggu = jadwal.length;
-                    const totalTarget = shiftPerMinggu * weeksElapsed;
-                    const hadir = rekap ? rekap.filter(l => l.status === 'Hadir').length : 0;
+                    const weeksElapsed = Math.max(1, Math.ceil((now - new Date(startOfYear)) / (604800000)));
+                    const totalTarget = jadwalRes.data.length * weeksElapsed;
+                    const hadir = rekapRes.data ? rekapRes.data.filter(l => l.status === 'Hadir').length : 0;
                     const score = totalTarget > 0 ? (hadir / totalTarget) * 100 : 0;
 
                     if (score > 70) { rankImg = "Mythic.jpg"; rankLabel = "Mythic"; rankColor = "#f43f5e"; } 
@@ -335,9 +326,7 @@
                 container.innerHTML = `<img src="${rankImg}" class="rank-img" alt="${rankLabel}">`;
                 rankText.textContent = rankLabel;
                 rankText.style.color = rankColor;
-                
             } catch (e) { 
-                console.error(e);
                 document.getElementById('rankContainer').innerHTML = `<i class="fa-solid fa-user text-4xl text-slate-600"></i>`;
             }
         }
@@ -348,26 +337,30 @@
 
         function loadPage(page, element) {
             const frame = document.getElementById('contentFrame');
+            if (frame.src.includes(page)) return; // Don't reload if same page
+            
             frame.style.opacity = '0';
             setTimeout(() => {
                 frame.src = page;
                 frame.onload = () => frame.style.opacity = '1';
-            }, 250);
+            }, 200);
+            
             document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
             element.classList.add('active');
         }
 
         function startCountdown() {
             timeLeft = 30;
-            const fullDash = 113;
             if (monitorInterval) clearInterval(monitorInterval);
+            
+            const numEl = document.getElementById('countdownNumber');
+            const bar = document.getElementById('progressProgress');
+
             monitorInterval = setInterval(() => {
                 timeLeft--;
-                const numEl = document.getElementById('countdownNumber');
                 if(numEl) numEl.innerText = timeLeft;
-                let offset = (timeLeft / 30) * fullDash;
-                const bar = document.getElementById('progressProgress');
-                if(bar) bar.style.strokeDashoffset = offset;
+                if(bar) bar.style.strokeDashoffset = (timeLeft / 30) * 113;
+                
                 if (timeLeft <= 0) {
                     clearInterval(monitorInterval);
                     monitorAttendance();
@@ -378,26 +371,27 @@
         async function monitorAttendance() {
             try {
                 const now = new Date();
-                const hariIni = HARI_MAP[now.getDay()];
                 const jamMenit = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-                const tglSekarang = now.toISOString().split('T')[0];
-                const { data: allShifts } = await client.from('jam_master').select('*');
                 
+                const { data: allShifts } = await client.from('jam_master').select('*');
                 const currentShift = allShifts?.find(s => {
                     const [mulai, selesai] = s.waktu.split(' - ');
                     return jamMenit >= mulai && jamMenit <= selesai;
                 });
 
-                if (!currentShift) { resumeMonitoring(); return; }
+                if (!currentShift) return resumeMonitoring();
 
-                const { data: jadwal } = await client.from('jadwal_detail').select('nama').eq('hari', hariIni).eq('shift', currentShift.waktu);
-                const { data: rekap } = await client.from('rekap_absensi').select('nama').eq('tanggal', tglSekarang).eq('shift', currentShift.label);
+                const tglSekarang = now.toISOString().split('T')[0];
+                const [jadwal, rekap] = await Promise.all([
+                    client.from('jadwal_detail').select('nama').eq('hari', HARI_MAP[now.getDay()]).eq('shift', currentShift.waktu),
+                    client.from('rekap_absensi').select('nama').eq('tanggal', tglSekarang).eq('shift', currentShift.label)
+                ]);
                 
-                if (jadwal && rekap && rekap.length < jadwal.length) {
-                    document.getElementById('alertMessage').innerText = `${jadwal.length - rekap.length} PETUGAS BELUM ABSEN SHIFT ${currentShift.label}`;
+                if (jadwal.data && rekap.data && rekap.data.length < jadwal.data.length) {
+                    document.getElementById('alertMessage').innerText = `${jadwal.data.length - rekap.data.length} PETUGAS BELUM ABSEN SHIFT ${currentShift.label}`;
                     document.getElementById('alertModal').classList.remove('hidden');
                     document.getElementById('countdownCircle').classList.add('hidden');
-                } else { resumeMonitoring(); }
+                } else resumeMonitoring();
             } catch (e) { resumeMonitoring(); }
         }
 
@@ -411,14 +405,8 @@
             startCountdown();
         }
 
-        function showLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('hidden');
-        }
-
-        function closeLogoutModal() {
-            document.getElementById('logoutModal').classList.add('hidden');
-        }
-
+        function showLogoutModal() { document.getElementById('logoutModal').classList.remove('hidden'); }
+        function closeLogoutModal() { document.getElementById('logoutModal').classList.add('hidden'); }
         function confirmLogout() {
             sessionStorage.clear();
             window.location.replace('login.html');
