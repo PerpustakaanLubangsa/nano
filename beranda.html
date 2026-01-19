@@ -3,27 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Library Intel - Sync Edition</title>
+    <title>Library Intel - Performance Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --dark-bg: #0f172a; --dark-card: rgba(30, 41, 59, 0.7); --accent: #3b82f6; }
+        :root { --dark-bg: #0f172a; --dark-card: #1e293b; --accent: #3b82f6; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        body { background: radial-gradient(circle at top right, #1e293b, #0f172a); font-family: 'Plus Jakarta Sans', sans-serif; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
         
-        .glass-card { background: var(--dark-card); backdrop-filter: blur(12px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        body { 
+            background: #0f172a; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #f1f5f9; 
+            min-height: 100vh; 
+            overflow-x: hidden;
+            /* Mengurangi beban render gradient kompleks */
+        }
+        
+        /* OPTIMASI: Menghapus backdrop-filter blur karena sangat berat bagi GPU */
+        .glass-card { 
+            background: rgba(30, 41, 59, 0.95); 
+            border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            contain: content; /* Memberitahu browser untuk mengisolasi render elemen ini */
+        }
+
         .stat-bar-card { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
-        #snow-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1; }
         .chart-label { font-size: 8px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1em; margin-bottom: 10px; text-align: center; }
+
+        /* OPTIMASI: Snow effect menggunakan CSS Animation (Hardware Accelerated) */
+        .snow-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .snow {
+            position: absolute; top: -10px; color: white; opacity: 0.2;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(105vh); }
+        }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
-    <canvas id="snow-canvas"></canvas>
+    <div class="snow-container" id="snow-box"></div>
 
     <div class="max-w-7xl mx-auto relative z-10">
         <header class="mb-6 flex justify-between items-center">
@@ -83,22 +111,26 @@
 
         document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-        // Light Snow Effect
-        const canvas = document.getElementById('snow-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height, snowflakes = [];
-        function initSnow() {
-            width = window.innerWidth; height = window.innerHeight;
-            canvas.width = width; canvas.height = height;
-            snowflakes = Array.from({ length: 30 }, () => ({ x: Math.random() * width, y: Math.random() * height, r: Math.random() * 2 + 1, d: Math.random() * 0.2 + 0.05 }));
+        // OPTIMASI: CSS-based Snow (Lebih ringan dari Canvas API)
+        function createSnow() {
+            const container = document.getElementById('snow-box');
+            for (let i = 0; i < 20; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snow';
+                flake.innerHTML = '•';
+                flake.style.left = Math.random() * 100 + '%';
+                flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                flake.style.animationDelay = Math.random() * 5 + 's';
+                flake.style.fontSize = (Math.random() * 10 + 5) + 'px';
+                container.appendChild(flake);
+            }
         }
-        function drawSnow() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-            snowflakes.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill(); f.y += f.d; if (f.y > height) f.y = -10; });
-            requestAnimationFrame(drawSnow);
-        }
-        window.addEventListener('resize', initSnow); initSnow(); drawSnow();
+        createSnow();
+
+        // Konfigurasi Global Chart.js untuk performa
+        Chart.defaults.animation = false; // Matikan animasi global
+        Chart.defaults.elements.line.tension = 0; // Kurangi kalkulasi kurva bezier
+        Chart.defaults.font.family = "'Plus Jakarta Sans'";
 
         async function initDashboard() {
             const todayStr = now.toISOString().split('T')[0];
@@ -107,8 +139,8 @@
 
             try {
                 const [p, s, b] = await Promise.all([
-                    client.from('data_pengunjung').select('*'),
-                    client.from('sirkulasi').select('id').eq('status', 'DIPINJAM'),
+                    client.from('data_pengunjung').select('created_at, aktivitas, jenjang, kategori, nama').gte('created_at', `${yearStr}-01-01`),
+                    client.from('sirkulasi').select('id', { count: 'exact' }).eq('status', 'DIPINJAM'),
                     client.from('biblio').select('id', { count: 'exact' })
                 ]);
 
@@ -116,74 +148,73 @@
                 const monthLogs = logs.filter(i => i.created_at.startsWith(monthStr));
 
                 document.getElementById('todayVisit').innerText = logs.filter(i => i.created_at.startsWith(todayStr)).length;
-                document.getElementById('activeSirkulasi').innerText = s.data?.length || 0;
+                document.getElementById('activeSirkulasi').innerText = s.count || 0;
                 document.getElementById('monthVisit').innerText = monthLogs.length;
-                document.getElementById('yearVisit').innerText = logs.filter(i => i.created_at.startsWith(yearStr)).length;
+                document.getElementById('yearVisit').innerText = logs.length;
                 document.getElementById('totalKoleksi').innerText = b.count || 0;
 
-                renderCharts(logs, monthLogs, yearStr);
-                renderTopTen(logs, yearStr);
+                // Gunakan setTimeout agar rendering chart tidak memblokir update angka stat di atas
+                setTimeout(() => {
+                    renderCharts(logs, monthLogs, yearStr);
+                    renderTopTen(logs);
+                }, 50);
+
             } catch (e) { console.error(e); }
         }
 
         function renderCharts(allData, monthData, year) {
-            // Helper untuk standarisasi teks
-            const clean = (val) => (val || "Lainnya").toString().toUpperCase().trim();
+            const clean = (v) => (v || "LAINNYA").toString().toUpperCase().trim();
 
-            // 1. Annual Line Chart
-            const monthlyCounts = new Array(12).fill(0);
-            allData.filter(i => i.created_at.startsWith(year)).forEach(i => monthlyCounts[new Date(i.created_at).getMonth()]++);
+            // 1. Annual
+            const monthly = new Array(12).fill(0);
+            allData.forEach(i => monthly[new Date(i.created_at).getMonth()]++);
+
             new Chart(document.getElementById('annualChart'), {
                 type: 'line',
-                data: { labels: ["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"], datasets: [{ data: monthlyCounts, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b', font: { size: 9 } } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } } } }
+                data: { 
+                    labels: ["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"], 
+                    datasets: [{ data: monthly, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, fill: false }] 
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } } } }
             });
 
-            // 2. Donut Chart (Bulan Ini: Berdasarkan Aktivitas)
-            const actCounts = {}; monthData.forEach(i => { const a = clean(i.aktivitas); actCounts[a] = (actCounts[a] || 0) + 1; });
+            // 2. Donut
+            const acts = {}; monthData.forEach(i => { const a = clean(i.aktivitas); acts[a] = (acts[a] || 0) + 1; });
             new Chart(document.getElementById('donutChart'), {
                 type: 'doughnut',
-                data: { labels: Object.keys(actCounts), datasets: [{ data: Object.values(actCounts), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'], borderWeight: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 8 }, boxWidth: 10 } } } }
+                data: { labels: Object.keys(acts), datasets: [{ data: Object.values(acts), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'], borderWeight: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
             });
 
-            // 3. Stacked Bar Chart (Bulan Ini: Aktivitas per Jenjang)
+            // 3. Stacked Bar
             const jenjangs = [...new Set(monthData.map(i => clean(i.jenjang)))].slice(0, 5);
-            const aktivitasKeys = Object.keys(actCounts);
             new Chart(document.getElementById('stackedBarChart'), {
                 type: 'bar',
                 data: { 
                     labels: jenjangs, 
-                    datasets: aktivitasKeys.map((act, idx) => ({
-                        label: act,
-                        data: jenjangs.map(j => monthData.filter(i => clean(i.jenjang) === j && clean(i.aktivitas) === act).length),
-                        backgroundColor: idx === 0 ? '#3b82f6' : (idx === 1 ? '#6366f1' : '#a855f7')
-                    }))
+                    datasets: [{ label: 'Total', data: jenjangs.map(j => monthData.filter(i => clean(i.jenjang) === j).length), backgroundColor: '#6366f1' }] 
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { stacked: true, grid: { display: false }, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { display: false } }, plugins: { legend: { display: false } } }
             });
 
-            // 4. Category Bar Chart (Bulan Ini: Berdasarkan Kategori Buku)
-            const catCounts = {}; monthData.forEach(i => { const c = clean(i.kategori); catCounts[c] = (catCounts[c] || 0) + 1; });
-            const topCats = Object.entries(catCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            // 4. Category
+            const cats = {}; monthData.forEach(i => { if(i.kategori) { const c = clean(i.kategori); cats[c] = (cats[c] || 0) + 1; } });
+            const topC = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0, 5);
             new Chart(document.getElementById('categoryBarChart'), {
                 type: 'bar',
-                data: { labels: topCats.map(d => d[0]), datasets: [{ data: topCats.map(d => d[1]), backgroundColor: '#f59e0b', borderRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { grid: { display: false }, ticks: { display: false } } } }
+                data: { labels: topC.map(d => d[0]), datasets: [{ data: topC.map(d => d[1]), backgroundColor: '#f59e0b' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } }, y: { display: false } } }
             });
         }
 
-        function renderTopTen(data, year) {
+        function renderTopTen(data) {
             const counts = {};
-            data.filter(i => i.created_at.startsWith(year)).forEach(i => { const n = (i.nama || "User").toUpperCase().trim(); counts[n] = (counts[n] || 0) + 1; });
-            const sorted = Object.entries(counts).sort(([,a], [,b]) => b - a).slice(0, 10);
-            document.getElementById('topRank').innerHTML = sorted.map(([name, count], idx) => `
-                <div class="flex items-center justify-between text-[10px] p-2 bg-white/5 rounded-lg border border-transparent hover:border-blue-500/30 transition-all">
-                    <div class="flex items-center gap-2 overflow-hidden w-4/5">
-                        <span class="font-black ${idx < 3 ? 'text-blue-400' : 'text-slate-600'} w-4">${idx + 1}</span>
-                        <p class="font-bold text-slate-300 truncate">${name}</p>
-                    </div>
-                    <span class="font-black text-blue-500">${count}</span>
+            data.forEach(i => { const n = (i.nama || "User").toUpperCase(); counts[n] = (counts[n] || 0) + 1; });
+            const sorted = Object.entries(counts).sort(([,a],[,b]) => b-a).slice(0, 10);
+            document.getElementById('topRank').innerHTML = sorted.map(([n, c], i) => `
+                <div class="flex justify-between text-[10px] p-2 bg-white/5 mb-1 rounded">
+                    <span class="truncate w-32 font-bold">${i+1}. ${n}</span>
+                    <span class="text-blue-400 font-black">${c}</span>
                 </div>
             `).join('');
         }
