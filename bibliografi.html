@@ -28,6 +28,11 @@
             background-size: 20px 20px;
         }
 
+        /* Lock scroll pada body saat modal aktif */
+        body.modal-open {
+            overflow: hidden;
+        }
+
         h1, h2, h3, .brand-font { font-family: 'Cinzel', serif; }
 
         #topProgressBarContainer {
@@ -177,13 +182,6 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Styles for Rack Explorer */
-        #rackSearchModal {
-            transition: opacity 0.3s ease;
-        }
-        #rackSearchPanel {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
         #rackSearchModal.hidden {
             display: none;
             opacity: 0;
@@ -377,11 +375,15 @@
             document.getElementById('alertCancelBtn').style.display = isConfirm ? 'block' : 'none';
             alertCallback = callback;
             modal.classList.add('active');
+            document.body.classList.add('modal-open');
             document.getElementById('alertConfirmBtn').focus();
         }
 
         function closeAlert(confirm = false) {
             document.getElementById('alertModal').classList.remove('active');
+            if(!document.querySelector('.bottom-sheet.active') && !document.querySelector('#eksModal:not(.hidden)')) {
+                document.body.classList.remove('modal-open');
+            }
             if(confirm && alertCallback) alertCallback();
             alertCallback = null;
         }
@@ -411,6 +413,7 @@
             }
         }
 
+        // Modifikasi loadData: Hanya memuat field minimal untuk daftar
         async function loadData(q = currentSearch, page = 1) {
             setLoader(true, 30);
             try {
@@ -418,29 +421,23 @@
                 const from = (currentPage - 1) * 15, to = from + 14;
                 
                 let biblioIdsFromEks = [];
-                
                 if (q) {
                     const { data: eksMatches } = await client
                         .from('ekslempar')
                         .select('biblio_id')
                         .ilike('kode', `%${q}%`);
-                    
-                    if (eksMatches && eksMatches.length > 0) {
-                        biblioIdsFromEks = eksMatches.map(e => e.biblio_id);
-                    }
+                    if (eksMatches) biblioIdsFromEks = eksMatches.map(e => e.biblio_id);
                 }
 
+                // Query hanya kolom yang dibutuhkan untuk tampilan list
                 let req = client.from('biblio')
-                    .select('*, ekslempar(*)', { count: 'exact' })
+                    .select('id, judul, penulis, isbn_issn, sampul_url, ekslempar(kode)', { count: 'exact' })
                     .order('updated_at', { ascending: false })
                     .range(from, to);
                 
                 if (q) {
                     let filterString = `judul.ilike.%${q}%,penulis.ilike.%${q}%`;
-                    if (biblioIdsFromEks.length > 0) {
-                        const idList = biblioIdsFromEks.join(',');
-                        filterString += `,id.in.(${idList})`;
-                    }
+                    if (biblioIdsFromEks.length > 0) filterString += `,id.in.(${biblioIdsFromEks.join(',')})`;
                     req = req.or(filterString);
                 }
 
@@ -460,7 +457,12 @@
                 list.innerHTML = `<div class="p-32 text-center text-slate-300 text-[11px] font-bold tracking-[0.4em] uppercase">Data Tidak Ditemukan</div>`;
                 return;
             }
-            list.innerHTML = localData.map(b => `
+            list.innerHTML = localData.map(b => {
+                // Tampilkan perwakilan kode barcode pertama saja
+                const representativeCode = b.ekslempar && b.ekslempar.length > 0 ? b.ekslempar[0].kode : '0 EKSEMPLAR';
+                const badgeClass = b.ekslempar && b.ekslempar.length > 0 ? 'stok-active' : '';
+
+                return `
                 <div onclick="openModal('${b.id}')" class="list-row">
                     <div class="w-10 h-14 bg-slate-100 rounded-md overflow-hidden border border-slate-200 shadow-sm">
                         ${b.sampul_url ? `<img src="${b.sampul_url}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fa-solid fa-book text-sm"></i></div>'}
@@ -469,10 +471,10 @@
                         <div class="font-bold text-slate-800 text-base leading-tight truncate tracking-tight">${b.judul}</div>
                         <div class="text-[11px] text-slate-400 truncate mt-1 uppercase tracking-widest font-semibold">${b.penulis || 'Karya Tanpa Pengarang'}</div>
                     </div>
-                    <div class="text-blue-600 font-mono text-[10px] font-bold opacity-70">${b.isbn_issn || 'TANPA-NOMOR'}</div>
-                    <div class="flex justify-center"><span class="stok-badge ${b.ekslempar?.length > 0 ? 'stok-active' : ''}">${b.ekslempar?.length || 0} EKSEMPLAR</span></div>
-                </div>
-            `).join('');
+                    <div class="text-blue-600 font-mono text-[10px] font-bold opacity-70">${b.isbn_issn || 'TANPA-ISBN'}</div>
+                    <div class="flex justify-center"><span class="stok-badge ${badgeClass}">${representativeCode}</span></div>
+                </div>`;
+            }).join('');
         }
 
         function renderPagination() {
@@ -488,6 +490,49 @@
             container.innerHTML = html;
         }
 
+        // Panggil data lengkap saat modal dibuka
+        async function openModal(id) {
+            document.getElementById('biblioForm').reset();
+            document.getElementById('editId').value = id;
+            currentTags = [];
+            
+            // Lock background scroll
+            document.body.classList.add('modal-open');
+
+            if(id === 'NEW') {
+                document.getElementById('eksSection').classList.add('hidden');
+                document.getElementById('btnDelete').classList.add('hidden');
+                renderTags();
+            } else {
+                setLoader(true, 50);
+                // Fetch data lengkap dari database
+                const { data: b, error } = await client.from('biblio').select('*').eq('id', id).single();
+                setLoader(false);
+
+                if(b) {
+                    document.getElementById('f_judul').value = b.judul;
+                    document.getElementById('f_penulis').value = b.penulis || '';
+                    document.getElementById('f_isbn').value = b.isbn_issn || '';
+                    document.getElementById('f_penerbit').value = b.penerbit || '';
+                    document.getElementById('f_tahun').value = b.tahun_terbit || '';
+                    document.getElementById('f_sampul').value = b.sampul_url || '';
+                    document.getElementById('f_abstrak').value = b.abstrak || '';
+                    document.getElementById('f_deskripsi_fisik').value = b.deskripsi_fisik || '';
+                    currentTags = b.topik || [];
+                    renderTags();
+                    document.getElementById('eksSection').classList.remove('hidden');
+                    document.getElementById('btnDelete').classList.remove('hidden');
+                    refreshEksList(id);
+                }
+            }
+            document.getElementById('mainModal').classList.add('active');
+        }
+
+        function closeModal() { 
+            document.getElementById('mainModal').classList.remove('active'); 
+            document.body.classList.remove('modal-open');
+        }
+
         document.getElementById('topicInput').addEventListener('keydown', (e) => {
             if(e.key === 'Enter') {
                 e.preventDefault();
@@ -499,10 +544,12 @@
                 e.target.value = '';
             }
         });
+
         function renderTags() {
             const list = document.getElementById('tagList');
             list.innerHTML = currentTags.map((t, idx) => `<div class="tag-item uppercase">${t}<i class="fa-solid fa-xmark ml-1 cursor-pointer opacity-50 hover:opacity-100" onclick="removeTag(${idx})"></i></div>`).join('');
         }
+
         function removeTag(idx) { currentTags.splice(idx, 1); renderTags(); }
 
         async function refreshEksList(bid) {
@@ -526,7 +573,6 @@
             if(!kode) return;
             
             toggleToast(true, 'Menyimpan Eksemplar...');
-            
             const payload = { 
                 biblio_id: bid, 
                 kode: kode.toUpperCase(), 
@@ -555,14 +601,9 @@
             const errorElement = document.getElementById('errorDuplicate');
             const btn = document.getElementById('btnSaveEks');
             const currentEditingId = document.getElementById('e_id').value;
-
             if(!val) { errorElement.style.display = 'none'; btn.disabled = false; return; }
             
-            const { data } = await client.from('ekslempar')
-                .select('id, kode')
-                .eq('kode', val.trim().toUpperCase())
-                .maybeSingle();
-
+            const { data } = await client.from('ekslempar').select('id, kode').eq('kode', val.trim().toUpperCase()).maybeSingle();
             if(data && data.id !== currentEditingId) { 
                 errorElement.style.display = 'block'; 
                 btn.disabled = true; 
@@ -572,36 +613,6 @@
                 btn.disabled = false; 
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
-        }
-
-        function openModal(id) {
-            document.getElementById('biblioForm').reset();
-            document.getElementById('editId').value = id;
-            currentTags = [];
-            
-            if(id === 'NEW') {
-                document.getElementById('eksSection').classList.add('hidden');
-                document.getElementById('btnDelete').classList.add('hidden');
-                renderTags();
-            } else {
-                const b = localData.find(x => x.id === id);
-                if(b) {
-                    document.getElementById('f_judul').value = b.judul;
-                    document.getElementById('f_penulis').value = b.penulis || '';
-                    document.getElementById('f_isbn').value = b.isbn_issn || '';
-                    document.getElementById('f_penerbit').value = b.penerbit || '';
-                    document.getElementById('f_tahun').value = b.tahun_terbit || '';
-                    document.getElementById('f_sampul').value = b.sampul_url || '';
-                    document.getElementById('f_abstrak').value = b.abstrak || '';
-                    document.getElementById('f_deskripsi_fisik').value = b.deskripsi_fisik || '';
-                    currentTags = b.topik || [];
-                    renderTags();
-                    document.getElementById('eksSection').classList.remove('hidden');
-                    document.getElementById('btnDelete').classList.remove('hidden');
-                    refreshEksList(id);
-                }
-            }
-            document.getElementById('mainModal').classList.add('active');
         }
 
         document.getElementById('biblioForm').onsubmit = async (e) => {
@@ -641,8 +652,6 @@
         function confirmDeleteBiblio() { showCustomAlert("Hapus bibliografi ini selamanya?", "Hapus Data", deleteBiblio, true); }
         function confirmDeleteEks(id) { showCustomAlert("Hapus eksemplar ini?", "Hapus Eksemplar", async () => { await client.from('ekslempar').delete().eq('id', id); refreshEksList(document.getElementById('editId').value); loadData(); }, true); }
 
-        function closeModal() { document.getElementById('mainModal').classList.remove('active'); }
-        
         function openAddEksModal() { 
             document.getElementById('eksModalTitle').innerText = "Registrasi Eksemplar";
             document.getElementById('e_id').value = "";
@@ -673,52 +682,28 @@
         function closeEksModal() { document.getElementById('eksModal').classList.add('hidden'); }
         function handleEksEnter(e) { if(e.key === 'Enter' && !document.getElementById('btnSaveEks').disabled) saveEkslempar(); }
 
-        // LOGIKA BARU UNTUK RACK EXPLORER
         function openRackSearch() {
             const inputVal = document.getElementById('e_lokasi').value.trim();
             const iframe = document.getElementById('rackIframe');
-            
-            // Tampilkan Modal
             document.getElementById('rackSearchModal').classList.remove('hidden');
-            
-            // Kirim pesan ke ddc.html untuk mencari nilai saat ini (setelah iframe load)
             if(inputVal) {
-                iframe.onload = () => {
-                    iframe.contentWindow.postMessage({ type: 'SEARCH_INIT', query: inputVal }, '*');
-                };
-                // Jika sudah load sebelumnya
+                iframe.onload = () => iframe.contentWindow.postMessage({ type: 'SEARCH_INIT', query: inputVal }, '*');
                 iframe.contentWindow.postMessage({ type: 'SEARCH_INIT', query: inputVal }, '*');
             }
         }
 
-        function closeRackSearch() {
-            document.getElementById('rackSearchModal').classList.add('hidden');
-        }
+        function closeRackSearch() { document.getElementById('rackSearchModal').classList.add('hidden'); }
 
-        // Event Listener untuk menerima data dari ddc.html
         window.addEventListener('message', function(event) {
-            // Kita pastikan data berasal dari ddc.html (opsional: cek event.origin)
-            if (event.data && typeof event.data === 'object') {
-                if(event.data.type === 'SELECT_RACK') {
-                    const selectedValue = event.data.kodeRak;
-                    document.getElementById('e_lokasi').value = selectedValue;
-                    
-                    // Beri feedback visual sebentar
-                    document.getElementById('e_lokasi').classList.add('ring-2', 'ring-blue-400');
-                    setTimeout(() => {
-                        document.getElementById('e_lokasi').classList.remove('ring-2', 'ring-blue-400');
-                    }, 1000);
-
-                    closeRackSearch();
-                }
+            if (event.data && typeof event.data === 'object' && event.data.type === 'SELECT_RACK') {
+                document.getElementById('e_lokasi').value = event.data.kodeRak;
+                document.getElementById('e_lokasi').classList.add('ring-2', 'ring-blue-400');
+                setTimeout(() => document.getElementById('e_lokasi').classList.remove('ring-2', 'ring-blue-400'), 1000);
+                closeRackSearch();
             }
         });
 
-        document.getElementById('searchInput').onkeydown = (e) => {
-            if(e.key === 'Enter') {
-                loadData(e.target.value, 1);
-            }
-        };
+        document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') loadData(e.target.value, 1); };
 
         window.onload = () => loadData();
     </script>
