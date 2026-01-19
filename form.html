@@ -72,7 +72,7 @@
         }
         .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
 
-        #customModal, #ratingModal {
+        #customModal, #ratingModal, #cooldownModal {
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
             display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px); padding: 20px;
         }
@@ -92,6 +92,29 @@
     </style>
 </head>
 <body onload="initData()">
+
+    <div id="cooldownModal">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600">
+                    <i class="fa-solid fa-hourglass-half text-2xl animate-pulse"></i>
+                </div>
+                <h3 class="font-extrabold text-slate-800 text-lg uppercase tracking-tight">Mohon Menunggu</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Sesi Aktivitas Terkunci</p>
+                
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4">
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Halo <span id="cdNama" class="font-bold text-sky-600"></span>, Anda baru saja mengisi buku tamu. Demi akurasi data, silakan datang lagi di jam buka selanjutnya...
+                    </p>
+                    <div id="cdTimer" class="text-2xl font-black text-slate-800 mt-2">Salam Hangat</div>
+                </div>
+                <p class="text-[9px] text-slate-400 italic">Pustakawan Lubangsa</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="location.reload()" class="btn-outline !text-[10px]">Tutup & Mengerti</button>
+            </div>
+        </div>
+    </div>
 
     <div id="ratingModal">
         <div class="modal-content">
@@ -369,35 +392,43 @@
             return { n: 'Warrior', i: 'Warrior.jpg' };
         }
 
-        // FUNGSI UNTUK MENGAMBIL DATA PERINGKAT DARI data_pengunjung
         async function fetchAch(name) {
-            // Ambil data dari log_aktivitas untuk history personal
-            const { data: myHistory } = await client.from('log_aktivitas').select('*').eq('nama', name);
-            // Ambil data dari data_pengunjung untuk penentuan peringkat global
-            const { data: globalStats } = await client.from('data_pengunjung').select('*');
-            
-            if (!globalStats) return null;
-            
             const now = new Date();
-            const personal = myHistory || [];
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            
+            // AMBIL DATA DARI data_pengunjung UNTUK POIN DAN PERINGKAT BULAN INI
+            const { data: globalVisitor } = await client
+                .from('data_pengunjung')
+                .select('nama, created_at')
+                .gte('created_at', startOfMonth); // FILTER BULAN INI SAJA
 
-            const ranker = (list, filter = () => true) => {
-                const filtered = list.filter(filter);
-                const s = filtered.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
+            // AMBIL SELURUH DATA UNTUK PERINGKAT SEPANJANG MASA
+            const { data: allVisitor } = await client
+                .from('data_pengunjung')
+                .select('nama');
+
+            // AMBIL HISTORI LOG AKTIVITAS UNTUK MODAL PROFIL
+            const { data: logHistori } = await client
+                .from('log_aktivitas')
+                .select('*')
+                .eq('nama', name);
+
+            const personalLog = logHistori || [];
+
+            const ranker = (list, targetName) => {
+                if (!list) return '-';
+                const s = list.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
                 const sorted = Object.entries(s).sort((a,b) => b[1]-a[1]);
-                const p = sorted.findIndex(x => x[0] === name);
+                const p = sorted.findIndex(x => x[0] === targetName);
                 return p !== -1 ? `#${p + 1}` : '-';
             };
 
             return {
-                b: personal.filter(h => h.aktivitas === 'Baca').length,
-                p: personal.filter(h => h.aktivitas === 'Pinjam').length,
-                l: [...new Set(personal.map(h => h.judul_buku))].reverse().slice(0, 5),
-                rA: ranker(globalStats), // Peringkat sepanjang masa dari data_pengunjung
-                rB: ranker(globalStats, h => { // Peringkat bulan ini dari data_pengunjung
-                    const d = new Date(h.created_at);
-                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                })
+                b: personalLog.filter(h => h.aktivitas === 'Baca').length,
+                p: personalLog.filter(h => h.aktivitas === 'Pinjam').length,
+                l: [...new Set(personalLog.map(h => h.judul_buku))].reverse().slice(0, 5),
+                rA: ranker(allVisitor, name), 
+                rB: ranker(globalVisitor, name)
             };
         }
 
@@ -408,19 +439,48 @@
             const currentBuku = document.getElementById('inputBuku').value;
             
             btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPERBARUI...';
-
-            const payload = {
-                nama: name, 
-                kamar: document.getElementById('inputKamar').value,
-                jenjang: document.getElementById('inputJenjang').value,
-                judul_buku: currentBuku,
-                kategori: document.getElementById('inputKategori').value,
-                aktivitas: document.getElementById('inputAktivitas').value,
-                created_at: new Date().toISOString()
-            };
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MENGECEK...';
 
             try {
+                // LOGIKA PEMBATASAN 3 JAM (CEK DI LOG AKTIVITAS)
+                const { data: lastLog } = await client
+                    .from('log_aktivitas')
+                    .select('created_at')
+                    .eq('nama', name)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (lastLog) {
+                    const lastTime = new Date(lastLog.created_at);
+                    const nowTime = new Date();
+                    const diffMs = nowTime - lastTime;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+
+                    if (diffHours < 3) {
+                        const remainingMin = Math.ceil((3 - diffHours) * 60);
+                        document.getElementById('cdNama').innerText = name;
+                        document.getElementById('cdTimer').innerText = `${remainingMin} Menit`;
+                        document.getElementById('cooldownModal').style.display = 'flex';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
+                        return;
+                    }
+                }
+
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPERBARUI...';
+
+                const payload = {
+                    nama: name, 
+                    kamar: document.getElementById('inputKamar').value,
+                    jenjang: document.getElementById('inputJenjang').value,
+                    judul_buku: currentBuku,
+                    kategori: document.getElementById('inputKategori').value,
+                    aktivitas: document.getElementById('inputAktivitas').value,
+                    created_at: new Date().toISOString()
+                };
+
+                // UPSERT ANGGOTA & BIBLIO
                 await client.from('anggota').upsert({
                     nama: payload.nama,
                     nis: selectedMemberNIS || null,
@@ -433,8 +493,12 @@
                     kategori: payload.kategori
                 }, { onConflict: 'judul' });
 
+                // SIMPAN KE LOG_AKTIVITAS
                 const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
                 if (logErr) throw logErr;
+
+                // SIMPAN JUGA KE data_pengunjung UNTUK PERINGKAT
+                await client.from('data_pengunjung').insert([{ nama: payload.nama, created_at: payload.created_at }]);
 
                 document.getElementById('ratingJudul').innerText = currentBuku;
                 document.getElementById('ratingModal').style.display = 'flex';
@@ -493,7 +557,9 @@
         }
 
         document.getElementById('modalAction').onclick = () => location.reload();
-        window.onclick = (e) => { if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); };
+        window.onclick = (e) => { 
+            if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); 
+        };
     </script>
 </body>
 </html>
