@@ -10,55 +10,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg-body: #fdfdfe; --accent: #2563eb; }
-        
-        /* Menyembunyikan Scrollbar untuk Chrome, Safari, dan Opera */
         ::-webkit-scrollbar { width: 0px; background: transparent; display: none; }
-        /* Menyembunyikan Scrollbar untuk IE, Edge, dan Firefox */
-        body { -ms-overflow-style: none; scrollbar-width: none; }
-
-        body { background-color: var(--bg-body); color: #1e293b; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; overflow-y: scroll; }
-
-        .hero-section { 
-            height: 60vh; min-height: 400px; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; 
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 58, 138, 0.85)), url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=2000'); 
-            background-size: cover; background-position: center; margin-bottom: 60px; 
-        }
-
+        body { -ms-overflow-style: none; scrollbar-width: none; background-color: var(--bg-body); color: #1e293b; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; overflow-y: scroll; }
+        .hero-section { height: 60vh; min-height: 400px; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 58, 138, 0.85)), url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=2000'); background-size: cover; background-position: center; margin-bottom: 60px; }
         .hero-section::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: var(--bg-body); clip-path: ellipse(60% 100% at 50% 100%); }
         .hero-title { font-size: clamp(2.2rem, 7vw, 4rem); font-weight: 800; color: white; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.5rem; text-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-
         .search-container { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 800px; z-index: 100; }
         .search-input-group { background: white; padding: 8px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); display: flex; align-items: center; border: 1px solid #e2e8f0; transition: all 0.3s ease; }
         .search-input-group:focus-within { transform: translateY(-2px) scale(1.01); border-color: var(--accent); }
         .search-input-group input { flex: 1; padding: 12px 20px; border: none; outline: none; font-size: 16px; font-weight: 500; }
-
         .main-content { flex: 1; padding-top: 20px; padding-bottom: 80px; position: relative; z-index: 10; }
         .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; position: relative; height: 100%; }
         .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 14px; margin-bottom: 12px; background: #f8fafc; }
-        
         .stars-container { display: flex; gap: 2px; color: #fbbf24; margin-bottom: 4px; }
         .star-sm { font-size: 10px; }
         .star-md { font-size: 14px; }
-
         #pagination { display: flex; justify-content: center; gap: 8px; margin-top: 50px; flex-wrap: wrap; }
         .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 700; color: #64748b; }
         .page-link.active { background: var(--accent) !important; color: white !important; }
-        
         footer { background: #0f172a; color: #94a3b8; padding: 50px 0; text-align: center; }
         .footer-btn { padding: 8px 16px; border-radius: 10px; font-size: 10px; font-weight: 700; border: 1px solid #1e293b; color: #64748b; text-decoration: none; }
         .btn-disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
-
-        /* Loader Overlay Baru */
-        #pageLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.7); backdrop-blur: 2px; z-index: 2000; display: none; align-items: center; justify-content: center; transition: opacity 0.3s; }
+        #pageLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.7); backdrop-blur: 2px; z-index: 2000; display: none; align-items: center; justify-content: center; }
         .spinner-ring { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         #progressBar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); width: 0%; transition: width 0.3s; z-index: 2001; }
-        
         #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; font-weight: 700; z-index: 1000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         #toast.show { transform: translateX(-50%) translateY(0); }
-
         .suggestion-item:hover { background-color: #f1f5f9; cursor: pointer; }
         .info-label { color: #94a3b8; font-weight: 600; width: 120px; text-transform: uppercase; font-size: 11px; }
         .info-value { color: #1e293b; font-weight: 700; font-size: 12px; }
@@ -81,7 +60,7 @@
         <div class="search-container">
             <div class="search-input-group">
                 <div class="pl-4 text-blue-500"><i class="fa-solid fa-magnifying-glass"></i></div>
-                <input type="text" id="searchInput" placeholder="Cari judul buku atau nama penulis..." autocomplete="off">
+                <input type="text" id="searchInput" placeholder="Cari judul, penulis, atau topik..." autocomplete="off">
                 <button onclick="fetchPage(1, document.getElementById('searchInput').value)" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-md active:scale-95">CARI</button>
             </div>
         </div>
@@ -189,9 +168,7 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         
         let totalRecords = 0, perPage = 24, currentPage = 1;
-        let searchDebounceTimer;
 
-        // Toast & UI Helper
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
@@ -200,8 +177,7 @@
         }
 
         function toggleLoader(show) {
-            const loader = document.getElementById('pageLoader');
-            loader.style.display = show ? 'flex' : 'none';
+            document.getElementById('pageLoader').style.display = show ? 'flex' : 'none';
         }
 
         function generateStars(ratingValue = 0, size = 'sm') {
@@ -213,39 +189,48 @@
             return starsHtml + `</div>`;
         }
 
-        // --- Core Fetch Functions ---
         async function fetchPage(page, query = '') {
             const progress = document.getElementById('progressBar');
             progress.style.width = '40%';
-            toggleLoader(true); // Menampilkan loader
+            toggleLoader(true); 
             
             try {
-                let bibQuery = client.from('biblio').select('id, judul, penulis, sampul_url, rating_avg, updated_at', { count: 'exact' });
+                let data, error;
                 
-                if (query) {
-                    bibQuery = bibQuery.or(`judul.ilike.%${query}%,penulis.ilike.%${query}%`);
+                if (query.trim() !== "") {
+                    // Gunakan Number() untuk memastikan tipe data Integer dikirim ke RPC
+                    const { data: rpcData, error: rpcError } = await client.rpc('smart_search_books', {
+                        search_query: query,
+                        page_num: Number(page),
+                        items_per_page: Number(perPage)
+                    });
+                    data = rpcData;
+                    error = rpcError;
+                    totalRecords = (data && data.length > 0) ? Number(data[0].total_count) : 0;
+                } else {
+                    const { data: defaultData, count, error: defaultError } = await client.from('biblio')
+                        .select('id, judul, penulis, sampul_url, rating_avg, updated_at', { count: 'exact' })
+                        .order('rating_avg', { ascending: false, nullsFirst: false })
+                        .order('updated_at', { ascending: false })
+                        .range((page-1)*perPage, page*perPage-1);
+                    data = defaultData;
+                    error = defaultError;
+                    totalRecords = count || 0;
                 }
-
-                const { data, count, error } = await bibQuery
-                    .order('rating_avg', { ascending: false, nullsFirst: false })
-                    .order('updated_at', { ascending: false })
-                    .range((page-1)*perPage, page*perPage-1);
 
                 if (error) throw error;
 
-                totalRecords = count || 0; 
                 currentPage = page;
-                
-                renderUI(data); 
+                renderUI(data || []); 
                 renderPagination();
                 
                 progress.style.width = '100%';
                 setTimeout(() => progress.style.width = '0%', 300);
             } catch (e) { 
-                console.error(e);
-                progress.style.width = '0%'; 
+                console.error("Fetch Error:", e);
+                showToast("Gagal memuat data", "error");
             } finally {
-                toggleLoader(false); // Menghilangkan loader
+                toggleLoader(false); 
             }
         }
 
@@ -255,28 +240,18 @@
             
             let htmlBuffer = '';
             data.forEach(item => {
-                const stars = generateStars(item.rating_avg, 'sm'); 
                 htmlBuffer += `
                 <div class="book-card" onclick="openModal('${item.id}')">
                     <img src="${item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover'}" 
                          class="book-img" loading="lazy">
-                    ${stars}
+                    ${generateStars(item.rating_avg, 'sm')}
                     <h3 class="font-bold text-[11px] leading-tight line-clamp-2 uppercase mb-1">${item.judul}</h3>
                     <p class="text-[9px] text-slate-400 font-bold truncate">${item.penulis || 'ANONIM'}</p>
                 </div>`;
             });
-            grid.innerHTML = htmlBuffer;
+            grid.innerHTML = htmlBuffer || '<div class="col-span-full text-center py-10 text-slate-400 font-bold">Buku tidak ditemukan</div>';
         }
 
-        // Debouncing Search
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            clearTimeout(searchDebounceTimer);
-            searchDebounceTimer = setTimeout(() => {
-                fetchPage(1, e.target.value);
-            }, 500); 
-        });
-
-        // --- Modal Logic ---
         async function openModal(id) {
             try {
                 toggleLoader(true);
@@ -439,23 +414,19 @@
             document.getElementById('bookingModal').classList.replace('flex', 'hidden'); 
         }
 
-        // Close modal when click outside
         window.onclick = (e) => { 
             if (e.target.id === 'detailModal') closeModal(); 
             if (e.target.id === 'bookingModal') closeBookingModal();
             if (!e.target.closest('#peminjamNis')) document.getElementById('suggestionBox').classList.add('hidden');
         };
 
-        // Initial Load
         window.onload = () => { 
             fetchPage(1); 
             if(window.self !== window.top) document.getElementById('btnDualPage').classList.add('btn-disabled'); 
         };
         
-        // Manual search on Enter
         document.getElementById('searchInput').onkeydown = (e) => { 
             if (e.key === 'Enter') {
-                clearTimeout(searchDebounceTimer);
                 fetchPage(1, e.target.value); 
             }
         };
