@@ -132,11 +132,12 @@
                     </div>
                 </div>
                 <div id="reservationInputArea" class="space-y-4">
-                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
-                        <p class="text-[10px] text-amber-900 leading-relaxed">
-                            Buku kembali pada <b id="ruleDayText">...</b>. Pesanan berlaku 48 jam (2 hari) setelah buku tersedia.
-                        </p>
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-2xl mb-4">
+                        <p class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Estimasi Buku Tersedia:</p>
+                        <p id="displayTanggalKembali" class="text-lg font-extrabold text-blue-900">-</p>
+                        <p class="text-[9px] text-blue-600 mt-1">*Antrean Anda otomatis terhapus jika melewati tanggal di atas.</p>
                     </div>
+                    
                     <div class="relative">
                         <input type="text" id="peminjamNis" autocomplete="off" onkeyup="searchAnggotaSuggestion(this.value)" placeholder="Ketik NIS atau Nama Anda..." class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none font-semibold text-sm">
                         <div id="suggestionBox" class="absolute z-[120] top-full left-0 right-0 bg-white border border-slate-200 rounded-xl mt-1 shadow-xl max-h-48 overflow-y-auto hidden"></div>
@@ -169,6 +170,9 @@
         
         let totalRecords = 0, perPage = 24, currentPage = 1;
 
+        // Variabel global untuk menyimpan tanggal tempo buku yang sedang dilihat
+        window.currentTempoDate = null;
+
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
@@ -198,7 +202,6 @@
                 let data, error;
                 
                 if (query.trim() !== "") {
-                    // Gunakan Number() untuk memastikan tipe data Integer dikirim ke RPC
                     const { data: rpcData, error: rpcError } = await client.rpc('smart_search_books', {
                         search_query: query,
                         page_num: Number(page),
@@ -299,12 +302,27 @@
             
             try {
                 const { data: circ } = await client.from('sirkulasi').select('nama_anggota, tgl_kembali').eq('kode_eksemplar', kode).eq('status', 'DIPINJAM').maybeSingle();
-                const d = circ ? new Date(circ.tgl_kembali) : null;
                 
-                document.getElementById('curPeminjamNama').innerText = circ?.nama_anggota || '-';
-                const formattedDate = d ? d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'short'}) : '-';
-                document.getElementById('curPeminjamTempo').innerText = formattedDate;
-                document.getElementById('ruleDayText').innerText = formattedDate !== '-' ? formattedDate : 'Segera';
+                if (circ) {
+                    const d = new Date(circ.tgl_kembali);
+                    window.currentTempoDate = circ.tgl_kembali; // Simpan tgl_kembali mentah untuk database
+                    
+                    const formattedDate = d.toLocaleDateString('id-ID', {
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    document.getElementById('curPeminjamNama').innerText = circ.nama_anggota;
+                    document.getElementById('curPeminjamTempo').innerText = formattedDate;
+                    document.getElementById('displayTanggalKembali').innerText = formattedDate;
+                } else {
+                    window.currentTempoDate = null;
+                    document.getElementById('curPeminjamNama').innerText = '-';
+                    document.getElementById('curPeminjamTempo').innerText = '-';
+                    document.getElementById('displayTanggalKembali').innerText = 'Segera';
+                }
                 
                 const { data: res } = await client.from('reservasi').select('*').eq('kode_eksemplar', kode).maybeSingle();
                 if (res) {
@@ -363,9 +381,14 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
             
-            const dt = new Date();
-            dt.setDate(dt.getDate() + 2);
-            const batasPesan = dt.toISOString().split('T')[0];
+            // Batas pesan = Tanggal Tempo Buku (Batas 0 hari)
+            // Jika data sirkulasi tidak ada (error/null), default ke 2 hari kedepan
+            let batasPesan = window.currentTempoDate;
+            if (!batasPesan) {
+                const dt = new Date();
+                dt.setDate(dt.getDate() + 2);
+                batasPesan = dt.toISOString().split('T')[0];
+            }
 
             try {
                 const { error } = await client.from('reservasi').insert([{ 
