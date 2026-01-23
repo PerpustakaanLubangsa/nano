@@ -23,9 +23,6 @@
         .book-card { background: white; border-radius: 20px; padding: 12px; transition: 0.3s; border: 1px solid #f1f5f9; cursor: pointer; position: relative; height: 100%; }
         .book-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 14px; margin-bottom: 12px; background: #f8fafc; }
-        .stars-container { display: flex; gap: 2px; color: #fbbf24; margin-bottom: 4px; }
-        .star-sm { font-size: 10px; }
-        .star-md { font-size: 14px; }
         #pagination { display: flex; justify-content: center; gap: 8px; margin-top: 50px; flex-wrap: wrap; }
         .page-link { min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: white; border: 1px solid #e2e8f0; cursor: pointer; font-weight: 700; color: #64748b; }
         .page-link.active { background: var(--accent) !important; color: white !important; }
@@ -94,7 +91,6 @@
             <div class="w-full md:w-[65%] p-8 overflow-y-auto">
                 <div class="flex justify-end mb-2"><button onclick="closeModal()"><i class="fa-solid fa-xmark text-xl text-slate-300 hover:text-slate-500"></i></button></div>
                 <div class="mb-6">
-                    <div id="modalStars" class="stars-container mb-2"></div>
                     <h2 id="modalJudul" class="text-2xl font-extrabold text-slate-800 leading-tight mb-2 uppercase"></h2>
                     <p id="modalPenulis" class="text-blue-600 font-bold text-sm uppercase tracking-wide"></p>
                 </div>
@@ -169,8 +165,6 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         
         let totalRecords = 0, perPage = 24, currentPage = 1;
-
-        // Variabel global untuk menyimpan tanggal tempo buku yang sedang dilihat
         window.currentTempoDate = null;
 
         function showToast(msg, type = 'success') {
@@ -184,15 +178,6 @@
             document.getElementById('pageLoader').style.display = show ? 'flex' : 'none';
         }
 
-        function generateStars(ratingValue = 0, size = 'sm') {
-            const count = Math.round(ratingValue) || 0;
-            let starsHtml = `<div class="stars-container">`;
-            for (let i = 0; i < 5; i++) {
-                starsHtml += `<i class="fa-${i < count ? 'solid' : 'regular'} fa-star star-${size} ${i < count ? '' : 'opacity-30'}"></i>`;
-            }
-            return starsHtml + `</div>`;
-        }
-
         async function fetchPage(page, query = '') {
             const progress = document.getElementById('progressBar');
             progress.style.width = '40%';
@@ -202,6 +187,7 @@
                 let data, error;
                 
                 if (query.trim() !== "") {
+                    // Jika menggunakan RPC, pengurutan biasanya ditangani di sisi Database Function
                     const { data: rpcData, error: rpcError } = await client.rpc('smart_search_books', {
                         search_query: query,
                         page_num: Number(page),
@@ -211,9 +197,9 @@
                     error = rpcError;
                     totalRecords = (data && data.length > 0) ? Number(data[0].total_count) : 0;
                 } else {
+                    // Pengurutan berdasarkan updated_at terbaru
                     const { data: defaultData, count, error: defaultError } = await client.from('biblio')
-                        .select('id, judul, penulis, sampul_url, rating_avg, updated_at', { count: 'exact' })
-                        .order('rating_avg', { ascending: false, nullsFirst: false })
+                        .select('id, judul, penulis, sampul_url, updated_at', { count: 'exact' })
                         .order('updated_at', { ascending: false })
                         .range((page-1)*perPage, page*perPage-1);
                     data = defaultData;
@@ -247,7 +233,6 @@
                 <div class="book-card" onclick="openModal('${item.id}')">
                     <img src="${item.sampul_url || 'https://images.placeholders.dev/?width=300&height=450&text=No+Cover'}" 
                          class="book-img" loading="lazy">
-                    ${generateStars(item.rating_avg, 'sm')}
                     <h3 class="font-bold text-[11px] leading-tight line-clamp-2 uppercase mb-1">${item.judul}</h3>
                     <p class="text-[9px] text-slate-400 font-bold truncate">${item.penulis || 'ANONIM'}</p>
                 </div>`;
@@ -263,7 +248,6 @@
                 const borrowed = circData ? circData.map(c => c.kode_eksemplar) : [];
 
                 document.getElementById('modalCover').src = item.sampul_url || '';
-                document.getElementById('modalStars').innerHTML = generateStars(item.rating_avg, 'md');
                 document.getElementById('modalJudul').innerText = item.judul;
                 document.getElementById('modalPenulis').innerText = item.penulis || 'ANONIM';
                 document.getElementById('modalIsbn').innerText = item.isbn_issn || '-';
@@ -305,15 +289,8 @@
                 
                 if (circ) {
                     const d = new Date(circ.tgl_kembali);
-                    window.currentTempoDate = circ.tgl_kembali; // Simpan tgl_kembali mentah untuk database
-                    
-                    const formattedDate = d.toLocaleDateString('id-ID', {
-                        weekday: 'long', 
-                        day: 'numeric', 
-                        month: 'long',
-                        year: 'numeric'
-                    });
-
+                    window.currentTempoDate = circ.tgl_kembali;
+                    const formattedDate = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
                     document.getElementById('curPeminjamNama').innerText = circ.nama_anggota;
                     document.getElementById('curPeminjamTempo').innerText = formattedDate;
                     document.getElementById('displayTanggalKembali').innerText = formattedDate;
@@ -381,8 +358,6 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
             
-            // Batas pesan = Tanggal Tempo Buku (Batas 0 hari)
-            // Jika data sirkulasi tidak ada (error/null), default ke 2 hari kedepan
             let batasPesan = window.currentTempoDate;
             if (!batasPesan) {
                 const dt = new Date();
