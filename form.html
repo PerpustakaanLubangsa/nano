@@ -11,174 +11,74 @@
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
-        :root {
-            --bg: #f0f9ff;
-            --accent: #0ea5e9;
-            --text-main: #0f172a;
-        }
-
+        :root { --bg: #f0f9ff; --accent: #0ea5e9; --text-main: #0f172a; }
         * { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }
         *::-webkit-scrollbar { display: none; }
-
         body { 
             background: radial-gradient(circle at top right, #e0f2fe, #f0f9ff);
             color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; 
             height: 100vh; margin: 0; padding: 15px; display: flex; flex-direction: column; overflow: hidden;
             position: relative;
         }
-
         body::before {
             content: ""; position: absolute; inset: 0;
             background-image: radial-gradient(circle, #fff 1px, transparent 1px);
             background-size: 50px 50px; animation: snow 10s linear infinite;
             opacity: 0.5; pointer-events: none;
         }
-
-        @keyframes snow {
-            0% { background-position: 0px 0px; }
-            100% { background-position: 500px 1000px; }
-        }
-
+        @keyframes snow { 0% { background-position: 0px 0px; } 100% { background-position: 500px 1000px; } }
         header { margin-bottom: 15px; flex-shrink: 0; }
         form { display: flex; flex-direction: column; height: 100%; gap: 10px; position: relative; }
-
         .input-formal { 
             background: #fff !important; border: 1.5px solid #cbd5e1 !important; 
             border-radius: 12px !important; padding: 10px 12px !important; font-weight: 600; 
             width: 100%; font-size: 14px; color: #1e293b !important; outline: none; transition: 0.3s;
         }
         .input-formal:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1); }
-        
         label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 4px; display: block; }
         
         .drop-box {
-            position: absolute; width: 100%; max-height: 200px; overflow-y: auto;
+            position: absolute; width: 100%; max-height: 250px; overflow-y: auto;
             background: rgba(255, 255, 255, 0.98); border-radius: 12px; border: 1px solid #e2e8f0;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; margin-top: 5px; display: none;
             backdrop-filter: blur(10px);
         }
-        .drop-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
-        .drop-item.selected { background: #e0f2fe; border-left: 4px solid var(--accent); color: #0369a1; }
-
+        .drop-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.2s; }
+        .drop-item:hover, .drop-item.active { background: #e0f2fe; border-left: 4px solid var(--accent); }
+        
+        .loading-item { padding: 12px; text-align: center; color: #64748b; font-size: 12px; font-weight: 700; }
+        
         .btn-submit { 
             background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             color: white; padding: 14px; border-radius: 14px; font-weight: 800; width: 100%; border: none; cursor: pointer; text-transform: uppercase;
         }
-
-        .btn-outline {
-            background: white; border: 1.5px solid #e2e8f0; color: #64748b;
-            padding: 12px; border-radius: 14px; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase;
-            font-size: 12px; transition: 0.3s; display: flex; align-items: center; justify-content: center;
+        .btn-rank {
+            background: white; border: 2px solid #0ea5e9; color: #0ea5e9; padding: 10px; border-radius: 14px; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.3s;
         }
-        .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
+        .btn-rank:hover { background: #f0f9ff; }
 
-        #customModal, #ratingModal, #cooldownModal {
+        #customModal {
             position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
             display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px); padding: 20px;
         }
         .modal-content {
-            background: white; border-radius: 2.5rem; width: 100%; max-width: 340px; 
-            max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
+            background: white; border-radius: 2.5rem; width: 100%; max-width: 360px; 
+            max-height: 95vh; display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 20px 50px rgba(0,0,0,0.2); position: relative;
         }
         .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
-        .modal-footer { padding: 1rem 1.5rem; background: white; border-top: 1px solid #f1f5f9; }
-
-        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 12px; }
-
-        .star-rating { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-        .star-rating i { font-size: 2rem; cursor: pointer; color: #e2e8f0; transition: 0.2s; }
-        .star-rating i:hover, .star-rating i.active { color: #f59e0b; transform: scale(1.2); }
+        .modal-footer { padding: 0.8rem 1.5rem; background: white; border-top: 1px solid #f1f5f9; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 8px; text-align: center; }
     </style>
 </head>
-<body onload="initData()">
-
-    <div id="cooldownModal">
-        <div class="modal-content">
-            <div class="modal-body text-center">
-                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600">
-                    <i class="fa-solid fa-hourglass-half text-2xl animate-pulse"></i>
-                </div>
-                <h3 class="font-extrabold text-slate-800 text-lg uppercase tracking-tight">Mohon Menunggu</h3>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Sesi Aktivitas Terkunci</p>
-                
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4">
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                        Halo <span id="cdNama" class="font-bold text-sky-600"></span>, Anda baru saja mengisi buku tamu. Demi akurasi data, silakan datang lagi di jam buka selanjutnya...
-                    </p>
-                    <div id="cdTimer" class="text-2xl font-black text-slate-800 mt-2">Salam Hangat</div>
-                </div>
-                <p class="text-[9px] text-slate-400 italic">Pustakawan Lubangsa</p>
-            </div>
-            <div class="modal-footer">
-                <button onclick="location.reload()" class="btn-outline !text-[10px]">Tutup & Mengerti</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="ratingModal">
-        <div class="modal-content">
-            <div class="modal-body text-center">
-                <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-600">
-                    <i class="fa-solid fa-book-open-reader text-2xl"></i>
-                </div>
-                <h3 class="font-extrabold text-slate-800 text-lg">BAGAIMANA BUKUNYA?</h3>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Berikan rating untuk koleksi ini</p>
-                <p id="ratingJudul" class="text-sm font-bold text-sky-600 italic truncate"></p>
-                
-                <div class="star-rating" id="starContainer">
-                    <i class="fa-solid fa-star" data-value="1"></i>
-                    <i class="fa-solid fa-star" data-value="2"></i>
-                    <i class="fa-solid fa-star" data-value="3"></i>
-                    <i class="fa-solid fa-star" data-value="4"></i>
-                    <i class="fa-solid fa-star" data-value="5"></i>
-                </div>
-                <p class="text-[9px] text-slate-400 italic">Pilihan Anda membantu menentukan peringkat buku di OPAC</p>
-            </div>
-        </div>
-    </div>
+<body>
 
     <div id="customModal">
         <div class="modal-content">
-            <div class="modal-body">
-                <div class="relative text-center flex flex-col items-center">
-                    <div class="w-24 h-24 mb-2 overflow-hidden rounded-full bg-transparent">
-                        <img id="rankImg" src="" alt="Rank" class="w-full h-full object-contain">
-                    </div>
-                    <h2 id="profNama" class="text-slate-800 font-extrabold text-xl truncate uppercase tracking-tight w-full"></h2>
-                    <div id="rankLabel" class="text-sky-600 text-[11px] font-black tracking-widest uppercase mt-1"></div>
-                    <div id="profInfo" class="text-slate-400 text-[9px] font-bold uppercase mb-6 mt-1"></div>
+            <div id="modalBodyContent" class="modal-body">
                 </div>
-
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="stat-card flex flex-col items-center">
-                        <span class="text-[8px] font-bold text-slate-400 uppercase">Total Baca</span>
-                        <span id="statBaca" class="text-2xl font-black text-slate-800">0</span>
-                    </div>
-                    <div class="stat-card flex flex-col items-center">
-                        <span class="text-[8px] font-bold text-slate-400 uppercase">Total Pinjam</span>
-                        <span id="statPinjam" class="text-2xl font-black text-slate-800">0</span>
-                    </div>
-                </div>
-
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between items-center bg-sky-50 p-3 rounded-xl border border-sky-100">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase">Rank Bulan Ini</span>
-                        <span id="rankBulan" class="text-sm font-black text-sky-600">#--</span>
-                    </div>
-                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase">Sepanjang Masa</span>
-                        <span id="rankAll" class="text-sm font-black text-slate-700">#--</span>
-                    </div>
-                </div>
-
-                <div class="text-left">
-                    <p class="text-[9px] font-black text-slate-400 uppercase mb-3"><i class="fa-solid fa-book-open mr-2"></i>Riwayat Buku</p>
-                    <div id="listBukuRiwayat" class="space-y-2"></div>
-                </div>
-            </div>
             <div class="modal-footer">
-                <button id="modalAction" class="btn-submit !rounded-2xl shadow-lg">Selesai</button>
+                <button id="modalAction" class="btn-submit !rounded-2xl shadow-lg">Tutup & Selesai</button>
             </div>
         </div>
     </div>
@@ -194,10 +94,9 @@
     <form id="guestForm" autocomplete="off">
         <div class="relative">
             <label><i class="fa-solid fa-id-card mr-1"></i> Identitas Nama / NIS</label>
-            <input type="text" id="inputNama" placeholder="Ketik nama atau NIS..." required class="input-formal">
+            <input type="text" id="inputNama" placeholder="Cari NIS atau Nama..." required class="input-formal">
             <div id="dropNama" class="drop-box"></div>
         </div>
-
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label><i class="fa-solid fa-house-chimney mr-1"></i> Kamar</label>
@@ -213,13 +112,11 @@
                 </select>
             </div>
         </div>
-
         <div class="relative">
             <label><i class="fa-solid fa-book-bookmark mr-1"></i> Judul Koleksi</label>
             <input type="text" id="inputBuku" placeholder="Cari judul buku..." required class="input-formal">
             <div id="dropBuku" class="drop-box"></div>
         </div>
-
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label><i class="fa-solid fa-tag mr-1"></i> Kategori</label>
@@ -240,11 +137,10 @@
                 </select>
             </div>
         </div>
-
-        <div class="mt-auto pb-2 space-y-3">
-            <a href="daftar_peringkat.html" class="btn-outline">
-                <i class="fa-solid fa-trophy mr-2 text-amber-500"></i>Lihat Peringkat
-            </a>
+        <div class="mt-auto pb-2 flex flex-col gap-2">
+            <button type="button" onclick="window.location.href='rank.html'" class="btn-rank">
+                <i class="fa-solid fa-trophy mr-2"></i>Lihat Peringkat
+            </button>
             <button type="submit" id="btnSubmit" class="btn-submit">
                 <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron
             </button>
@@ -255,311 +151,210 @@
         const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
         const client = supabase.createClient(SB_URL, SB_KEY);
+        let searchTimer;
 
-        let dataAnggota = [], dataBiblio = [], activeIdx = -1, searchTimer;
-        let selectedMemberNIS = null;
-
-        async function initData() {
-            const statusIcon = document.getElementById('syncStatus');
-            statusIcon.classList.add('fa-spin', 'text-sky-400');
-            
-            const fetchAll = async (tbl, cols) => {
-                let res = [], from = 0, more = true;
-                while(more) {
-                    const {data} = await client.from(tbl).select(cols).range(from, from + 999);
-                    res = [...res, ...data];
-                    if(data.length < 1000) more = false; else from += 1000;
-                }
-                return res;
-            };
-
-            [dataAnggota, dataBiblio] = await Promise.all([
-                fetchAll('anggota', 'nama, nis, kamar, jenjang'),
-                fetchAll('biblio', 'judul, kategori')
-            ]);
-
-            bindSmartSearch('inputNama', 'dropNama', dataAnggota, ['nama', 'nis']);
-            bindSmartSearch('inputBuku', 'dropBuku', dataBiblio, ['judul']);
-            
-            const allInputs = document.querySelectorAll('#guestForm input, #guestForm select');
-            allInputs.forEach(el => {
-                el.addEventListener('change', checkAutoSubmit);
-                el.addEventListener('input', checkAutoSubmit);
-            });
-
-            statusIcon.classList.remove('fa-spin');
+        function calculateRank(poin) {
+            let rank = "Warrior";
+            if (poin >= 1000) rank = "Immortal";
+            else if (poin >= 955) rank = "Glory";
+            else if (poin >= 905) rank = "Honor";
+            else if (poin >= 855) rank = "Mythic";
+            else if (poin >= 655) rank = "Legend";
+            else if (poin >= 455) rank = "Epic";
+            else if (poin >= 305) rank = "Grandmaster";
+            else if (poin >= 155) rank = "Master";
+            else if (poin >= 55) rank = "Elite";
+            return { name: rank, img: `${rank}.jpg` };
         }
 
-        function checkAutoSubmit() {
-            const form = document.getElementById('guestForm');
-            const btn = document.getElementById('btnSubmit');
-            if (!btn.disabled && form.checkValidity()) {
-                const drops = document.querySelectorAll('.drop-box');
-                const anyDropOpen = Array.from(drops).some(d => d.style.display === 'block');
-                if (!anyDropOpen) {
-                    form.requestSubmit();
-                }
-            }
+        function showToast(msg, color = "#ef4444") {
+            Toastify({ text: msg, duration: 3000, gravity: "top", position: "center", style: { background: color, borderRadius: "10px", fontWeight: "bold" } }).showToast();
         }
 
-        function bindSmartSearch(inputId, dropId, source, keys) {
+        function bindSmartSearch(inputId, dropId, tableName, searchColumns) {
             const input = document.getElementById(inputId);
             const drop = document.getElementById(dropId);
+            let activeIdx = -1;
 
             input.addEventListener('keydown', (e) => {
                 const items = drop.querySelectorAll('.drop-item');
-                if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = (activeIdx + 1) % items.length; highlight(items); }
-                else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = (activeIdx - 1 + items.length) % items.length; highlight(items); }
-                else if (e.key === 'Enter') { 
-                    e.preventDefault(); 
-                    if (activeIdx > -1) items[activeIdx].click(); 
-                    else handleBlurOrEnter(input, source, inputId); 
-                }
+                if (e.key === 'ArrowDown') { activeIdx = (activeIdx + 1) % items.length; updateActive(items); e.preventDefault(); }
+                else if (e.key === 'ArrowUp') { activeIdx = (activeIdx - 1 + items.length) % items.length; updateActive(items); e.preventDefault(); }
+                else if (e.key === 'Enter' && activeIdx > -1) { items[activeIdx].click(); e.preventDefault(); }
             });
 
             input.addEventListener('input', () => {
                 clearTimeout(searchTimer);
-                const val = input.value.toLowerCase().trim();
+                const val = input.value.trim();
+                activeIdx = -1;
                 if (val.length < 2) { drop.style.display = 'none'; return; }
-                
-                drop.innerHTML = '<div class="p-4 text-[11px] text-slate-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Mencari...</div>';
                 drop.style.display = 'block';
+                drop.innerHTML = `<div class="loading-item"><i class="fa-solid fa-spinner fa-spin mr-2"></i>MENCARI...</div>`;
 
-                searchTimer = setTimeout(() => {
-                    const matches = source.filter(item => {
-                        return keys.some(k => {
-                            const target = item[k]?.toString().toLowerCase() || '';
-                            const queryWords = val.split(/[\s.]+/).filter(w => w.length > 0);
-                            return queryWords.every(word => target.includes(word));
-                        });
-                    }).slice(0, 10);
-
-                    if (matches.length > 0) {
-                        drop.innerHTML = matches.map((m, i) => `
+                searchTimer = setTimeout(async () => {
+                    let query = client.from(tableName).select('*');
+                    if (searchColumns.length > 1) query = query.or(`${searchColumns[0]}.ilike.%${val}%,${searchColumns[1]}.ilike.%${val}%`);
+                    else query = query.ilike(searchColumns[0], `%${val}%`);
+                    
+                    const { data } = await query.limit(10);
+                    if (data && data.length > 0) {
+                        drop.innerHTML = data.map((m, i) => `
                             <div class="drop-item" onclick="pick('${inputId}', '${dropId}', ${i})">
-                                <div class="text-[13px] font-bold text-slate-700 truncate">${m.nama || m.judul}</div>
-                                <div class="text-[10px] text-slate-400">${m.nis || m.kategori || ''}</div>
+                                <div class="text-[13px] font-extrabold text-slate-700">${m.nama || m.judul}</div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase">${m.nis ? `NIS: ${m.nis} • ` : ''} ${m.kamar || m.kategori || ''}</div>
                             </div>`).join('');
-                        drop.dataset.current = JSON.stringify(matches);
+                        drop.dataset.current = JSON.stringify(data);
                     } else { drop.style.display = 'none'; }
-                }, 800);
+                }, 400);
             });
 
-            input.addEventListener('blur', () => setTimeout(() => handleBlurOrEnter(input, source, inputId), 200));
-        }
-
-        function handleBlurOrEnter(input, source, inputId) {
-            if (inputId !== 'inputNama') return;
-            const val = input.value.trim();
-            const found = source.find(s => s.nis?.toString() === val || s.nama?.toLowerCase() === val.toLowerCase());
-            if (found) {
-                input.value = found.nama;
-                selectedMemberNIS = found.nis;
-                document.getElementById('inputKamar').value = found.kamar || '';
-                document.getElementById('inputJenjang').value = found.jenjang || '';
-                checkAutoSubmit();
+            if (inputId === 'inputNama') {
+                input.addEventListener('blur', async () => {
+                    setTimeout(async () => {
+                        const val = input.value.trim();
+                        if (!val || drop.style.display === 'block') return;
+                        if (/^\d+$/.test(val)) {
+                            const { data } = await client.from('anggota').select('*').eq('nis', val).maybeSingle();
+                            if (data) {
+                                input.value = data.nama;
+                                document.getElementById('inputKamar').value = data.kamar || '';
+                                document.getElementById('inputJenjang').value = data.jenjang || '';
+                            } else { input.value = ''; showToast("NIS tidak ditemukan!"); }
+                        }
+                    }, 200);
+                });
             }
-            document.getElementById('dropNama').style.display = 'none';
+
+            function updateActive(items) {
+                items.forEach((item, i) => {
+                    item.classList.toggle('active', i === activeIdx);
+                    if(i === activeIdx) item.scrollIntoView({ block: 'nearest' });
+                });
+            }
         }
 
-        function highlight(items) {
-            items.forEach((it, i) => it.classList.toggle('selected', i === activeIdx));
-            if (activeIdx > -1) items[activeIdx].scrollIntoView({ block: 'nearest' });
-        }
+        bindSmartSearch('inputNama', 'dropNama', 'anggota', ['nama', 'nis']);
+        bindSmartSearch('inputBuku', 'dropBuku', 'biblio', ['judul']);
 
         function pick(inputId, dropId, idx) {
             const drop = document.getElementById(dropId);
             const data = JSON.parse(drop.dataset.current)[idx];
             if (inputId === 'inputNama') {
                 document.getElementById('inputNama').value = data.nama;
-                selectedMemberNIS = data.nis;
                 document.getElementById('inputKamar').value = data.kamar || '';
                 document.getElementById('inputJenjang').value = data.jenjang || '';
             } else {
                 document.getElementById('inputBuku').value = data.judul;
                 document.getElementById('inputKategori').value = data.kategori || '';
             }
-            drop.style.display = 'none'; activeIdx = -1;
-            checkAutoSubmit();
-        }
-
-        function getRank(rankStr) {
-            const n = parseInt(rankStr.replace('#', '')) || 999;
-            if (n <= 3) return { n: 'Mythic', i: 'Mythic.jpg' };
-            if (n <= 10) return { n: 'Legend', i: 'Legend.jpg' };
-            if (n <= 25) return { n: 'Epic', i: 'Epic.jpg' };
-            if (n <= 50) return { n: 'Grandmaster', i: 'Grandmaster.jpg' };
-            return { n: 'Warrior', i: 'Warrior.jpg' };
-        }
-
-        async function fetchAch(name) {
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-            
-            // AMBIL DATA DARI data_pengunjung UNTUK POIN DAN PERINGKAT BULAN INI
-            const { data: globalVisitor } = await client
-                .from('data_pengunjung')
-                .select('nama, created_at')
-                .gte('created_at', startOfMonth); // FILTER BULAN INI SAJA
-
-            // AMBIL SELURUH DATA UNTUK PERINGKAT SEPANJANG MASA
-            const { data: allVisitor } = await client
-                .from('data_pengunjung')
-                .select('nama');
-
-            // AMBIL HISTORI LOG AKTIVITAS UNTUK MODAL PROFIL
-            const { data: logHistori } = await client
-                .from('log_aktivitas')
-                .select('*')
-                .eq('nama', name);
-
-            const personalLog = logHistori || [];
-
-            const ranker = (list, targetName) => {
-                if (!list) return '-';
-                const s = list.reduce((a, c) => { a[c.nama] = (a[c.nama] || 0) + 1; return a; }, {});
-                const sorted = Object.entries(s).sort((a,b) => b[1]-a[1]);
-                const p = sorted.findIndex(x => x[0] === targetName);
-                return p !== -1 ? `#${p + 1}` : '-';
-            };
-
-            return {
-                b: personalLog.filter(h => h.aktivitas === 'Baca').length,
-                p: personalLog.filter(h => h.aktivitas === 'Pinjam').length,
-                l: [...new Set(personalLog.map(h => h.judul_buku))].reverse().slice(0, 5),
-                rA: ranker(allVisitor, name), 
-                rB: ranker(globalVisitor, name)
-            };
+            drop.style.display = 'none';
         }
 
         document.getElementById('guestForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
-            const name = document.getElementById('inputNama').value;
-            const currentBuku = document.getElementById('inputBuku').value;
+            const namaUser = document.getElementById('inputNama').value;
+            const modal = document.getElementById('customModal');
+            const modalBody = document.getElementById('modalBodyContent');
             
-            btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MENGECEK...';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPROSES...';
 
             try {
-                // LOGIKA PEMBATASAN 3 JAM (CEK DI LOG AKTIVITAS)
-                const { data: lastLog } = await client
-                    .from('log_aktivitas')
+                // CEK COOLDOWN 3 JAM
+                const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+                const { data: recentLogs, error: checkError } = await client
+                    .from('data_pengunjung')
                     .select('created_at')
-                    .eq('nama', name)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+                    .eq('nama', namaUser)
+                    .gt('created_at', threeHoursAgo)
+                    .limit(1);
 
-                if (lastLog) {
-                    const lastTime = new Date(lastLog.created_at);
-                    const nowTime = new Date();
-                    const diffMs = nowTime - lastTime;
-                    const diffHours = diffMs / (1000 * 60 * 60);
+                if (checkError) throw checkError;
 
-                    if (diffHours < 3) {
-                        const remainingMin = Math.ceil((3 - diffHours) * 60);
-                        document.getElementById('cdNama').innerText = name;
-                        document.getElementById('cdTimer').innerText = `${remainingMin} Menit`;
-                        document.getElementById('cooldownModal').style.display = 'flex';
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
-                        return;
-                    }
+                if (recentLogs && recentLogs.length > 0) {
+                    // TAMPILAN MODAL COOLDOWN
+                    modalBody.innerHTML = `
+                        <div class="text-center py-6">
+                            <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fa-solid fa-clock-rotate-left text-4xl"></i>
+                            </div>
+                            <h2 class="text-slate-800 font-extrabold text-xl mb-2">UPS, TUNGGU DULU!</h2>
+                            <p class="text-slate-500 text-sm font-semibold leading-relaxed">
+                                Anda telah mencatat kunjungan hari ini.<br>Kembali lagi pada jam selanjutnya!
+                            </p>
+                        </div>`;
+                    modal.style.display = 'flex';
+                    return;
                 }
 
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPERBARUI...';
-
+                // JIKA LOLOS CEK, INSERT DATA
                 const payload = {
-                    nama: name, 
+                    nama: namaUser,
                     kamar: document.getElementById('inputKamar').value,
                     jenjang: document.getElementById('inputJenjang').value,
-                    judul_buku: currentBuku,
+                    judul_buku: document.getElementById('inputBuku').value,
                     kategori: document.getElementById('inputKategori').value,
                     aktivitas: document.getElementById('inputAktivitas').value,
                     created_at: new Date().toISOString()
                 };
 
-                // UPSERT ANGGOTA & BIBLIO
-                await client.from('anggota').upsert({
-                    nama: payload.nama,
-                    nis: selectedMemberNIS || null,
-                    kamar: payload.kamar,
-                    jenjang: payload.jenjang
-                }, { onConflict: 'nama' });
+                const { error: errInsert } = await client.from('data_pengunjung').insert([payload]);
+                if (errInsert) throw errInsert;
 
-                await client.from('biblio').upsert({
-                    judul: payload.judul_buku,
-                    kategori: payload.kategori
-                }, { onConflict: 'judul' });
+                // AMBIL DATA REKAP UNTUK TAMPILAN SUKSES
+                const { data: viewData } = await client.from('rekap_pengunjung_lengkap').select('*').eq('nama', namaUser).maybeSingle();
 
-                // SIMPAN KE LOG_AKTIVITAS
-                const { error: logErr } = await client.from('log_aktivitas').insert([payload]);
-                if (logErr) throw logErr;
-
-                // SIMPAN JUGA KE data_pengunjung UNTUK PERINGKAT
-                await client.from('data_pengunjung').insert([{ nama: payload.nama, created_at: payload.created_at }]);
-
-                document.getElementById('ratingJudul').innerText = currentBuku;
-                document.getElementById('ratingModal').style.display = 'flex';
-                
-                const a = await fetchAch(name);
-                if (a) {
-                    const rc = getRank(a.rB); 
-                    document.getElementById('rankImg').src = rc.i;
-                    document.getElementById('rankLabel').innerText = rc.n;
-                    document.getElementById('profNama').innerText = name;
-                    document.getElementById('profInfo').innerText = `${payload.jenjang} • KAMAR ${payload.kamar}`;
-                    document.getElementById('statBaca').innerText = a.b;
-                    document.getElementById('statPinjam').innerText = a.p;
-                    document.getElementById('rankBulan').innerText = a.rB;
-                    document.getElementById('rankAll').innerText = a.rA;
-                    document.getElementById('listBukuRiwayat').innerHTML = a.l.map(b => 
-                        `<div class="text-[11px] text-slate-600 truncate bg-blue-50/50 p-2 rounded-lg border border-blue-100"><i class="fa-solid fa-circle-check text-sky-500 mr-2"></i>${b}</div>`
-                    ).join('') || '<div class="text-[10px] text-slate-400">Belum ada riwayat</div>';
-                    
-                    setupRatingStars(payload.judul_buku);
+                if (viewData) {
+                    const r = calculateRank(viewData.poin_saat_ini);
+                    modalBody.innerHTML = `
+                        <div class="text-center flex flex-col items-center mb-4">
+                            <div class="w-24 h-24 mb-1 overflow-hidden">
+                                <img src="${r.img}" alt="Rank" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-sky-600 text-[10px] font-black tracking-widest uppercase mb-1">${r.name}</div>
+                            <h2 class="text-slate-800 font-extrabold text-lg uppercase tracking-tight w-full truncate">${viewData.nama}</h2>
+                            <div class="text-slate-400 text-[9px] font-bold uppercase mt-1">${viewData.jenjang} • KAMAR ${viewData.kamar}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div class="stat-card border-sky-100 bg-sky-50/30">
+                                <span class="text-[8px] font-bold text-sky-600 uppercase">Poin Kamu</span><br>
+                                <span class="text-xl font-black text-sky-600">${viewData.poin_saat_ini}</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase">Kunjungan</span><br>
+                                <span class="text-xl font-black text-slate-800">${viewData.total_kunjungan}</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="stat-card">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase">Total Baca</span><br>
+                                <span class="text-lg font-black text-slate-700">${viewData.total_baca}</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase">Total Pinjam</span><br>
+                                <span class="text-lg font-black text-slate-700">${viewData.total_pinjam}</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-2 mb-1">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Koleksi
+                            </span>
+                            <div class="text-[10px] text-slate-600 leading-tight font-semibold max-h-20 overflow-y-auto italic">
+                                ${viewData.history_judul_buku || 'Belum ada riwayat.'}
+                            </div>
+                        </div>`;
                 }
-
+                modal.style.display = 'flex';
+            } catch (err) {
+                showToast("Gagal: " + err.message);
+            } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
-
-            } catch (err) { 
-                console.error(err);
-                alert("Sinkronisasi gagal!"); 
-                btn.disabled = false; 
                 btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Simpan & Sinkron';
             }
         };
 
-        function setupRatingStars(judulBuku) {
-            const stars = document.querySelectorAll('#starContainer i');
-            stars.forEach(star => {
-                star.onclick = async () => {
-                    const val = parseInt(star.dataset.value);
-                    stars.forEach(s => s.classList.toggle('active', s.dataset.value <= val));
-
-                    const { data: buku } = await client.from('biblio').select('rating_total, rating_count').eq('judul', judulBuku).single();
-                    if (buku) {
-                        const t = (buku.rating_total || 0) + val;
-                        const c = (buku.rating_count || 0) + 1;
-                        await client.from('biblio').update({
-                            rating_total: t,
-                            rating_count: c,
-                            rating_avg: t / c
-                        }).eq('judul', judulBuku);
-                    }
-
-                    document.getElementById('ratingModal').style.display = 'none';
-                    document.getElementById('customModal').style.display = 'flex';
-                };
-            });
-        }
-
         document.getElementById('modalAction').onclick = () => location.reload();
-        window.onclick = (e) => { 
-            if (!e.target.closest('.relative')) document.querySelectorAll('.drop-box').forEach(d => d.style.display = 'none'); 
-        };
     </script>
 </body>
 </html>
