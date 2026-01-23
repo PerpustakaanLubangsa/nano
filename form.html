@@ -153,17 +153,18 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         let searchTimer;
 
+        // PEMBARUAN LOGIKA RANK (1 Kunjungan = 5 Poin)
         function calculateRank(poin) {
             let rank = "Warrior";
-            if (poin >= 1000) rank = "Immortal";
-            else if (poin >= 955) rank = "Glory";
-            else if (poin >= 905) rank = "Honor";
-            else if (poin >= 855) rank = "Mythic";
-            else if (poin >= 655) rank = "Legend";
-            else if (poin >= 455) rank = "Epic";
-            else if (poin >= 305) rank = "Grandmaster";
-            else if (poin >= 155) rank = "Master";
-            else if (poin >= 55) rank = "Elite";
+            if (poin >= 150) rank = "Immortal";       // 30 Kunjungan
+            else if (poin >= 125) rank = "Glory";     // 25 Kunjungan
+            else if (poin >= 100) rank = "Honor";     // 20 Kunjungan
+            else if (poin >= 75) rank = "Mythic";      // 15 Kunjungan (Target Utama)
+            else if (poin >= 60) rank = "Legend";      // 12 Kunjungan
+            else if (poin >= 45) rank = "Epic";        // 9 Kunjungan
+            else if (poin >= 30) rank = "Grandmaster"; // 6 Kunjungan
+            else if (poin >= 20) rank = "Master";      // 4 Kunjungan
+            else if (poin >= 10) rank = "Elite";       // 2 Kunjungan
             return { name: rank, img: `${rank}.jpg` };
         }
 
@@ -273,7 +274,6 @@
                 if (checkError) throw checkError;
 
                 if (recentLogs && recentLogs.length > 0) {
-                    // TAMPILAN MODAL COOLDOWN
                     modalBody.innerHTML = `
                         <div class="text-center py-6">
                             <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -288,7 +288,6 @@
                     return;
                 }
 
-                // JIKA LOLOS CEK, INSERT DATA
                 const payload = {
                     nama: namaUser,
                     kamar: document.getElementById('inputKamar').value,
@@ -302,7 +301,6 @@
                 const { error: errInsert } = await client.from('data_pengunjung').insert([payload]);
                 if (errInsert) throw errInsert;
 
-                // AMBIL DATA REKAP UNTUK TAMPILAN SUKSES
                 const { data: viewData } = await client.from('rekap_pengunjung_lengkap').select('*').eq('nama', namaUser).maybeSingle();
 
                 if (viewData) {
