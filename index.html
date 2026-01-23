@@ -205,6 +205,8 @@
             try {
                 let data, error;
                 if (query.trim() !== "") {
+                    // Script ini memanggil fungsi smart_search_books di database. 
+                    // Jika SQL sudah diupdate di database, pencarian TOPIK otomatis aktif.
                     const { data: rpcData, error: rpcError } = await client.rpc('smart_search_books', {
                         search_query: query, page_num: Number(page), items_per_page: Number(perPage)
                     });
