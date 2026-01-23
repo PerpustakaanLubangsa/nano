@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peringkat Pembaca - Snowy Digital Library</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #0ea5e9; }
+        * { scrollbar-width: none; -ms-overflow-style: none; box-sizing: border-box; }
+        *::-webkit-scrollbar { display: none; }
+        body { 
+            background: radial-gradient(circle at top right, #e0f2fe, #f0f9ff);
+            color: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; margin: 0; padding: 15px;
+        }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 20px; }
+        .search-input { width: 100%; background: white; border: 1.5px solid #e2e8f0; padding: 12px 15px; border-radius: 18px; font-size: 14px; font-weight: 600; outline: none; }
+        
+        .member-card { 
+            background: white; border-radius: 18px; padding: 12px 16px; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 15px; cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent;
+        }
+        .member-card:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.1); }
+        
+        .rank-pure { width: 50px; height: 50px; flex-shrink: 0; }
+        .rank-pure img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05)); }
+
+        /* Modal Base */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); 
+            display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(12px); padding: 15px;
+        }
+        .modal-box { 
+            background: white; border-radius: 32px; width: 100%; max-width: 400px; 
+            max-height: 85vh; overflow-y: auto; position: relative;
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);
+        }
+        .close-top {
+            position: absolute; top: 20px; right: 20px; width: 32px; height: 32px;
+            background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: #64748b; font-size: 14px; cursor: pointer; z-index: 10; transition: 0.2s;
+        }
+        .close-top:hover { background: #fee2e2; color: #ef4444; }
+
+        .history-item {
+            position: relative; padding-left: 20px; border-left: 2px solid #e2e8f0;
+            padding-bottom: 12px; font-size: 11px;
+        }
+        .history-item::before {
+            content: ""; position: absolute; left: -6px; top: 0;
+            width: 10px; height: 10px; border-radius: 50%; background: #0ea5e9; border: 2px solid white;
+        }
+        .history-item:last-child { border: none; }
+        
+        /* Rank Rule Item */
+        .rule-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .rule-item:last-child { border: none; }
+
+        .btn-nav { background: white; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 14px; font-weight: 800; font-size: 10px; letter-spacing: 1px; }
+        .btn-nav:disabled { opacity: 0.3; }
+    </style>
+</head>
+<body>
+
+    <div id="infoModal" class="modal-overlay" style="display: flex;">
+        <div class="modal-box p-6">
+            <div class="close-top" onclick="closeInfo()"><i class="fa-solid fa-xmark"></i></div>
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-circle-info text-sky-500 text-3xl mb-2"></i>
+                <h2 class="text-slate-800 font-extrabold text-lg uppercase tracking-tight">Ketentuan Rank</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Snowy Digital Library</p>
+            </div>
+            
+            <div class="space-y-1 bg-slate-50 rounded-2xl p-2 border border-slate-100 mb-4">
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">IMMORTAL</span><span class="text-[11px] font-black text-sky-600">1000+ Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">GLORY</span><span class="text-[11px] font-black text-sky-600">955 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">HONOR</span><span class="text-[11px] font-black text-sky-600">905 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">MYTHIC</span><span class="text-[11px] font-black text-sky-600">855 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">LEGEND</span><span class="text-[11px] font-black text-sky-600">655 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">EPIC</span><span class="text-[11px] font-black text-sky-600">455 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">GRANDMASTER</span><span class="text-[11px] font-black text-sky-600">305 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">MASTER</span><span class="text-[11px] font-black text-sky-600">155 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">ELITE</span><span class="text-[11px] font-black text-sky-600">55 Pts</span></div>
+                <div class="rule-item"><span class="text-[11px] font-bold text-slate-700">WARRIOR</span><span class="text-[11px] font-black text-sky-600">0 Pts</span></div>
+            </div>
+
+            <div class="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i>
+                    <div>
+                        <p class="text-[11px] font-extrabold text-red-600 uppercase">Peringatan Keaktifan</p>
+                        <p class="text-[10px] font-medium text-red-500 leading-relaxed">Tidak berkunjung selama 3 hari berturut-turut akan dikurangi <strong class="font-black">-2 Poin</strong> secara otomatis.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeInfo()" class="w-full bg-sky-500 text-white py-3 rounded-xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all">Mengerti</button>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="close-top" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></div>
+            <div class="p-8">
+                <div class="text-center flex flex-col items-center mb-8 pt-4">
+                    <div class="w-28 h-28 mb-3">
+                        <img id="mRankImg" src="" class="w-full h-full object-contain filter drop-shadow-xl">
+                    </div>
+                    <div id="mRankLabel" class="text-sky-500 text-[11px] font-black tracking-[0.3em] uppercase mb-1">RANK</div>
+                    <h2 id="mNama" class="text-slate-800 font-extrabold text-xl uppercase leading-tight mb-1">NAMA</h2>
+                    <div id="mIdentitas" class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">INFO</div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 mb-8">
+                    <div class="stat-box text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Kunjungan</p>
+                        <p id="mKunjungan" class="text-lg font-black text-slate-800">0</p>
+                    </div>
+                    <div class="stat-box text-center p-3 bg-sky-50 rounded-2xl border border-sky-100">
+                        <p class="text-[8px] font-black text-sky-500 uppercase">Total Poin</p>
+                        <p id="mPoin" class="text-lg font-black text-sky-600">0</p>
+                    </div>
+                    <div class="stat-box text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[8px] font-black text-slate-400 uppercase">Baca/Pinjam</p>
+                        <p id="mAktif" class="text-lg font-black text-slate-800">0/0</p>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <p class="text-[10px] font-black text-slate-800 uppercase mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ul text-sky-500"></i> Histori Koleksi Terakhir
+                    </p>
+                    <div id="mHistoriList" class="flex flex-col"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto">
+        <header class="flex items-center justify-between mb-6 pt-2">
+            <button onclick="window.location.href='index.html'" class="w-10 h-10 glass-card flex items-center justify-center text-slate-500 hover:text-sky-500 transition-all">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="text-center">
+                <h1 class="text-lg font-black text-slate-800 tracking-tighter uppercase italic">Snowy Library</h1>
+                <p id="totalCount" class="text-[8px] font-black text-sky-400 uppercase tracking-[0.2em]">Syncing Records...</p>
+            </div>
+            <div class="w-10"></div>
+        </header>
+
+        <div class="mb-6 flex gap-2">
+            <input type="text" id="searchInput" placeholder="Cari nama atau nis anggota..." class="search-input shadow-xl shadow-sky-100/20 flex-1">
+            <button onclick="document.getElementById('infoModal').style.display='flex'" class="w-12 h-12 bg-white rounded-[18px] flex items-center justify-center text-sky-500 shadow-xl shadow-sky-100/20 border border-slate-100 active:bg-slate-50 transition-all"><i class="fa-solid fa-circle-question"></i></button>
+        </div>
+
+        <div id="listContainer" class="flex flex-col min-h-[450px]"></div>
+
+        <div class="flex items-center justify-between mt-10 pb-10">
+            <button id="prevBtn" class="btn-nav shadow-sm active:bg-slate-50">PREV</button>
+            <span id="pageLabel" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Page 1</span>
+            <button id="nextBtn" class="btn-nav shadow-sm active:bg-slate-50">NEXT</button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let currentPage = 0;
+        const perPage = 10;
+        let searchStr = "";
+        let timer;
+
+        function getRank(poin) {
+            let r = "Warrior";
+            if (poin >= 1000) r = "Immortal";
+            else if (poin >= 955) r = "Glory";
+            else if (poin >= 905) r = "Honor";
+            else if (poin >= 855) r = "Mythic";
+            else if (poin >= 655) r = "Legend";
+            else if (poin >= 455) r = "Epic";
+            else if (poin >= 305) r = "Grandmaster";
+            else if (poin >= 155) r = "Master";
+            else if (poin >= 55) r = "Elite";
+            return { name: r, img: `${r}.jpg` };
+        }
+
+        async function load() {
+            const list = document.getElementById('listContainer');
+            list.innerHTML = `<div class="p-20 text-center"><i class="fa-solid fa-snowflake fa-spin text-sky-300 text-3xl"></i></div>`;
+            
+            const start = currentPage * perPage;
+            const end = start + perPage - 1;
+
+            let query = client.from('rekap_pengunjung_lengkap').select('*', { count: 'exact' });
+            if (searchStr) query = query.ilike('nama', `%${searchStr}%`);
+
+            const { data, count, error } = await query.order('poin_saat_ini', { ascending: false }).range(start, end);
+
+            if (data) {
+                document.getElementById('totalCount').innerText = `${count} Active Members`;
+                document.getElementById('pageLabel').innerText = `Page ${currentPage + 1}`;
+                document.getElementById('prevBtn').disabled = (currentPage === 0);
+                document.getElementById('nextBtn').disabled = (end >= count - 1);
+
+                list.innerHTML = data.map(u => {
+                    const r = getRank(u.poin_saat_ini);
+                    return `
+                    <div class="member-card shadow-sm" onclick="showDetail(${JSON.stringify(u).replace(/"/g, '&quot;')})">
+                        <div class="rank-pure">
+                            <img src="${r.img}" alt="${r.name}">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-[13px] font-extrabold text-slate-800 uppercase truncate">${u.nama}</h3>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${u.jenjang} • ${u.kamar}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[14px] font-black text-sky-600">${u.poin_saat_ini}</div>
+                            <div class="text-[7px] font-bold text-slate-300 uppercase tracking-tighter">Pts</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function showDetail(u) {
+            const r = getRank(u.poin_saat_ini);
+            document.getElementById('mRankImg').src = r.img;
+            document.getElementById('mRankLabel').innerText = r.name;
+            document.getElementById('mNama').innerText = u.nama;
+            document.getElementById('mIdentitas').innerText = `${u.jenjang} • ${u.kamar}`;
+            document.getElementById('mPoin').innerText = u.poin_saat_ini;
+            document.getElementById('mKunjungan').innerText = u.total_kunjungan;
+            document.getElementById('mAktif').innerText = `${u.total_baca}/${u.total_pinjam}`;
+            
+            const historyContainer = document.getElementById('mHistoriList');
+            if (u.history_judul_buku) {
+                const books = u.history_judul_buku.split(', ');
+                historyContainer.innerHTML = books.map(book => `
+                    <div class="history-item">
+                        <span class="text-slate-700 font-bold uppercase">${book}</span>
+                    </div>
+                `).join('');
+            } else {
+                historyContainer.innerHTML = `<p class="text-slate-400 italic text-[10px]">Belum ada data koleksi.</p>`;
+            }
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+        function closeInfo() { document.getElementById('infoModal').style.display = 'none'; }
+
+        document.getElementById('searchInput').oninput = (e) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { searchStr = e.target.value; currentPage = 0; load(); }, 500);
+        };
+
+        document.getElementById('prevBtn').onclick = () => { currentPage--; load(); window.scrollTo(0,0); };
+        document.getElementById('nextBtn').onclick = () => { currentPage++; load(); window.scrollTo(0,0); };
+
+        window.onload = load;
+    </script>
+</body>
+</html>
