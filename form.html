@@ -153,18 +153,17 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
         let searchTimer;
 
-        // PEMBARUAN LOGIKA RANK (1 Kunjungan = 5 Poin)
         function calculateRank(poin) {
             let rank = "Warrior";
-            if (poin >= 150) rank = "Immortal";       // 30 Kunjungan
-            else if (poin >= 125) rank = "Glory";     // 25 Kunjungan
-            else if (poin >= 100) rank = "Honor";     // 20 Kunjungan
-            else if (poin >= 75) rank = "Mythic";      // 15 Kunjungan (Target Utama)
-            else if (poin >= 60) rank = "Legend";      // 12 Kunjungan
-            else if (poin >= 45) rank = "Epic";        // 9 Kunjungan
-            else if (poin >= 30) rank = "Grandmaster"; // 6 Kunjungan
-            else if (poin >= 20) rank = "Master";      // 4 Kunjungan
-            else if (poin >= 10) rank = "Elite";       // 2 Kunjungan
+            if (poin >= 150) rank = "Immortal";
+            else if (poin >= 125) rank = "Glory";
+            else if (poin >= 100) rank = "Honor";
+            else if (poin >= 75) rank = "Mythic";
+            else if (poin >= 60) rank = "Legend";
+            else if (poin >= 45) rank = "Epic";
+            else if (poin >= 30) rank = "Grandmaster";
+            else if (poin >= 20) rank = "Master";
+            else if (poin >= 10) rank = "Elite";
             return { name: rank, img: `${rank}.jpg` };
         }
 
@@ -209,23 +208,6 @@
                 }, 400);
             });
 
-            if (inputId === 'inputNama') {
-                input.addEventListener('blur', async () => {
-                    setTimeout(async () => {
-                        const val = input.value.trim();
-                        if (!val || drop.style.display === 'block') return;
-                        if (/^\d+$/.test(val)) {
-                            const { data } = await client.from('anggota').select('*').eq('nis', val).maybeSingle();
-                            if (data) {
-                                input.value = data.nama;
-                                document.getElementById('inputKamar').value = data.kamar || '';
-                                document.getElementById('inputJenjang').value = data.jenjang || '';
-                            } else { input.value = ''; showToast("NIS tidak ditemukan!"); }
-                        }
-                    }, 200);
-                });
-            }
-
             function updateActive(items) {
                 items.forEach((item, i) => {
                     item.classList.toggle('active', i === activeIdx);
@@ -262,7 +244,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>MEMPROSES...';
 
             try {
-                // CEK COOLDOWN 3 JAM
+                // 1. CEK COOLDOWN 3 JAM
                 const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
                 const { data: recentLogs, error: checkError } = await client
                     .from('data_pengunjung')
@@ -288,6 +270,7 @@
                     return;
                 }
 
+                // 2. INPUT DATA BARU
                 const payload = {
                     nama: namaUser,
                     kamar: document.getElementById('inputKamar').value,
@@ -301,14 +284,18 @@
                 const { error: errInsert } = await client.from('data_pengunjung').insert([payload]);
                 if (errInsert) throw errInsert;
 
-                const { data: viewData } = await client.from('rekap_pengunjung_lengkap').select('*').eq('nama', namaUser).maybeSingle();
+                // 3. JEDA 1 DETIK (Penting agar database View terupdate)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // 4. AMBIL DATA PENCAPAIAN
+                const { data: viewData, error: errView } = await client.from('rekap_pengunjung_lengkap').select('*').eq('nama', namaUser).maybeSingle();
 
                 if (viewData) {
                     const r = calculateRank(viewData.poin_saat_ini);
                     modalBody.innerHTML = `
                         <div class="text-center flex flex-col items-center mb-4">
                             <div class="w-24 h-24 mb-1 overflow-hidden">
-                                <img src="${r.img}" alt="Rank" class="w-full h-full object-contain">
+                                <img src="${r.img}" alt="Rank" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/100x100?text=Rank'">
                             </div>
                             <div class="text-sky-600 text-[10px] font-black tracking-widest uppercase mb-1">${r.name}</div>
                             <h2 class="text-slate-800 font-extrabold text-lg uppercase tracking-tight w-full truncate">${viewData.nama}</h2>
@@ -341,6 +328,14 @@
                             <div class="text-[10px] text-slate-600 leading-tight font-semibold max-h-20 overflow-y-auto italic">
                                 ${viewData.history_judul_buku || 'Belum ada riwayat.'}
                             </div>
+                        </div>`;
+                } else {
+                    // Jika data rekap belum tersedia, tampilkan pesan sukses standar
+                    modalBody.innerHTML = `
+                        <div class="text-center py-6">
+                             <i class="fa-solid fa-circle-check text-green-500 text-5xl mb-4"></i>
+                             <h2 class="text-slate-800 font-extrabold text-xl mb-2">BERHASIL DISIMPAN!</h2>
+                             <p class="text-slate-500 text-sm font-semibold">Data kunjungan Anda telah masuk ke sistem.</p>
                         </div>`;
                 }
                 modal.style.display = 'flex';
