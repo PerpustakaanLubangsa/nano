@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detail Koleksi - Perpustakaan Lubangsa</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --bg-body: #f8fafd; --bg-card: #ffffff; --text-main: #1f1f1f; --google-gray: #f1f3f4; --border: #dee2e6; }
+@media (prefers-color-scheme: dark) { :root { --bg-body: #131314; --bg-card: #1e1f20; --text-main: #e3e3e3; --google-gray: #2b2b2b; --border: #444746; } }
+* { margin:0; padding:0; box-sizing:border-box; border:none !important; outline:none !important; }
+body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+.btn-back { width: 40px; height: 40px; border-radius: 50% !important; background: var(--bg-card); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border) !important; transition: 0.3s; }
+.btn-back:hover { background: var(--google-gray); }
+.detail-container { max-width: 1000px; margin: 40px auto; padding: 0 24px; }
+.cover-img { width: 100%; max-width: 300px; border-radius: 32px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+.eks-card { background: var(--google-gray); border-radius: 20px !important; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<div class="detail-container">
+<button onclick="history.back()" class="btn-back mb-8"><i class="fa-solid fa-arrow-left"></i></button>
+<div id="content" class="flex flex-col md:flex-row gap-12 opacity-0 transition-opacity duration-500">
+<div class="md:w-1/3 flex justify-center"><img id="cover" class="cover-img"></div>
+<div class="md:w-2/3">
+<h1 id="judul" class="text-3xl md:text-4xl font-600 mb-2 leading-tight tracking-tight"></h1>
+<p id="penulis" class="text-blue-500 font-700 uppercase text-xs mb-8"></p>
+<div class="grid grid-cols-2 gap-y-6 gap-x-12 mb-10 text-sm">
+<div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">ISBN / ISSN</p><p id="isbn" class="font-600"></p></div>
+<div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Penerbit</p><p id="penerbit" class="font-600"></p></div>
+<div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Tahun Terbit</p><p id="tahun" class="font-600"></p></div>
+<div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Kategori</p><p id="kategori" class="font-600"></p></div>
+</div>
+<h3 class="font-800 text-[10px] uppercase opacity-40 mb-4 tracking-widest">Ketersediaan Eksemplar</h3>
+<div id="eksList" class="space-y-3"></div>
+</div>
+</div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const urlParams = new URLSearchParams(window.location.search);
+const id = urlParams.get('id');
+async function loadDetail() {
+if(!id) return location.href = 'index.html';
+const { data: b, error } = await supabase.from('biblio').select('*, ekslempar(*)').eq('id', id).single();
+if(error) return alert("Buku tidak ditemukan");
+document.title = b.judul;
+document.getElementById('cover').src = b.sampul_url || 'https://via.placeholder.com/300x450';
+document.getElementById('judul').innerText = b.judul;
+document.getElementById('penulis').innerText = b.penulis || 'ANONIM';
+document.getElementById('isbn').innerText = b.isbn_issn || '-';
+document.getElementById('penerbit').innerText = b.penerbit || '-';
+document.getElementById('tahun').innerText = b.tahun_terbit || '-';
+document.getElementById('kategori').innerText = b.kategori || '-';
+document.getElementById('eksList').innerHTML = b.ekslempar.map(e => `
+<div class="eks-card">
+<div><p class="text-xs font-800">${e.kode}</p><p class="text-[10px] opacity-40 uppercase font-700">${e.lokasi_rak || 'UMUM'}</p></div>
+<span class="text-[10px] font-800 uppercase px-4 py-1.5 rounded-full ${e.status === 'Tersedia' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">${e.status}</span>
+</div>`).join('') || '<p class="text-xs opacity-50">Tidak ada eksemplar.</p>';
+document.getElementById('content').classList.remove('opacity-0');
+}
+loadDetail();
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Detail Sirkulasi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-page: #f8fafd;
+--bg-surface: #ffffff;
+--text-main: #1f1f1f;
+--text-sub: #444746;
+--brand: #1a73e8;
+--border: #dee1e5;
+--input-bg: #f0f4f9;
+--danger: #d93025;
+--tag-bg: rgba(26, 115, 232, 0.1);
+--success: #00c853;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-page: #000000;
+--bg-surface: #121212;
+--text-main: #e3e3e3;
+--text-sub: #9aa0a6;
+--brand: #8ab4f8;
+--border: #303134;
+--input-bg: #1e1f20;
+--danger: #f28b82;
+--tag-bg: rgba(138, 180, 248, 0.15);
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-page);
+color: var(--text-main);
+display: flex;
+align-items: center;
+justify-content: center;
+height: 100vh;
+width: 100vw;
+overflow: hidden;
+}
+.app-container { width: 100%; max-width: 420px; padding: 12px; height: 100%; display: flex; align-items: center; justify-content: center; }
+.card {
+background: var(--bg-surface);
+border: 1px solid var(--border);
+border-radius: 24px;
+padding: 20px;
+width: 100%;
+max-height: 95vh;
+display: flex;
+flex-direction: column;
+gap: 12px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+position: relative;
+}
+.section-title { font-size: 9px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
+.data-group { display: flex; flex-direction: column; gap: 2px; }
+.main-val { font-size: 16px; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+.sub-val { font-size: 12px; font-weight: 600; color: var(--brand); }
+.tag-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tag { padding: 3px 8px; background: var(--tag-bg); color: var(--brand); font-size: 9px; font-weight: 700; border-radius: 6px; }
+.status-badge { padding: 4px 12px; border-radius: 100px; font-size: 9px; font-weight: 800; color: #000; }
+.action-area { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.btn {
+width: 100%;
+padding: 12px;
+border-radius: 100px;
+font-family: inherit;
+font-size: 13px;
+font-weight: 700;
+cursor: pointer;
+border: none;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+}
+.btn-primary { background: var(--brand); color: #000; }
+.btn-secondary { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--border); }
+.kbd-hint { font-size: 9px; padding: 1px 5px; background: rgba(0,0,0,0.1); border-radius: 4px; opacity: 0.6; }
+.hidden { display: none !important; }
+.success-overlay { text-align: center; padding: 6px; background: var(--tag-bg); border-radius: 10px; border: 1px solid var(--brand); margin-bottom: -4px; }
+hr { border: none; border-top: 1px solid var(--border); }
+.modal-overlay {
+position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+background: rgba(0,0,0,0.5);
+display: flex; align-items: center; justify-content: center;
+z-index: 1000; padding: 20px;
+}
+.modal-content {
+background: var(--bg-surface);
+border-radius: 20px;
+padding: 24px;
+width: 100%; max-width: 320px;
+text-align: center;
+box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+.toast {
+position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+background: var(--brand); color: #000;
+padding: 10px 20px; border-radius: 100px;
+font-size: 12px; font-weight: 700;
+z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+animation: slideInUp 0.3s ease;
+}
+@keyframes slideInUp { from { transform: translate(-50%, 50px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="app-container">
+<div id="loader" class="card">
+<div style="height: 18px; background: var(--input-bg); border-radius: 6px; width: 40%; animation: pulse 1.5s infinite;"></div>
+<div style="height: 18px; background: var(--input-bg); border-radius: 6px; width: 80%; animation: pulse 1.5s infinite; margin-top:10px;"></div>
+</div>
+<div id="content" class="card hidden">
+<div id="successMsg" class="success-overlay hidden">
+<p id="msgText" style="font-size: 11px; font-weight: 800; color: var(--brand);">✓ PEMINJAMAN BERHASIL</p>
+</div>
+<div class="data-group">
+<span class="section-title">Peminjam</span>
+<p id="detNama" class="main-val">-</p>
+<p id="detNis" class="sub-val">-</p>
+<div id="memberTags" class="tag-container"></div>
+</div>
+<hr>
+<div class="data-group">
+<span class="section-title">Buku</span>
+<p id="detJudul" class="main-val">-</p>
+<p id="detKode" class="sub-val">-</p>
+<div id="bookTags" class="tag-container"></div>
+</div>
+<hr>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="data-group">
+<span class="section-title">Jatuh Tempo</span>
+<p id="detTempo" style="font-size: 15px; font-weight: 700; color: var(--brand);">-</p>
+</div>
+<div id="detStatus" class="status-badge">-</div>
+</div>
+<div id="preAction" class="action-area">
+<button id="btnKonfirmasi" class="btn btn-primary">Konfirmasi Pinjaman <span class="kbd-hint">Enter</span></button>
+<button id="btnKembali" class="btn btn-secondary">Kembali <span class="kbd-hint">Esc</span></button>
+</div>
+<div id="postAction" class="action-area hidden">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+<button id="btnPerpanjang" class="btn btn-secondary">Perpanjang <span class="kbd-hint">+</span></button>
+<button id="btnKembalikan" class="btn btn-danger" style="font-size: 11px;">Kembalikan <span class="kbd-hint">-</span></button>
+</div>
+<button id="btnSelesai" class="btn btn-primary">Selesai <span class="kbd-hint">Enter</span></button>
+</div>
+</div>
+</div>
+<div id="customModal" class="modal-overlay hidden">
+<div class="modal-content">
+<h3 id="modalTitle" style="font-size: 16px; margin-bottom: 8px;">Konfirmasi</h3>
+<p id="modalBody" style="font-size: 13px; color: var(--text-sub); margin-bottom: 20px;">Apakah Anda yakin?</p>
+<div style="display: flex; gap: 8px;">
+<button id="modalCancel" class="btn btn-secondary">Batal</button>
+<button id="modalConfirm" class="btn btn-primary">Ya, Lanjut</button>
+</div>
+</div>
+</div>
+<script type="module">
+import { supabase as client } from './supa/supa.js';
+let dataReady = { member: null, book: null, sirkulasiId: null };
+let isConfirmed = false;
+let isProcessing = false;
+let modalCallback = null;
+function showToast(msg) {
+const t = document.createElement('div');
+t.className = 'toast';
+t.innerText = msg;
+document.body.appendChild(t);
+setTimeout(() => t.remove(), 2500);
+}
+function showModal(title, body, callback) {
+document.getElementById('modalTitle').innerText = title;
+document.getElementById('modalBody').innerText = body;
+document.getElementById('customModal').classList.remove('hidden');
+modalCallback = callback;
+}
+function closeModal() {
+document.getElementById('customModal').classList.add('hidden');
+modalCallback = null;
+}
+async function loadDetail() {
+const sessionData = sessionStorage.getItem('pending_loan');
+if (!sessionData) { window.location.href = 'sirkulasi.html'; return; }
+const payload = JSON.parse(sessionData);
+const { data: anggota, error: errA } = await client.from('anggota').select('*').eq('id', payload.member?.id).single();
+const { data: eks, error: errE } = await client.from('ekslempar').select('*, biblio(*)').eq('kode', payload.book?.kode.trim()).single();
+if (errA || errE || !anggota || !eks) { window.location.href = 'sirkulasi.html'; return; }
+dataReady.member = anggota; dataReady.book = eks;
+document.getElementById('detNama').innerText = anggota.nama;
+document.getElementById('detNis').innerText = anggota.nis;
+const mTags = document.getElementById('memberTags'); mTags.innerHTML = '';
+[anggota.kamar, anggota.organisasi, anggota.jenjang].forEach(t => { if (t) mTags.innerHTML += `<span class="tag">${t}</span>`; });
+document.getElementById('detJudul').innerText = eks.biblio.judul;
+document.getElementById('detKode').innerText = eks.kode;
+const bTags = document.getElementById('bookTags'); bTags.innerHTML = '';
+if (eks.biblio.penulis) bTags.innerHTML += `<span class="tag">${eks.biblio.penulis}</span>`;
+if (eks.lokasi_rak) bTags.innerHTML += `<span class="tag">${eks.lokasi_rak}</span>`;
+const statusBadge = document.getElementById('detStatus');
+const currentStatus = eks.status || 'Tersedia';
+statusBadge.innerText = currentStatus.toUpperCase();
+statusBadge.style.background = currentStatus.toLowerCase() === 'tersedia' ? 'var(--success)' : 'var(--danger)';
+document.getElementById('btnKonfirmasi').disabled = currentStatus.toLowerCase() !== 'tersedia';
+if (payload.direct) {
+const { data: sirkul } = await client.from('sirkulasi').select('*').eq('member_id', anggota.id).eq('kode_eksemplar', eks.kode).eq('status', 'DIPINJAM').single();
+if (sirkul) { dataReady.sirkulasiId = sirkul.id; document.getElementById('detTempo').innerText = sirkul.tgl_kembali; showSuccessState(true); }
+} else {
+const tglKembali = new Date(); 
+tglKembali.setDate(tglKembali.getDate() + 4);
+const yyyy = tglKembali.getFullYear();
+const mm = String(tglKembali.getMonth() + 1).padStart(2, '0');
+const dd = String(tglKembali.getDate()).padStart(2, '0');
+document.getElementById('detTempo').innerText = `${yyyy}-${mm}-${dd}`;
+}
+document.getElementById('loader').classList.add('hidden');
+document.getElementById('content').classList.remove('hidden');
+}
+async function konfirmasiPinjam() {
+if (isConfirmed || isProcessing || document.getElementById('btnKonfirmasi').disabled) return;
+isProcessing = true;
+const now = new Date();
+const yyyy = now.getFullYear();
+const mm = String(now.getMonth() + 1).padStart(2, '0');
+const dd = String(now.getDate()).padStart(2, '0');
+const tglPinjam = `${yyyy}-${mm}-${dd}`;
+const tglKembali = document.getElementById('detTempo').innerText;
+const { data, error: insErr } = await client.from('sirkulasi').insert([{
+member_id: dataReady.member.id, biblio_id: dataReady.book.biblio_id, nis: dataReady.member.nis,
+nama_anggota: dataReady.member.nama, kode_eksemplar: dataReady.book.kode, judul_buku: dataReady.book.biblio.judul,
+status: 'DIPINJAM', tgl_pinjam: tglPinjam, tgl_kembali: tglKembali
+}]).select().single();
+if (!insErr) {
+await client.from('ekslempar').update({ status: 'Dipinjam' }).eq('kode', dataReady.book.kode);
+dataReady.sirkulasiId = data.id;
+showSuccessState();
+showToast("Pinjaman Berhasil!");
+}
+isProcessing = false;
+}
+async function kembalikanBuku() {
+if (!dataReady.sirkulasiId || isProcessing) return;
+showModal("Kembalikan Buku", "Hapus data sirkulasi dan kembalikan stok buku?", async () => {
+isProcessing = true;
+const { error: delErr } = await client.from('sirkulasi').delete().eq('id', dataReady.sirkulasiId);
+if (!delErr) {
+await client.from('ekslempar').update({ status: 'Tersedia' }).eq('kode', dataReady.book.kode);
+closeModal();
+showToast("Buku Kembali");
+setTimeout(goBack, 1000);
+}
+isProcessing = false;
+});
+}
+async function perpanjangBuku() {
+if (!dataReady.sirkulasiId || isProcessing) return;
+showModal("Perpanjang", "Refresh durasi pinjam menjadi 4 hari dari sekarang?", async () => {
+isProcessing = true;
+const current = new Date(); current.setDate(current.getDate() + 4);
+const yyyy = current.getFullYear();
+const mm = String(current.getMonth() + 1).padStart(2, '0');
+const dd = String(current.getDate()).padStart(2, '0');
+const newTempo = `${yyyy}-${mm}-${dd}`;
+const { error: upErr } = await client.from('sirkulasi').update({ tgl_kembali: newTempo }).eq('id', dataReady.sirkulasiId);
+if (!upErr) {
+document.getElementById('detTempo').innerText = newTempo;
+closeModal();
+showToast("Durasi Direfresh");
+}
+isProcessing = false;
+});
+}
+function showSuccessState(isDirect = false) {
+isConfirmed = true;
+document.getElementById('msgText').innerText = isDirect ? 'RINGKASAN PINJAMAN AKTIF' : '✓ PEMINJAMAN BERHASIL';
+document.getElementById('successMsg').classList.remove('hidden');
+document.getElementById('preAction').classList.add('hidden');
+document.getElementById('postAction').classList.remove('hidden');
+document.getElementById('detStatus').innerText = 'DIPINJAM';
+document.getElementById('detStatus').style.background = 'var(--brand)';
+}
+window.goBack = () => { sessionStorage.removeItem('pending_loan'); window.location.href = 'sirkulasi.html'; };
+document.getElementById('btnKonfirmasi').onclick = konfirmasiPinjam;
+document.getElementById('btnKembali').onclick = goBack;
+document.getElementById('btnSelesai').onclick = goBack;
+document.getElementById('btnPerpanjang').onclick = perpanjangBuku;
+document.getElementById('btnKembalikan').onclick = kembalikanBuku;
+document.getElementById('modalCancel').onclick = closeModal;
+document.getElementById('modalConfirm').onclick = () => modalCallback && modalCallback();
+window.addEventListener('keydown', (e) => {
+if (!document.getElementById('customModal').classList.contains('hidden')) {
+if (e.key === 'Enter') { e.preventDefault(); modalCallback && modalCallback(); }
+if (e.key === 'Escape') closeModal();
+return;
+}
+if (e.key === 'Escape') goBack();
+else if (e.key === 'Enter') { e.preventDefault(); isConfirmed ? goBack() : konfirmasiPinjam(); }
+else if (isConfirmed && (e.key === '+' || e.key === '=')) perpanjangBuku();
+else if (isConfirmed && e.key === '-') kembalikanBuku();
+});
+loadDetail();
+</script>
+</body>
+</html>

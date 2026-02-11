@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor Bibliografi • Gemini Style</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+--bg-main: #fcfdfe;
+--text-main: #1a1c1e;
+--text-muted: #5e6266;
+--accent: #0061ff;
+--border: #e9eef2;
+--input-bg: #f3f6f9;
+--modal-overlay: rgba(240, 244, 248, 0.7);
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--text-main: #e2e2e6;
+--text-muted: #8e9199;
+--accent: #a8c7fa;
+--border: #222427;
+--input-bg: #111315;
+--modal-overlay: rgba(0, 0, 0, 0.8);
+}
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #8882; border-radius: 10px; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+body { background-color: var(--bg-main); color: var(--text-main); padding: 20px 24px; line-height: 1.6; }
+.editor-wrapper { max-width: 720px; margin: 0 auto; }
+.nav-back { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--input-bg); border-radius: 14px; color: var(--text-main); cursor: pointer; margin-bottom: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid var(--border); }
+.nav-back:hover { background: var(--accent); color: #000; transform: translateX(-4px); border-color: var(--accent); }
+.section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-top: 32px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+.section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; padding-left: 4px; }
+.form-control { width: 100%; background: var(--input-bg); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500; color: var(--text-main); outline: none; transition: all 0.3s; }
+.form-control:focus { border-color: var(--accent); background: var(--bg-main); box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.05); }
+.eks-tag { background: var(--input-bg); border: 1px solid var(--border); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease; }
+.eks-tag:hover { border-color: var(--accent); transform: scale(1.02); }
+.tag-pill { background: var(--accent); color: #000; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.modal { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal.active { display: flex; }
+.modal-content { background: var(--bg-main); width: 100%; max-width: 420px; border-radius: 32px; padding: 32px; border: 1px solid var(--border); }
+.btn-save-main { background: var(--accent); color: #000; padding: 12px 32px; border-radius: 30px; font-size: 13px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+.btn-save-main:hover { transform: translateY(-1px); opacity: 0.9; }
+.btn-delete-link { font-size: 11px; font-weight: 700; color: #ef4444; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+.btn-delete-link:hover { opacity: 1; }
+.loader-full { position: fixed; inset: 0; background: var(--bg-main); z-index: 9999; display: none; align-items: center; justify-content: center; }
+.loader-full.active { display: flex; }
+</style>
+</head>
+<body>
+<div id="loader" class="loader-full"><i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl"></i></div>
+<div id="eksModal" class="modal">
+<div class="modal-content">
+<div class="form-group"><label>Barcode / Kode Eksemplar</label><input type="text" id="m_kode" class="form-control" placeholder="Scan barcode..."></div>
+<div class="form-group"><label>Nomor Panggil</label><input type="text" id="m_panggil" class="form-control"></div>
+<div class="form-group"><label>Lokasi Rak</label><input type="text" id="m_rak" class="form-control"></div>
+<div class="flex items-center justify-between mt-10">
+<button id="btnHapusEks" class="text-red-500 text-[10px] font-black uppercase hidden">Hapus Item</button>
+<div class="flex gap-4 ml-auto">
+<button onclick="closeModal()" class="text-muted font-bold text-sm">Batal</button>
+<button onclick="saveEks()" class="bg-black dark:bg-white dark:text-black text-white px-6 py-2.5 rounded-xl font-bold text-sm">Simpan</button>
+</div>
+</div>
+</div>
+</div>
+<div class="editor-wrapper">
+<div class="nav-back" onclick="location.href='bibliografi.html'"><i class="fa-solid fa-arrow-left text-lg"></i></div>
+<form id="biblioForm">
+<div class="section-title" style="margin-top: 0;">Informasi Dasar</div>
+<div class="form-group"><label>Judul Koleksi</label><input type="text" id="f_judul" class="form-control" placeholder="Judul lengkap buku..." required></div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0">
+<div class="form-group"><label>Penulis</label><input type="text" id="f_penulis" class="form-control"></div>
+<div class="form-group"><label>Penerbit</label><input type="text" id="f_penerbit" class="form-control"></div>
+<div class="form-group"><label>Tahun Terbit</label><input type="text" id="f_tahun" class="form-control"></div>
+<div class="form-group"><label>ISBN / ISSN</label><input type="text" id="f_isbn" class="form-control"></div>
+<div class="form-group"><label>Kategori</label><input type="text" id="f_kategori" class="form-control"></div>
+<div class="form-group"><label>Deskripsi Fisik</label><input type="text" id="f_fisik" class="form-control" placeholder="200 hlm; 21 cm"></div>
+</div>
+<div class="section-title">Visual & Abstrak</div>
+<div class="form-group"><label>URL Sampul Buku</label><input type="url" id="f_sampul" class="form-control" placeholder="https://..."></div>
+<div class="form-group"><label>Abstrak / Catatan</label><textarea id="f_abstrak" class="form-control" rows="3"></textarea></div>
+<div class="form-group">
+<label>Topik / Subjek</label>
+<input type="text" id="topicInput" class="form-control" placeholder="Tekan Enter">
+<div id="tagList" class="flex flex-wrap gap-2 mt-3"></div>
+</div>
+<div class="section-title">Unit Eksemplar</div>
+<div id="eksList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"></div>
+<button type="button" onclick="openModal()" class="text-xs font-bold text-blue-500 hover:opacity-70 transition-all">+ Tambah Eksemplar</button>
+<div class="mt-12 pt-8 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-end gap-6">
+<span id="btnDelete" class="btn-delete-link hidden" onclick="deleteData()">Hapus Koleksi</span>
+<button type="submit" class="btn-save-main">Simpan Perubahan</button>
+</div>
+</form>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const urlParams = new URLSearchParams(window.location.search);
+const editId = urlParams.get('id');
+let currentTags = [];
+let eksemplars = [];
+let editingEksIndex = null;
+if(editId) { loadDetail(); }
+async function loadDetail() {
+document.getElementById('loader').classList.add('active');
+const { data: biblio } = await supabase.from('biblio').select('*').eq('id', editId).single();
+const { data: eks } = await supabase.from('ekslempar').select('*').eq('biblio_id', editId);
+document.getElementById('loader').classList.remove('active');
+if(biblio) {
+document.getElementById('btnDelete').classList.remove('hidden');
+document.getElementById('f_judul').value = biblio.judul || '';
+document.getElementById('f_penulis').value = biblio.penulis || '';
+document.getElementById('f_penerbit').value = biblio.penerbit || '';
+document.getElementById('f_tahun').value = biblio.tahun_terbit || '';
+document.getElementById('f_isbn').value = biblio.isbn_issn || '';
+document.getElementById('f_kategori').value = biblio.kategori || '';
+document.getElementById('f_fisik').value = biblio.deskripsi_fisik || '';
+document.getElementById('f_sampul').value = biblio.sampul_url || '';
+document.getElementById('f_abstrak').value = biblio.abstrak || '';
+currentTags = Array.isArray(biblio.topik) ? biblio.topik : [];
+renderTags();
+}
+if(eks) { eksemplars = eks; renderEksemplar(); }
+}
+window.openModal = (index = null) => {
+editingEksIndex = index;
+if(index !== null) {
+const e = eksemplars[index];
+document.getElementById('m_kode').value = e.kode || '';
+document.getElementById('m_panggil').value = e.nomor_panggil || '';
+document.getElementById('m_rak').value = e.lokasi_rak || '';
+document.getElementById('btnHapusEks').classList.remove('hidden');
+document.getElementById('btnHapusEks').onclick = () => { eksemplars.splice(index, 1); closeModal(); renderEksemplar(); };
+} else {
+document.querySelectorAll('#eksModal input').forEach(i => i.value = '');
+document.getElementById('btnHapusEks').classList.add('hidden');
+}
+document.getElementById('eksModal').classList.add('active');
+};
+window.closeModal = () => document.getElementById('eksModal').classList.remove('active');
+window.saveEks = () => {
+const kode = document.getElementById('m_kode').value;
+if(!kode) return;
+const data = { kode, nomor_panggil: document.getElementById('m_panggil').value, lokasi_rak: document.getElementById('m_rak').value, status: 'Tersedia', status_audit: 'belum' };
+if(editingEksIndex !== null) eksemplars[editingEksIndex] = { ...eksemplars[editingEksIndex], ...data };
+else eksemplars.push(data);
+closeModal();
+renderEksemplar();
+};
+function renderEksemplar() {
+const list = document.getElementById('eksList');
+list.innerHTML = eksemplars.map((e, i) => `
+<div class="eks-tag" onclick="openModal(${i})">
+<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+<div class="flex-1">
+<div class="text-xs font-bold leading-none">${e.kode}</div>
+<div class="text-[10px] text-muted font-medium mt-1">${e.nomor_panggil || '-'} • ${e.lokasi_rak || '-'}</div>
+</div>
+<i class="fa-solid fa-chevron-right text-[10px] opacity-20"></i>
+</div>
+`).join('');
+}
+document.getElementById('topicInput').onkeydown = (e) => {
+if(e.key === 'Enter') {
+e.preventDefault();
+const val = e.target.value.trim();
+if(val && !currentTags.includes(val)) { currentTags.push(val); renderTags(); }
+e.target.value = '';
+}
+};
+function renderTags() {
+const list = document.getElementById('tagList');
+list.innerHTML = currentTags.map((t, i) => `<div class="tag-pill">${t}<i class="fa-solid fa-xmark opacity-40 cursor-pointer" onclick="removeTag(${i})"></i></div>`).join('');
+}
+window.removeTag = (i) => { currentTags.splice(i, 1); renderTags(); };
+document.getElementById('biblioForm').onsubmit = async (e) => {
+e.preventDefault();
+document.getElementById('loader').classList.add('active');
+const bibPayload = {
+judul: document.getElementById('f_judul').value,
+penulis: document.getElementById('f_penulis').value,
+penerbit: document.getElementById('f_penerbit').value,
+tahun_terbit: document.getElementById('f_tahun').value,
+isbn_issn: document.getElementById('f_isbn').value,
+kategori: document.getElementById('f_kategori').value,
+deskripsi_fisik: document.getElementById('f_fisik').value,
+sampul_url: document.getElementById('f_sampul').value,
+abstrak: document.getElementById('f_abstrak').value,
+topik: currentTags,
+updated_at: new Date().toISOString()
+};
+let bibId = editId;
+try {
+if(editId) { await supabase.from('biblio').update(bibPayload).eq('id', editId); }
+else { const { data, error } = await supabase.from('biblio').insert([bibPayload]).select().single(); if(error) throw error; bibId = data.id; }
+if(bibId) {
+await supabase.from('ekslempar').delete().eq('biblio_id', bibId);
+const eksPayload = eksemplars.map(ek => ({ biblio_id: bibId, kode: ek.kode, nomor_panggil: ek.nomor_panggil, lokasi_rak: ek.lokasi_rak, status: ek.status || 'Tersedia', status_audit: ek.status_audit || 'belum' }));
+if(eksPayload.length > 0) await supabase.from('ekslempar').insert(eksPayload);
+}
+location.href = 'bibliografi.html';
+} catch (err) { alert('Gagal: ' + err.message); } finally { document.getElementById('loader').classList.remove('active'); }
+};
+window.deleteData = async () => {
+if(confirm('Hapus koleksi?')) {
+document.getElementById('loader').classList.add('active');
+await supabase.from('biblio').delete().eq('id', editId);
+location.href = 'bibliografi.html';
+}
+};
+</script>
+</body>
+</html>

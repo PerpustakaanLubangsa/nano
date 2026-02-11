@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buku Tamu - Snowy Digital Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<style>
+:root {
+--bg-page: #000000;
+--bg-card: #000000;
+--text-primary: #e8eaed;
+--text-secondary: #9aa0a6;
+--border-color: #333333;
+--accent-color: #8ab4f8;
+--input-bg: #000000;
+--drop-bg: #121212;
+--skeleton: #222222;
+--item-hover: rgba(138, 180, 248, 0.1);
+--item-active: rgba(138, 180, 248, 0.25);
+}
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Plus Jakarta Sans', sans-serif;
+}
+body {
+background-color: var(--bg-page);
+color: var(--text-primary);
+height: 100vh;
+display: flex;
+flex-direction: column;
+padding: 24px;
+overflow: hidden;
+}
+header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 32px;
+flex-shrink: 0;
+}
+.header-title {
+font-size: 24px;
+font-weight: 800;
+letter-spacing: -0.5px;
+color: var(--text-primary);
+}
+.header-logo {
+height: 48px;
+width: auto;
+object-fit: contain;
+}
+form {
+display: flex;
+flex-direction: column;
+gap: 16px;
+height: 100%;
+overflow-y: auto;
+padding-bottom: 20px;
+}
+.field-group {
+position: relative;
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+.row {
+display: flex;
+gap: 12px;
+}
+.row > div {
+flex: 1;
+}
+label {
+font-size: 11px;
+font-weight: 700;
+color: var(--text-secondary);
+text-transform: uppercase;
+letter-spacing: 0.8px;
+}
+input, select {
+width: 100%;
+padding: 14px 16px;
+font-size: 15px;
+background-color: var(--input-bg);
+color: var(--text-primary);
+border: 1px solid var(--border-color);
+border-radius: 12px;
+outline: none;
+transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input:focus, select:focus {
+border-color: var(--accent-color);
+box-shadow: 0 0 0 1px var(--accent-color);
+}
+.drop-box {
+position: absolute;
+top: 100%;
+left: 0;
+right: 0;
+background-color: var(--drop-bg);
+border: 1px solid var(--border-color);
+border-radius: 12px;
+margin-top: 8px;
+max-height: 250px;
+overflow-y: auto;
+z-index: 1000;
+box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+display: none;
+}
+.drop-item {
+padding: 14px 16px;
+cursor: pointer;
+border-bottom: 1px solid var(--border-color);
+transition: all 0.1s;
+border-left: 4px solid transparent;
+}
+.drop-item:last-child {
+border-bottom: none;
+}
+.drop-item:hover {
+background-color: var(--item-hover);
+}
+.drop-item.active {
+background-color: var(--item-active);
+border-left-color: var(--accent-color);
+}
+.drop-item .main-text {
+font-size: 14px;
+font-weight: 700;
+line-height: 1.4;
+}
+.drop-item .sub-text {
+font-size: 11px;
+color: var(--text-secondary);
+margin-top: 4px;
+font-weight: 500;
+}
+.skeleton-item {
+padding: 12px 16px;
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+.sk-line {
+height: 14px;
+background: var(--skeleton);
+border-radius: 4px;
+position: relative;
+overflow: hidden;
+}
+.sk-line::after {
+content: "";
+position: absolute;
+inset: 0;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+animation: loading 1.5s infinite;
+}
+@keyframes loading {
+0% { transform: translateX(-100%); }
+100% { transform: translateX(100%); }
+}
+.sk-w-full { width: 100%; }
+.sk-w-half { width: 50%; height: 10px; }
+.actions {
+margin-top: auto;
+display: flex;
+flex-direction: column;
+gap: 12px;
+padding: 10px 0;
+flex-shrink: 0;
+}
+button {
+padding: 14px;
+border-radius: 28px;
+font-size: 15px;
+font-weight: 700;
+cursor: pointer;
+transition: all 0.2s;
+border: none;
+}
+.btn-rank {
+background-color: transparent;
+color: var(--accent-color);
+border: 1px solid var(--border-color);
+}
+.btn-submit {
+background-color: var(--accent-color);
+color: #ffffff;
+}
+button:active {
+transform: scale(0.98);
+}
+button:disabled {
+opacity: 0.5;
+cursor: not-allowed;
+}
+::-webkit-scrollbar {
+width: 0px;
+}
+</style>
+</head>
+<body>
+<header>
+<div class="header-title">BUKU TAMU</div>
+<img src="image/logo/logo2.png" alt="Logo" class="header-logo">
+</header>
+<form id="guestForm" autocomplete="off">
+<div class="field-group">
+<label>Nama atau NIS</label>
+<input type="text" id="inputNama" placeholder="Ketik untuk mencari..." required>
+<div id="dropNama" class="drop-box"></div>
+</div>
+<div class="row">
+<div class="field-group">
+<label>Kamar</label>
+<input type="text" id="inputKamar" placeholder="A-01" required>
+</div>
+<div class="field-group">
+<label>Jenjang</label>
+<select id="inputJenjang" required>
+<option value="" disabled selected>Pilih</option>
+<option value="SLTP">SLTP</option>
+<option value="SLTA">SLTA</option>
+<option value="PT">PT</option>
+</select>
+</div>
+</div>
+<div class="field-group">
+<label>Koleksi (Judul/Penulis/Kode)</label>
+<input type="text" id="inputBuku" placeholder="Cari buku..." required>
+<div id="dropBuku" class="drop-box"></div>
+</div>
+<div class="row">
+<div class="field-group">
+<label>Kategori</label>
+<select id="inputKategori" required>
+<option value="" disabled selected>Pilih</option>
+<option value="Kesusastraan">Kesusastraan</option>
+<option value="Komik">Komik</option>
+<option value="Filsafat dan Psikologi">Filsafat dan Psikologi</option>
+<option value="Agama">Agama</option>
+<option value="Ilmu Sosial">Ilmu Sosial</option>
+<option value="Sejarah dan Geografi">Sejarah dan Geografi</option>
+<option value="Ilmu Murni">Ilmu Murni</option>
+<option value="Ilmu Bahasa">Ilmu Bahasa</option>
+<option value="Managemen">Managemen</option>
+<option value="Majalah">Majalah</option>
+</select>
+</div>
+<div class="field-group">
+<label>Aktivitas</label>
+<select id="inputAktivitas" required>
+<option value="" disabled selected>Pilih</option>
+<option value="Baca">Baca</option>
+<option value="Pinjam">Pinjam</option>
+</select>
+</div>
+</div>
+<div class="actions">
+<button type="button" class="btn-rank" onclick="window.location.href='rank.html'">Lihat Peringkat</button>
+<button type="submit" id="btnSubmit" class="btn-submit">Simpan & Sinkron</button>
+</div>
+</form>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const DB_NAME = 'LibraryCacheDB';
+const STORE_NAME = 'permanent_suggestions';
+let validAnggota = false;
+let validBuku = false;
+async function initDB() {
+return new Promise((resolve) => {
+const request = indexedDB.open(DB_NAME, 1);
+request.onupgradeneeded = (e) => {
+const db = e.target.result;
+if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+};
+request.onsuccess = (e) => resolve(e.target.result);
+});
+}
+async function getCache(key) {
+const db = await initDB();
+return new Promise((resolve) => {
+const transaction = db.transaction(STORE_NAME, 'readonly');
+const store = transaction.objectStore(STORE_NAME);
+const request = store.get(key);
+request.onsuccess = () => resolve(request.result);
+});
+}
+async function setCache(key, val) {
+const db = await initDB();
+const transaction = db.transaction(STORE_NAME, 'readwrite');
+const store = transaction.objectStore(STORE_NAME);
+store.put(val, key);
+}
+function showToast(msg, isError = true) {
+Toastify({
+text: msg,
+duration: 4000,
+gravity: "top",
+position: "center",
+style: {
+background: isError ? "#d93025" : "#1e8e3e",
+borderRadius: "12px",
+fontSize: "14px",
+fontWeight: "600",
+boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+}
+}).showToast();
+}
+function showSkeleton(drop) {
+drop.style.display = 'block';
+drop.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton-item"><div class="sk-line sk-w-full"></div><div class="sk-line sk-w-half"></div></div>`).join('');
+}
+let searchTimer;
+function bindSmartSearch(inputId, dropId, type) {
+const input = document.getElementById(inputId);
+const drop = document.getElementById(dropId);
+let activeIdx = -1;
+input.addEventListener('keydown', (e) => {
+const items = drop.querySelectorAll('.drop-item');
+if (!items.length) return;
+if (e.key === 'ArrowDown') { activeIdx = (activeIdx + 1) % items.length; updateActive(items, activeIdx); e.preventDefault(); }
+else if (e.key === 'ArrowUp') { activeIdx = (activeIdx - 1 + items.length) % items.length; updateActive(items, activeIdx); e.preventDefault(); }
+else if (e.key === 'Enter') { if (activeIdx > -1) { items[activeIdx].click(); e.preventDefault(); } }
+});
+input.addEventListener('input', async () => {
+if (inputId === 'inputNama') validAnggota = false;
+if (inputId === 'inputBuku') validBuku = false;
+const val = input.value.trim().toLowerCase();
+activeIdx = -1;
+if (val.length < 2) { drop.style.display = 'none'; clearTimeout(searchTimer); return; }
+const cacheKey = `${type}_${val}`;
+const cachedData = await getCache(cacheKey);
+if (cachedData) renderDrop(drop, inputId, cachedData);
+else showSkeleton(drop);
+clearTimeout(searchTimer);
+searchTimer = setTimeout(async () => {
+let results = [];
+let error = null;
+if (type === 'anggota') {
+const { data, error: err } = await supabase.from('anggota').select('*').or(`nama.ilike.%${val}%,nis.ilike.%${val}%`).limit(10);
+results = data; error = err;
+} else if (type === 'buku') {
+const [resBib, resEks] = await Promise.all([
+supabase.from('biblio').select('id, judul, penulis, kategori, ekslempar(kode)').or(`judul.ilike.%${val}%,penulis.ilike.%${val}%`).limit(10),
+supabase.from('ekslempar').select('kode, biblio(id, judul, penulis, kategori)').ilike('kode', `%${val}%`).limit(5)
+]);
+let map = new Map();
+if (resBib.data) resBib.data.forEach(b => map.set(b.id, { id: b.id, judul: b.judul, penulis: b.penulis, kategori: b.kategori, kode: b.ekslempar?.[0]?.kode || '-' }));
+if (resEks.data) resEks.data.forEach(e => { if (e.biblio && !map.has(e.biblio.id)) map.set(e.biblio.id, { id: e.biblio.id, judul: e.biblio.judul, penulis: e.biblio.penulis, kategori: e.biblio.kategori, kode: e.kode }); });
+results = Array.from(map.values()).slice(0, 10);
+error = resBib.error || resEks.error;
+}
+if (!error && results && results.length > 0) {
+const oldCache = JSON.stringify(cachedData);
+const newCache = JSON.stringify(results);
+if (oldCache !== newCache) { await setCache(cacheKey, results); renderDrop(drop, inputId, results, activeIdx); }
+} else if (!cachedData) { drop.style.display = 'none'; }
+}, cachedData ? 1000 : 50);
+});
+}
+function renderDrop(drop, inputId, data, activeIdx = -1) {
+drop.innerHTML = data.map((m, i) => {
+let mainText, subText;
+if (inputId === 'inputNama') { mainText = m.nama; subText = `${m.nis ? 'NIS: ' + m.nis : ''} ${m.kamar ? '• ' + m.kamar : ''}`; }
+else { mainText = m.judul; subText = `${m.penulis || 'Tanpa Penulis'} • [${m.kode || '-'}]`; }
+return `<div class="drop-item ${i === activeIdx ? 'active' : ''}" data-index="${i}"><div class="main-text">${mainText}</div><div class="sub-text">${subText}</div></div>`;
+}).join('');
+drop.querySelectorAll('.drop-item').forEach(el => {
+el.onclick = () => {
+const item = data[el.dataset.index];
+if (inputId === 'inputNama') {
+document.getElementById('inputNama').value = item.nama;
+document.getElementById('inputKamar').value = item.kamar || '';
+document.getElementById('inputJenjang').value = item.jenjang || '';
+validAnggota = true;
+} else {
+document.getElementById('inputBuku').value = item.judul;
+document.getElementById('inputKategori').value = item.kategori || '';
+validBuku = true;
+}
+drop.style.display = 'none';
+};
+});
+drop.style.display = 'block';
+}
+function updateActive(items, idx) {
+items.forEach((item, i) => { if (i === idx) { item.classList.add('active'); item.scrollIntoView({ block: 'nearest' }); } else { item.classList.remove('active'); } });
+}
+bindSmartSearch('inputNama', 'dropNama', 'anggota');
+bindSmartSearch('inputBuku', 'dropBuku', 'buku');
+document.getElementById('guestForm').onsubmit = async (e) => {
+e.preventDefault();
+if (!validAnggota || !validBuku) { showToast("Pilih Nama & Buku dari saran."); return; }
+const btn = document.getElementById('btnSubmit');
+const namaUser = document.getElementById('inputNama').value;
+const originalText = btn.innerText;
+btn.disabled = true;
+btn.innerText = 'Sinkronisasi...';
+try {
+const now = new Date();
+const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+const { data: recentLogs, error: checkError } = await supabase.from('data_pengunjung').select('created_at').eq('nama', namaUser).gt('created_at', threeHoursAgo).order('created_at', { ascending: false }).limit(1);
+if (checkError) throw checkError;
+if (recentLogs && recentLogs.length > 0) {
+const lastTime = new Date(recentLogs[0].created_at);
+const diff = Math.ceil((lastTime.getTime() + 3 * 60 * 60 * 1000 - now.getTime()) / (1000 * 60));
+showToast(`Sobat ${namaUser}, Anda baru saja berkunjung. Silakan isi kembali dalam ${diff} menit.`, true);
+btn.disabled = false;
+btn.innerText = originalText;
+return;
+}
+const payload = {
+nama: namaUser,
+kamar: document.getElementById('inputKamar').value,
+jenjang: document.getElementById('inputJenjang').value,
+judul_buku: document.getElementById('inputBuku').value,
+kategori: document.getElementById('inputKategori').value,
+aktivitas: document.getElementById('inputAktivitas').value,
+created_at: now.toISOString(),
+tanggal_kunjungan: now.toLocaleDateString('en-CA')
+};
+const { error: errInsert } = await supabase.from('data_pengunjung').insert([payload]);
+if (errInsert) throw errInsert;
+sessionStorage.setItem('last_guest', JSON.stringify({ nama: namaUser }));
+window.location.href = 'profile_pencapaian_pengunjung.html';
+} catch (err) {
+showToast("Gagal: " + err.message);
+btn.disabled = false;
+btn.innerText = originalText;
+}
+};
+</script>
+</body>
+</html>

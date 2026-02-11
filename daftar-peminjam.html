@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAFTAR PEMINJAM - LIGHT SNOW</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { 
+            --snow-bg: #fdfeff; 
+            --snow-card: #ffffff; 
+            --snow-input: #f0f4f8; 
+            --snow-primary: #3b82f6; 
+            --snow-border: #e2e8f0;
+            --snow-text: #1e293b;
+        }
+        body { background-color: var(--snow-bg); color: var(--snow-text); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; padding: 20px; }
+        .glass { background: var(--snow-card); border: 1px solid var(--snow-border); box-shadow: 0 10px 25px rgba(148, 163, 184, 0.1); border-radius: 24px; }
+        
+        tr.row-data { transition: background-color 0.2s ease; }
+        tr.row-data:hover { background-color: #f8fafc !important; }
+        
+        td { padding: 14px 16px; font-size: 12px; border-top: 1px solid var(--snow-border); border-bottom: 1px solid var(--snow-border); }
+        td:first-child { border-left: 1px solid var(--snow-border); border-radius: 16px 0 0 16px; }
+        td:last-child { border-right: 1px solid var(--snow-border); border-radius: 0 16px 16px 0; }
+        
+        .badge-denda { background: #fff1f2; color: #e11d48; padding: 4px 8px; border-radius: 8px; font-weight: 800; font-size: 10px; }
+        .badge-kamar { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 5px; font-size: 8px; font-weight: 800; margin-left: 5px; }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; }
+        
+        .editable-date { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 4px; }
+        .editable-date:hover { color: var(--snow-primary); }
+
+        .btn-action { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 10px; transition: all 0.2s; }
+        .btn-extend { background: #eff6ff; color: #3b82f6; }
+        .btn-extend:hover { background: #3b82f6; color: white; }
+        .btn-return { background: #f0fdf4; color: #22c55e; }
+        .btn-return:hover { background: #22c55e; color: white; }
+
+        .search-container { position: relative; width: 100%; display: flex; align-items: center; }
+        .search-input { 
+            width: 100%; padding: 1rem 1rem 1rem 3rem; border-radius: 1rem; font-weight: 700; font-size: 0.875rem; outline: none; 
+            border: 2px solid #cbd5e1 !important; background-color: #ffffff !important; transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--snow-primary) !important; }
+        .search-icon { position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="modalConfirm" class="modal-overlay">
+    <div class="glass w-full max-w-[300px] p-7 text-center">
+        <div id="confirmIcon" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl"></div>
+        <h3 id="confirmTitle" class="text-sm font-black mb-2">Konfirmasi</h3>
+        <p id="confirmMsg" class="text-[11px] text-slate-500 mb-6 font-medium"></p>
+        <div class="flex gap-2">
+            <button onclick="closeConfirm()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button id="btnActionConfirm" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-[10px]">YA, LANJUTKAN</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalEdit" class="modal-overlay">
+    <div class="glass w-full max-w-[300px] p-7">
+        <h3 id="editTitle" class="text-sm font-black mb-4 uppercase text-slate-400">Edit Tanggal</h3>
+        <input type="date" id="editDateInput" class="w-full p-3 rounded-xl mb-6 font-bold text-sm outline-none border-2 border-slate-200 focus:border-blue-400 bg-slate-50">
+        <div class="flex gap-2">
+            <button onclick="closeEditModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px]">BATAL</button>
+            <button id="btnSimpanEdit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-[10px]">SIMPAN</button>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Daftar Peminjam</h1>
+            <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">Kendali Sirkulasi Aktif</p>
+        </div>
+        <button onclick="location.reload()" class="text-[10px] font-bold text-blue-500 hover:text-blue-700"><i class="fas fa-sync-alt mr-1"></i> REFRESH</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchBox" placeholder="Cari peminjam, buku, atau kamar..." class="search-input">
+        </div>
+        <div class="glass p-4 flex items-center gap-4">
+            <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><i class="fas fa-book"></i></div>
+            <div><p class="text-[9px] font-black text-slate-400 uppercase">Total Aktif</p><p id="statTotal" class="text-lg font-extrabold">0</p></div>
+        </div>
+        <div class="glass p-4 flex items-center gap-4">
+            <div class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center"><i class="fas fa-clock"></i></div>
+            <div><p class="text-[9px] font-black text-slate-400 uppercase">Terlambat</p><p id="statLate" class="text-lg font-extrabold">0</p></div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full border-separate" style="border-spacing: 0 8px;">
+            <thead>
+                <tr class="text-left text-[10px] font-black uppercase text-slate-400">
+                    <th class="px-4 py-2">Anggota & Kamar</th>
+                    <th class="px-4 py-2">Buku & Penulis</th>
+                    <th class="px-4 py-2 text-center">Pinjam</th>
+                    <th class="px-4 py-2 text-center">Tempo</th>
+                    <th class="px-4 py-2">Denda</th>
+                    <th class="px-4 py-2 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const S_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+    const client = supabase.createClient(S_URL, S_KEY);
+
+    let allData = [], editingId = null, editingField = '', confirmCallback = null;
+
+    window.addEventListener('keydown', (e) => {
+        const modalConfirm = document.getElementById('modalConfirm');
+        const modalEdit = document.getElementById('modalEdit');
+        if (modalConfirm.style.display === 'flex') {
+            if (e.key === 'Enter') document.getElementById('btnActionConfirm').click();
+            if (e.key === 'Escape') closeConfirm();
+        } else if (modalEdit.style.display === 'flex') {
+            if (e.key === 'Enter') document.getElementById('btnSimpanEdit').click();
+            if (e.key === 'Escape') closeEditModal();
+        }
+    });
+
+    async function loadData() {
+        const { data, error } = await client.from('sirkulasi').select('*').eq('status', 'DIPINJAM').order('tgl_kembali', { ascending: true });
+        if (!error) { allData = data; renderTable(data); updateStats(data); }
+    }
+
+    function renderTable(items) {
+        const body = document.getElementById('tableBody');
+        body.innerHTML = '';
+        const now = new Date(); now.setHours(0,0,0,0);
+        
+        items.forEach(item => {
+            const tglP = new Date(item.tgl_pinjam);
+            const tglK = new Date(item.tgl_kembali);
+            const diff = Math.ceil((now - tglK) / (1000 * 60 * 60 * 24));
+            const denda = diff > 0 ? diff * 1000 : 0;
+
+            const tr = document.createElement('tr');
+            tr.className = 'row-data';
+            tr.innerHTML = `
+                <td>
+                    <div class="flex items-center">
+                        <span class="font-bold text-slate-800 uppercase text-[11px]">${item.nama_anggota}</span>
+                        ${item.kamar ? `<span class="badge-kamar">${item.kamar}</span>` : ''}
+                    </div>
+                    <div class="text-[9px] text-slate-400 font-bold tracking-tighter">${item.nis}</div>
+                </td>
+                <td>
+                    <div class="font-bold text-slate-700 text-[11px] truncate max-w-[200px]">${item.judul_buku}</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-blue-400 font-black uppercase tracking-widest">${item.kode_eksemplar}</span>
+                        <span class="text-[9px] text-slate-300 font-medium italic">${item.penulis || '-'}</span>
+                    </div>
+                </td>
+                <td class="text-center font-medium text-slate-500">
+                    <span class="editable-date" onclick="openEdit('${item.id}', 'tgl_pinjam', '${item.tgl_pinjam}')">${tglP.toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</span>
+                </td>
+                <td class="text-center">
+                    <span class="editable-date font-bold ${diff > 0 ? 'text-rose-500' : 'text-slate-700'}" onclick="openEdit('${item.id}', 'tgl_kembali', '${item.tgl_kembali}')">${tglK.toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</span>
+                </td>
+                <td>${denda > 0 ? `<span class="badge-denda">Rp ${denda.toLocaleString()}</span>` : `<span class="text-emerald-500 font-bold text-[10px]">Lancar</span>`}</td>
+                <td class="px-4">
+                    <div class="flex justify-center gap-2">
+                        <button onclick="showConfirmModal('EXTEND', '${item.id}', '${item.tgl_kembali}')" title="Perpanjang 7 Hari" class="btn-action btn-extend"><i class="fas fa-history text-[10px]"></i></button>
+                        <button onclick="showConfirmModal('RETURN', '${item.id}')" title="Kembalikan Buku" class="btn-action btn-return"><i class="fas fa-check text-[10px]"></i></button>
+                    </div>
+                </td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function showConfirmModal(type, id, extra = null) {
+        const modal = document.getElementById('modalConfirm');
+        const icon = document.getElementById('confirmIcon');
+        const title = document.getElementById('confirmTitle');
+        const msg = document.getElementById('confirmMsg');
+        const btn = document.getElementById('btnActionConfirm');
+
+        if (type === 'EXTEND') {
+            icon.className = "w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl";
+            icon.innerHTML = '<i class="fas fa-history"></i>';
+            title.textContent = "Perpanjang Pinjaman";
+            msg.textContent = "Tambah masa pinjam buku ini selama 7 hari dari batas tempo saat ini?";
+            btn.className = "flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-[10px]";
+            confirmCallback = () => handleExtend(id, extra);
+        } else {
+            icon.className = "w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl";
+            icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+            title.textContent = "Buku Kembali";
+            msg.textContent = "Konfirmasi bahwa buku ini sudah dikembalikan?";
+            btn.className = "flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px]";
+            confirmCallback = () => handleReturn(id);
+        }
+        modal.style.display = 'flex';
+        btn.focus();
+    }
+
+    function closeConfirm() { document.getElementById('modalConfirm').style.display = 'none'; confirmCallback = null; }
+
+    document.getElementById('btnActionConfirm').onclick = async () => {
+        if (confirmCallback) {
+            await confirmCallback();
+            closeConfirm();
+        }
+    };
+
+    async function handleExtend(id, currentTempo) {
+        let newDate = new Date(currentTempo);
+        newDate.setDate(newDate.getDate() + 7);
+        await client.from('sirkulasi').update({ tgl_kembali: newDate.toISOString().split('T')[0] }).eq('id', id);
+        loadData();
+    }
+
+    async function handleReturn(id) {
+        const tglSkrg = new Date().toISOString().split('T')[0];
+        await client.from('sirkulasi').update({ status: 'KEMBALI', tgl_dikembalikan: tglSkrg }).eq('id', id);
+        loadData();
+    }
+
+    function openEdit(id, field, val) {
+        editingId = id; editingField = field;
+        const input = document.getElementById('editDateInput');
+        document.getElementById('editTitle').textContent = field.includes('pinjam') ? 'Edit Tgl Pinjam' : 'Edit Jatuh Tempo';
+        input.value = new Date(val).toISOString().split('T')[0];
+        document.getElementById('modalEdit').style.display = 'flex';
+        setTimeout(() => input.focus(), 50);
+    }
+
+    document.getElementById('btnSimpanEdit').onclick = async () => {
+        const val = document.getElementById('editDateInput').value;
+        if(!val) return;
+        const { error } = await client.from('sirkulasi').update({ [editingField]: val }).eq('id', editingId);
+        if(!error) { closeEditModal(); loadData(); }
+    };
+
+    function closeEditModal() { document.getElementById('modalEdit').style.display = 'none'; }
+    
+    function updateStats(items) {
+        const now = new Date(); now.setHours(0,0,0,0);
+        document.getElementById('statTotal').textContent = items.length;
+        document.getElementById('statLate').textContent = items.filter(i => new Date(i.tgl_kembali) < now).length;
+    }
+
+    document.getElementById('searchBox').oninput = (e) => {
+        const q = e.target.value.toLowerCase();
+        renderTable(allData.filter(i => 
+            i.nama_anggota.toLowerCase().includes(q) || 
+            i.judul_buku.toLowerCase().includes(q) || 
+            (i.kamar && i.kamar.toLowerCase().includes(q)) ||
+            i.nis.includes(q)
+        ));
+    };
+
+    loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perpustakaan Lubangsa</title>
+<link rel="icon" type="image/png" href="image/logo/logo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-body: #f8fafd;
+--bg-card: #ffffff;
+--text-main: #1f1f1f;
+--text-muted: #70757a;
+--border: #dee2e6;
+--accent: #0b57d0;
+--google-gray: #f1f3f4;
+--skeleton-base: #e0e0e0;
+--skeleton-highlight: #f5f5f5;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-body: #131314;
+--bg-card: #1e1f20;
+--text-main: #e3e3e3;
+--text-muted: #9aa0a6;
+--border: #444746;
+--google-gray: #2b2b2b;
+--skeleton-base: #333333;
+--skeleton-highlight: #444444;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none !important; -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 10px; border: 2px solid var(--bg-body); }
+::-webkit-scrollbar-thumb:hover { background: #9e9e9e; }
+@media (prefers-color-scheme: dark) {
+::-webkit-scrollbar-thumb { background: #444746; }
+::-webkit-scrollbar-thumb:hover { background: #5f6368; }
+}
+body {
+background: var(--bg-body);
+color: var(--text-main);
+font-family: 'Plus Jakarta Sans', sans-serif;
+line-height: 1.5;
+overflow-x: hidden;
+}
+header {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+background: transparent;
+padding: 16px 24px;
+display: flex;
+justify-content: center;
+z-index: 1000;
+}
+.header-top {
+width: 100%;
+max-width: 1400px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.brand-container { display: flex; align-items: center; gap: 16px; text-decoration: none; }
+.logo-frame {
+width: 40px;
+height: 40px;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.logo-img { height: 100%; width: auto; object-fit: contain; }
+.brand-text {
+font-size: 13px;
+font-weight: 700;
+color: #ffffff;
+line-height: 1.2;
+max-width: 220px;
+text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+@media (max-width: 600px) {
+.brand-text { display: none; }
+}
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.btn-dual-page {
+height: 38px;
+width: 38px;
+display: flex;
+align-items: center;
+justify-content: center;
+background: rgba(255,255,255,0.2);
+backdrop-filter: blur(8px);
+color: #ffffff;
+border-radius: 4px;
+text-decoration: none;
+font-size: 16px;
+transition: background 0.2s;
+}
+.btn-dual-page:hover { background: rgba(255,255,255,0.3); }
+.btn-google-login {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 8px 16px;
+background: #ffffff;
+border-radius: 4px;
+text-decoration: none;
+color: #1f1f1f;
+font-size: 14px;
+font-weight: 600;
+transition: transform 0.2s, box-shadow 0.2s;
+box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.btn-google-login:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.hero-slider {
+position: relative;
+width: 100%;
+height: 550px;
+overflow: hidden;
+background: #000;
+}
+.slide {
+position: absolute;
+inset: 0;
+background-size: cover;
+background-position: center;
+background-image: url('image/hero/hero.png');
+}
+.hero-overlay {
+position: absolute;
+inset: 0;
+background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 40%, var(--bg-body) 100%);
+}
+.search-container {
+position: relative;
+width: 90%;
+max-width: 720px;
+margin: -45px auto 0;
+z-index: 1100;
+}
+.search-wrapper {
+background: var(--bg-card);
+border-radius: 32px;
+padding: 10px 14px 10px 24px;
+display: flex;
+align-items: center;
+box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.search-input { background: transparent; width: 100%; font-size: 16px; color: var(--text-main); padding: 8px 0; }
+.search-btn {
+background: var(--accent);
+color: white;
+width: 44px;
+height: 44px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+margin-left: 8px;
+}
+#suggestionBox {
+position: absolute;
+top: 100%;
+left: 0;
+right: 0;
+background: var(--bg-card);
+border-radius: 0 0 24px 24px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+display: none;
+z-index: 1000;
+overflow: hidden;
+margin-top: -10px;
+padding-top: 15px;
+}
+.suggestion-item { padding: 12px 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+.suggestion-item:hover { background: var(--google-gray); }
+.main-content { max-width: 1100px; margin: 60px auto; padding: 0 40px; }
+@media (max-width: 768px) { .main-content { padding: 0 16px; } }
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+@media (min-width: 768px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 28px; } }
+@media (min-width: 1024px) { .grid { grid-template-columns: repeat(6, 1fr); gap: 32px; } }
+.book-card {
+background: var(--bg-body);
+text-decoration: none;
+color: inherit;
+transition: transform 0.2s;
+display: flex;
+flex-direction: column;
+width: 100%;
+}
+.book-card:hover { transform: translateY(-5px); }
+.book-img {
+width: 100%;
+aspect-ratio: 3/4.5;
+object-fit: cover;
+border-radius: 0;
+background: var(--google-gray);
+margin-bottom: 12px;
+opacity: 0;
+transition: opacity 0.4s;
+}
+.book-title {
+font-size: 10.5px;
+font-weight: 700;
+text-transform: uppercase;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+height: 2.8em;
+margin-bottom: 4px;
+}
+.book-author { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.skeleton-card { background: var(--bg-body); }
+#sentinel { height: 100px; width: 100%; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+<div class="header-top">
+<a href="#" class="brand-container">
+<div class="logo-frame">
+<img src="image/logo/logo2.png" class="logo-img" alt="Logo">
+</div>
+<span class="brand-text">Perpustakaan PP. Annuqayah Daerah Lubangsa</span>
+</a>
+<div class="header-actions">
+<a href="dual_page_login.html" class="btn-dual-page" title="Dual Page Mode">
+<i class="fa-solid fa-layer-group"></i>
+</a>
+<a href="login.html" class="btn-google-login">
+<svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7l2.89 2.24c1.69-1.55 2.7-3.85 2.7-6.57Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.89-2.24c-.81.54-1.84.87-3.07.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.98 5.48 18 9 18Z" fill="#34A853"/><path d="M3.95 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.99H.95C.35 6.19 0 7.55 0 9s.35 2.81.95 4.01l3-2.29Z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.42 0 9 0 5.48 0 2.43 2.02.95 4.99l3 2.29c.71-2.14 2.7-3.73 5.05-3.73Z" fill="#EA4335"/></svg>
+<span>Masuk</span>
+</a>
+</div>
+</div>
+</header>
+<section class="hero-slider">
+<div class="slide"></div>
+<div class="hero-overlay"></div>
+</section>
+<div class="search-container">
+<div class="search-wrapper">
+<i class="fa-solid fa-search" style="color: #9aa0a6; font-size: 16px; margin-right: 14px;"></i>
+<input type="text" id="searchInput" class="search-input" placeholder="Cari judul buku atau penulis..." autocomplete="off">
+<button onclick="window.resetAndFetch()" class="search-btn">
+<i class="fa-solid fa-magnifying-glass"></i>
+</button>
+</div>
+<div id="suggestionBox"></div>
+</div>
+<main class="main-content">
+<div id="catalogGrid" class="grid"></div>
+<div id="skeletonContainer" class="grid hidden">
+<script>
+for(let i=0; i<6; i++) {
+document.write('<div class="skeleton-card" style="padding:0;"><div style="width:100%;aspect-ratio:3/4.5;border-radius:0;background:var(--skeleton-base);animation:pulse 1.5s infinite"></div><div style="height:12px;background:var(--skeleton-base);margin-top:12px;width:80%"></div></div>');
+}
+</script>
+</div>
+<div id="sentinel"></div>
+</main>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const DB_NAME = 'LubangsaCache';
+const STORE_CATALOG = 'catalog';
+const STORE_SUGGESTIONS = 'suggestions';
+const TTL = 7 * 24 * 60 * 60 * 1000;
+let db;
+let currentPage = 0, perPage = 18, isFetching = false, query = '', hasMore = true;
+const SVG_DATA = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23f1f3f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239aa0a6'%3ENo Cover%3C/text%3E%3C/svg%3E";
+const initDB = () => {
+return new Promise((resolve) => {
+try {
+const request = indexedDB.open(DB_NAME, 1);
+request.onupgradeneeded = (e) => {
+const d = e.target.result;
+if (!d.objectStoreNames.contains(STORE_CATALOG)) d.createObjectStore(STORE_CATALOG);
+if (!d.objectStoreNames.contains(STORE_SUGGESTIONS)) d.createObjectStore(STORE_SUGGESTIONS);
+};
+request.onsuccess = (e) => { db = e.target.result; resolve(); };
+request.onerror = () => resolve();
+} catch (e) { resolve(); }
+});
+};
+const setCache = (store, key, data) => {
+if (!db) return;
+const tx = db.transaction(store, 'readwrite');
+tx.objectStore(store).put({ data, timestamp: Date.now() }, key);
+};
+const getCache = (store, key) => {
+return new Promise((resolve) => {
+if (!db) return resolve(null);
+const tx = db.transaction(store, 'readwrite');
+const objectStore = tx.objectStore(store);
+const request = objectStore.get(key);
+request.onsuccess = () => {
+if (request.result) {
+const { data, timestamp } = request.result;
+if (Date.now() - timestamp < TTL) {
+objectStore.put({ data, timestamp: Date.now() }, key);
+resolve(data);
+} else { resolve(null); }
+} else { resolve(null); }
+};
+request.onerror = () => resolve(null);
+});
+};
+async function fetchBooks() {
+if (isFetching || !hasMore) return;
+isFetching = true;
+const cacheKey = `list_${query}_${currentPage}`;
+const cachedData = await getCache(STORE_CATALOG, cacheKey);
+if (cachedData) {
+renderBooks(cachedData);
+isFetching = false;
+currentPage++;
+return;
+}
+document.getElementById('skeletonContainer').classList.remove('hidden');
+try {
+const start = currentPage * perPage;
+let req = supabase.from('biblio').select('id, judul, penulis, sampul_url');
+if (query.trim()) req = req.ilike('judul', `%${query}%`);
+const { data, error } = await req.order('sampul_url', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).range(start, start + perPage - 1);
+if (error) throw error;
+if (data.length < perPage) hasMore = false;
+setCache(STORE_CATALOG, cacheKey, data);
+renderBooks(data);
+currentPage++;
+} finally {
+isFetching = false;
+document.getElementById('skeletonContainer').classList.add('hidden');
+}
+}
+function renderBooks(data) {
+const grid = document.getElementById('catalogGrid');
+data.forEach(item => {
+const card = document.createElement('a');
+card.href = `detail.html?id=${item.id}`;
+card.className = 'book-card';
+const imgUrl = item.sampul_url ? item.sampul_url : SVG_DATA;
+card.innerHTML = `
+<img data-src="${imgUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="book-img lazy" alt="cover">
+<h3 class="book-title">${item.judul}</h3>
+<p class="book-author">${item.penulis || 'ANONIM'}</p>`;
+grid.appendChild(card);
+});
+initLazy();
+}
+function initLazy() {
+const obs = new IntersectionObserver((es) => {
+es.forEach(e => {
+if(e.isIntersecting) {
+const img = e.target;
+img.src = img.dataset.src;
+img.onload = () => img.style.opacity = '1';
+img.onerror = () => { img.src = SVG_DATA; img.style.opacity = '1'; };
+obs.unobserve(img);
+}
+});
+}, { rootMargin: '100px' });
+document.querySelectorAll('.lazy').forEach(i => obs.observe(i));
+}
+const handleSuggestions = async (val) => {
+const box = document.getElementById('suggestionBox');
+const wrapper = document.querySelector('.search-wrapper');
+if (val.length < 2) { 
+box.style.display = 'none'; 
+wrapper.style.borderRadius = '32px';
+return; 
+}
+const cacheKey = `sug_${val}`;
+let sugs = await getCache(STORE_SUGGESTIONS, cacheKey);
+if (!sugs) {
+const { data } = await supabase.from('biblio').select('judul').ilike('judul', `%${val}%`).limit(6);
+sugs = data ? data.map(d => d.judul) : [];
+setCache(STORE_SUGGESTIONS, cacheKey, sugs);
+}
+if (sugs.length > 0) {
+wrapper.style.borderRadius = '24px 24px 0 0';
+box.innerHTML = sugs.map(s => `<div class="suggestion-item" onclick="window.selectSug('${s.replace(/'/g, "\\'")}')"><i class="fa-solid fa-clock-rotate-left" style="color: #9aa0a6; font-size: 12px;"></i>${s}</div>`).join('');
+box.style.display = 'block';
+} else { 
+box.style.display = 'none'; 
+wrapper.style.borderRadius = '32px';
+}
+};
+window.selectSug = (val) => {
+document.getElementById('searchInput').value = val;
+document.getElementById('suggestionBox').style.display = 'none';
+document.querySelector('.search-wrapper').style.borderRadius = '32px';
+window.resetAndFetch();
+};
+window.resetAndFetch = () => {
+query = document.getElementById('searchInput').value;
+document.getElementById('catalogGrid').innerHTML = '';
+currentPage = 0; hasMore = true;
+fetchBooks();
+};
+document.getElementById('searchInput').oninput = (e) => handleSuggestions(e.target.value);
+document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); };
+document.addEventListener('click', (e) => { 
+if(!e.target.closest('.search-container')) {
+document.getElementById('suggestionBox').style.display = 'none';
+document.querySelector('.search-wrapper').style.borderRadius = '32px';
+}
+});
+await initDB();
+fetchBooks();
+const sent = new IntersectionObserver((es) => { if(es[0].isIntersecting && !isFetching && hasMore) fetchBooks(); }, { rootMargin: '300px' });
+sent.observe(document.getElementById('sentinel'));
+</script>
+</body>
+</html>

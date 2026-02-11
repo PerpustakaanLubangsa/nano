@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Perpustakaan Lubangsa</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-color: #ffffff;
+--text-primary: #1f1f1f;
+--text-secondary: #5f6368;
+--border-color: #dadce0;
+--btn-hover: #f8f9fa;
+--toast-bg: #1f1f1f;
+--toast-text: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-color: #131314;
+--text-primary: #e3e3e3;
+--text-secondary: #8e918f;
+--border-color: #444746;
+--btn-hover: #1e1e1f;
+--toast-bg: #e3e3e3;
+--toast-text: #131314;
+}
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-color);
+color: var(--text-primary);
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+}
+header { padding: 24px; width: 100%; max-width: 1280px; margin: 0 auto; }
+.logo-link img { height: 40px; width: auto; }
+main { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+.login-container { width: 100%; max-width: 440px; text-align: center; }
+.login-header { margin-bottom: 40px; }
+.login-header h1 { font-size: 32px; font-weight: 500; margin-bottom: 12px; }
+.btn-google {
+width: 100%;
+background-color: transparent;
+color: var(--text-primary);
+border: 1px solid var(--border-color);
+padding: 14px;
+border-radius: 100px;
+font-size: 14px;
+font-weight: 500;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 12px;
+cursor: pointer;
+transition: 0.2s;
+}
+.btn-google:hover { background-color: var(--btn-hover); }
+.btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
+#toast-container { position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%); z-index: 9999; }
+.toast {
+padding: 12px 24px;
+border-radius: 100px;
+background-color: var(--toast-bg);
+color: var(--toast-text);
+font-size: 14px;
+animation: slideUp 0.3s ease-out forwards;
+}
+@keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.footer-copyright { margin-top: 64px; font-size: 14px; color: var(--text-secondary); }
+.success-screen {
+position: fixed;
+inset: 0;
+background: var(--bg-color);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 10000;
+}
+.success-screen img {
+height: 80px;
+width: auto;
+animation: pulse 1.5s infinite ease-in-out;
+}
+@keyframes pulse {
+0% { transform: scale(1); opacity: 0.8; }
+50% { transform: scale(1.1); opacity: 1; }
+100% { transform: scale(1); opacity: 0.8; }
+}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<header id="siteHeader">
+<a href="index.html" class="logo-link"><img src="image/logo/logo.png" alt="Logo"></a>
+</header>
+<main id="siteMain">
+<div class="login-container">
+<div class="login-header">
+<h1>Masuk</h1>
+<p>Panel Admin Perpustakaan</p>
+</div>
+<button id="btnGoogle" class="btn-google">
+<svg viewBox="0 0 24 24" width="20" height="20">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05"/>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+</svg>
+<span>Lanjutkan dengan Google</span>
+</button>
+<div class="footer-copyright"><p>&copy; 2026 Perpustakaan Lubangsa</p></div>
+</div>
+</main>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const btnGoogle = document.getElementById('btnGoogle');
+const toastContainer = document.getElementById('toast-container');
+function showToast(message) {
+const toast = document.createElement('div');
+toast.className = 'toast';
+toast.innerText = message;
+toastContainer.appendChild(toast);
+setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
+}
+btnGoogle.addEventListener('click', async () => {
+btnGoogle.disabled = true;
+await supabase.auth.signInWithOAuth({
+provider: 'google',
+options: { redirectTo: window.location.origin + window.location.pathname }
+});
+});
+async function checkAccess() {
+const { data: { session } } = await supabase.auth.getSession();
+if (session) {
+if (window.location.hash) {
+window.history.replaceState(null, null, window.location.pathname);
+}
+const { data, error } = await supabase.from('allowed_admins').select('email').eq('email', session.user.email).single();
+if (data) {
+document.body.innerHTML = `<div class="success-screen"><img src="image/logo/logo.png" alt="Loading"></div>`;
+setTimeout(() => window.location.replace('panel.html'), 800);
+} else {
+showToast("Akses ditolak. Email tidak terdaftar.");
+await supabase.auth.signOut();
+btnGoogle.disabled = false;
+}
+}
+}
+checkAccess();
+supabase.auth.onAuthStateChange((event) => { if (event === 'SIGNED_IN') checkAccess(); });
+</script>
+</body>
+</html>

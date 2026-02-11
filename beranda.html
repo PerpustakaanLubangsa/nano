@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intelijen Perpustakaan | Edisi Gemini</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-page: #f0f2f5;
+--bg-card: #ffffff;
+--text-primary: #1f1f1f;
+--text-secondary: #444746;
+--accent: #1a73e8;
+--border: #e3e3e3;
+--shimmer: #f6f7f9;
+--radius: 8px;
+--scroll-thumb: #c1c1c1;
+--scroll-track: #f1f1f1;
+--up: #22c55e;
+--down: #ef4444;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-page: #000000;
+--bg-card: #131314;
+--text-primary: #e3e3e3;
+--text-secondary: #c4c7c5;
+--accent: #8ab4f8;
+--border: #3c4043;
+--shimmer: #1e1f20;
+--scroll-thumb: #3c4043;
+--scroll-track: #131314;
+--up: #0066ff;
+--down: #1e4d94;
+}
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scroll-track); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; overflow: hidden; }
+body {
+font-family: 'Inter', sans-serif;
+background-color: var(--bg-page);
+color: var(--text-primary);
+padding: 16px;
+display: flex;
+flex-direction: column;
+transition: background 0.3s ease;
+}
+.app-container { 
+max-width: 1100px; 
+margin: 0 auto; 
+width: 100%; 
+height: 100%; 
+display: flex; 
+flex-direction: column; 
+gap: 12px;
+}
+.card {
+background-color: var(--bg-card);
+border-radius: var(--radius);
+border: 1px solid var(--border);
+padding: 20px;
+position: relative;
+overflow: hidden;
+flex: 1;
+display: flex;
+flex-direction: column;
+}
+.card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 16px;
+}
+.card-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.scroll-hint { font-size: 10px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.chart-viewport { 
+width: 100%; 
+flex: 1;
+overflow-x: auto; 
+cursor: grab; 
+user-select: none; 
+scrollbar-width: none; 
+}
+.chart-viewport::-webkit-scrollbar { display: none !important; }
+.chart-viewport:active { cursor: grabbing; }
+.chart-canvas-container { height: 100%; min-width: 100%; }
+.stats-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+margin-bottom: 8px;
+}
+.stat-box {
+background-color: var(--bg-card);
+border: 1px solid var(--border);
+border-radius: var(--radius);
+padding: 12px 16px;
+}
+.stat-label {
+font-size: 11px;
+font-weight: 500;
+color: var(--text-secondary);
+margin-bottom: 4px;
+}
+.stat-value {
+font-size: 24px;
+font-weight: 600;
+color: var(--text-primary);
+letter-spacing: -0.5px;
+}
+.skeleton {
+position: absolute;
+inset: 0;
+background-color: var(--bg-card);
+z-index: 10;
+display: flex;
+padding: 24px;
+transition: opacity 0.4s ease;
+}
+.shimmer-line {
+height: 100%;
+width: 100%;
+background: linear-gradient(90deg, var(--shimmer) 25%, var(--border) 50%, var(--shimmer) 75%);
+background-size: 200% 100%;
+animation: loading 1.5s infinite;
+}
+@keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+footer { 
+padding: 12px 0; 
+border-top: 1px solid var(--border);
+margin-top: auto;
+}
+.footer-content {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 16px;
+font-size: 11px;
+color: var(--text-secondary);
+}
+.footer-content a {
+color: var(--accent);
+text-decoration: none;
+font-weight: 600;
+}
+.footer-content a:hover {
+text-decoration: underline;
+}
+.divider {
+width: 1px;
+height: 12px;
+background-color: var(--border);
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+<section class="card">
+<div id="loader" class="skeleton"><div class="shimmer-line"></div></div>
+<div class="card-header">
+<span class="card-title">Analisis Tren & Prediksi Esok</span>
+<span id="scanStatus" class="scroll-hint">Sinkronisasi...</span>
+</div>
+<div class="chart-viewport" id="dragScroll">
+<div id="chartContainer" class="chart-canvas-container">
+<canvas id="trafficChart"></canvas>
+</div>
+</div>
+</section>
+<div class="stats-grid">
+<div class="stat-box">
+<p class="stat-label">Pengunjung Hari Ini</p>
+<p id="valPengunjung" class="stat-value">0</p>
+</div>
+<div class="stat-box">
+<p class="stat-label">Total Peminjaman</p>
+<p id="valPinjam" class="stat-value">0</p>
+</div>
+<div class="stat-box">
+<p class="stat-label">Total Koleksi</p>
+<p id="valKoleksi" class="stat-value">0</p>
+</div>
+</div>
+<footer>
+<div class="footer-content">
+<span>Perpustakaan Lubangsa 2026</span>
+<div class="divider"></div>
+<a href="data_pengunjung.html">Data Pengunjung Selengkapnya</a>
+<div class="divider"></div>
+<span>Dikembangkan Oleh Adlan Madjied Ridho</span>
+</div>
+</footer>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const style = getComputedStyle(document.documentElement);
+const colorUp = style.getPropertyValue('--up').trim();
+const colorDown = style.getPropertyValue('--down').trim();
+const accentColor = style.getPropertyValue('--accent').trim();
+const textSecondary = style.getPropertyValue('--text-secondary').trim();
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = textSecondary;
+let isAnimationActive = true;
+async function initializeData() {
+try {
+const now = new Date();
+const todayStr = now.toISOString().split('T')[0];
+const tomorrow = new Date(now);
+tomorrow.setDate(now.getDate() + 1);
+const tomorrowStr = tomorrow.toISOString().split('T')[0];
+const [resTraffic, resPinjam, resKoleksi] = await Promise.all([
+supabase.from('stats_aktivitas_harian').select('tanggal, total').order('tanggal', { ascending: true }),
+supabase.from('stats_aktivitas_harian').select('total').eq('aktivitas', 'Pinjam'),
+supabase.from('total_koleksi_buku').select('total').single()
+]);
+const dbData = resTraffic.data || [];
+const dbMap = {};
+dbData.forEach(d => { dbMap[d.tanggal] = (dbMap[d.tanggal] || 0) + d.total; });
+let labels = [];
+let values = [];
+let trendStates = [];
+if (dbData.length > 0) {
+let current = new Date(dbData[0].tanggal);
+const end = new Date(now);
+let prevVal = null;
+while (current <= end) {
+const s = current.toISOString().split('T')[0];
+labels.push(s);
+const val = dbMap[s] || 0;
+values.push(val);
+if (dbMap[s] === undefined) {
+trendStates.push('gap');
+} else if (prevVal === null) {
+trendStates.push('up');
+} else {
+trendStates.push(val >= prevVal ? 'up' : 'down');
+}
+prevVal = val;
+current.setDate(current.getDate() + 1);
+}
+}
+const predLabels = [tomorrowStr];
+const avg = values.length > 0 ? values.slice(-3).reduce((a,b)=>a+b,0) / Math.min(values.length, 3) : 0;
+const lastActual = values[values.length-1] || 0;
+const predValues = [lastActual, avg * 1.05];
+document.getElementById('valPengunjung').innerText = dbMap[todayStr] || 0;
+document.getElementById('valPinjam').innerText = (resPinjam.data || []).reduce((a, b) => a + b.total, 0);
+document.getElementById('valKoleksi').innerText = resKoleksi.data ? resKoleksi.data.total : 0;
+renderTrafficChart(labels, values, predLabels, predValues, trendStates);
+initDragScroll();
+const loader = document.getElementById('loader');
+loader.style.opacity = '0';
+setTimeout(() => { loader.remove(); autoAnimateSmoothScroll(); }, 400);
+} catch (error) { console.error(error); }
+}
+function renderTrafficChart(labels, values, predLabels, predValues, trendStates) {
+const ctx = document.getElementById('trafficChart');
+const canvasCtx = ctx.getContext('2d');
+const container = document.getElementById('chartContainer');
+const allLabels = [...labels, ...predLabels];
+if (allLabels.length > 5) container.style.width = (allLabels.length * 95) + "px";
+const upGrad = canvasCtx.createLinearGradient(0, 0, 0, 400);
+upGrad.addColorStop(0, colorUp + '66');
+upGrad.addColorStop(1, 'transparent');
+const downGrad = canvasCtx.createLinearGradient(0, 0, 0, 400);
+downGrad.addColorStop(0, colorDown + '66');
+downGrad.addColorStop(1, 'transparent');
+new Chart(ctx, {
+type: 'line',
+data: {
+labels: allLabels,
+datasets: [
+{
+label: 'Aktual',
+data: [...values, null],
+segment: {
+borderColor: ctx => {
+const state = trendStates[ctx.p1DataIndex];
+return (state === 'gap' || state === 'down') ? colorDown : colorUp;
+},
+backgroundColor: ctx => {
+const state = trendStates[ctx.p1DataIndex];
+return (state === 'gap' || state === 'down') ? downGrad : upGrad;
+}
+},
+borderWidth: 5,
+pointRadius: 4,
+pointBackgroundColor: '#ffffff',
+pointBorderColor: ctx => {
+const state = trendStates[ctx.dataIndex];
+return (state === 'gap' || state === 'down') ? colorDown : colorUp;
+},
+pointBorderWidth: 2,
+tension: 0.4,
+fill: true
+},
+{
+label: 'Prediksi',
+data: [...Array(labels.length - 1).fill(null), ...predValues],
+borderColor: accentColor,
+borderDash: [6, 4],
+borderWidth: 3,
+pointRadius: 4,
+pointBackgroundColor: accentColor,
+tension: 0.4,
+fill: false
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: { legend: { display: false } },
+scales: {
+x: {
+ticks: {
+maxRotation: 0,
+callback: function(val) {
+const d = new Date(this.getLabelForValue(val));
+const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+return [d.getDate() + ' ' + bulan[d.getMonth()], d.getFullYear()];
+}
+},
+grid: { color: 'transparent' }
+},
+y: { beginAtZero: true, position: 'right', grid: { color: 'rgba(128,128,128,0.1)', drawTicks: false } }
+}
+}
+});
+}
+function autoAnimateSmoothScroll() {
+const slider = document.getElementById('dragScroll');
+const status = document.getElementById('scanStatus');
+const target = slider.scrollWidth - slider.clientWidth;
+if (target <= 0) { status.innerText = "Geser Untuk Melihat"; return; }
+const speed = 60; 
+const duration = (target / speed) * 1000;
+let start = null;
+function step(timestamp) {
+if (!isAnimationActive) return;
+if (!start) start = timestamp;
+const progress = Math.min((timestamp - start) / duration, 1);
+slider.scrollLeft = progress * target;
+if (progress < 1) requestAnimationFrame(step);
+else status.innerText = "Geser Untuk Melihat";
+}
+requestAnimationFrame(step);
+}
+function stopAnimation() {
+if (isAnimationActive) {
+isAnimationActive = false;
+document.getElementById('scanStatus').innerText = "Geser Untuk Melihat";
+}
+}
+function initDragScroll() {
+const slider = document.getElementById('dragScroll');
+let isDown = false; let startX; let scrollLeft;
+slider.addEventListener('wheel', stopAnimation, { passive: true });
+slider.addEventListener('touchstart', stopAnimation, { passive: true });
+slider.addEventListener('mousedown', (e) => { 
+stopAnimation();
+isDown = true; 
+startX = e.pageX - slider.offsetLeft; 
+scrollLeft = slider.scrollLeft; 
+});
+slider.addEventListener('mouseleave', () => { isDown = false; });
+slider.addEventListener('mouseup', () => { isDown = false; });
+slider.addEventListener('mousemove', (e) => { 
+if (!isDown) return; 
+e.preventDefault(); 
+const x = e.pageX - slider.offsetLeft; 
+const walk = (x - startX) * 2; 
+slider.scrollLeft = scrollLeft - walk; 
+});
+}
+initializeData();
+</script>
+</body>
+</html>

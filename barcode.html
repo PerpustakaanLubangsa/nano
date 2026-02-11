@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Barcode - Snow Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-snow: #f1f5f9;
+            --accent-blue: #3b82f6;
+            --border-ice: #e2e8f0;
+        }
+
+        body { 
+            background-color: var(--bg-snow); 
+            color: #1e293b; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1 { font-family: 'Cinzel', serif; }
+
+        .card-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Struktur Label Barcode */
+        .label-preview {
+            width: 4cm;
+            height: 2.5cm;
+            border: 0.5pt solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            color: black;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .label-library-header {
+            background-color: #f1f5f9; /* Abu-abu terang */
+            font-size: 7pt;
+            font-weight: 800;
+            text-align: center;
+            text-transform: uppercase;
+            border-bottom: 0.5pt solid #000;
+            width: 100%;
+            padding: 1.5mm 0;
+        }
+
+        .label-title-tiny {
+            font-size: 4pt; /* Ukuran diperkecil */
+            font-weight: 400;
+            text-align: center;
+            line-height: 1;
+            margin: 1mm 1mm 0.5mm 1mm;
+            color: #94a3b8; /* Warna disamarkan (abu-abu) */
+            display: -webkit-box;
+            -webkit-line-clamp: 1; /* Cukup satu baris agar tidak memakan tempat */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        .barcode-svg {
+            width: 90%;
+            max-height: 1cm;
+        }
+
+        .label-code-bottom {
+            font-size: 8pt;
+            font-weight: 700;
+            margin-top: 0.5mm;
+            letter-spacing: 1px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; background-image: none !important; margin: 0; padding: 0; }
+            #printArea { 
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5mm; 
+                padding: 10mm;
+            }
+            .label-preview { 
+                page-break-inside: avoid; 
+                border: 0.5pt solid #000 !important;
+            }
+            .label-library-header {
+                background-color: #f1f5f9 !important; /* Memastikan warna muncul saat print */
+                -webkit-print-color-adjust: exact;
+            }
+        }
+
+        .item-row { transition: 0.2s; border: 1px solid transparent; }
+        .item-row.selected { background: #eff6ff; border-color: #3b82f6; transform: translateX(5px); }
+
+        .loader {
+            width: 20px; height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-12">
+
+    <div class="max-w-6xl mx-auto no-print">
+        <header class="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tighter text-blue-600 uppercase">Barcode Label</h1>
+                <p class="text-slate-400 text-[10px] mt-2 tracking-[0.4em] uppercase font-bold italic">Lubangsa Library • Supabase Sync</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="statusLoader" class="loader"></div>
+                <button id="printBtn" onclick="window.print()" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl shadow-lg transition-all uppercase text-xs tracking-widest disabled:opacity-30">
+                    Cetak (<span id="selectedCount">0</span>) Label
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="card-glass p-2 rounded-2xl mb-6 shadow-sm flex items-center">
+                    <div class="pl-4 text-blue-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Cari judul buku atau kode..." class="w-full p-4 bg-transparent outline-none font-medium text-slate-700">
+                </div>
+                <div id="dataList" class="space-y-3 min-h-[400px]"></div>
+                <div id="pagination" class="flex justify-center gap-2 mt-8"></div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="card-glass p-6 rounded-3xl sticky top-8 border-dashed border-2 border-slate-200">
+                    <h2 class="font-bold text-slate-800 mb-4 uppercase text-xs tracking-widest text-center">Preview Label</h2>
+                    <div id="previewBox" class="flex flex-col items-center justify-center bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div id="singlePreview" class="label-preview shadow-2xl">
+                            <span class="text-[8pt] text-slate-300 p-10">Pilih Item</span>
+                        </div>
+                    </div>
+                    <button onclick="clearSelection()" class="w-full mt-6 text-[10px] font-bold text-red-400 uppercase tracking-widest hover:text-red-600">Reset Pilihan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" class="hidden"></div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let allData = [];
+        let selectedItems = new Map();
+        let currentPage = 1;
+        const itemsPerPage = 8;
+        let queryStr = '';
+
+        async function loadData() {
+            document.getElementById('statusLoader').style.display = 'block';
+            let { data, error } = await client.from('ekslempar').select(`id, kode, biblio ( judul )`).order('id', { ascending: false });
+            document.getElementById('statusLoader').style.display = 'none';
+
+            if (!error) {
+                allData = data.map(item => ({
+                    id: item.id,
+                    kode: item.kode,
+                    judul: item.biblio ? item.biblio.judul : 'Tanpa Judul'
+                }));
+                renderUI();
+            }
+        }
+
+        function renderUI() {
+            const container = document.getElementById('dataList');
+            const filtered = allData.filter(i => i.judul.toLowerCase().includes(queryStr.toLowerCase()) || i.kode.toLowerCase().includes(queryStr.toLowerCase()));
+            const start = (currentPage - 1) * itemsPerPage;
+            const paginated = filtered.slice(start, start + itemsPerPage);
+
+            container.innerHTML = paginated.map(item => `
+                <div onclick="toggleItem('${item.id}')" class="item-row card-glass p-4 rounded-2xl cursor-pointer flex items-center justify-between ${selectedItems.has(item.id) ? 'selected' : ''}">
+                    <div>
+                        <div class="text-[10px] font-extrabold text-blue-500 uppercase">${item.kode}</div>
+                        <div class="text-sm font-bold text-slate-700 line-clamp-1">${item.judul}</div>
+                    </div>
+                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedItems.has(item.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-200'}">
+                        ${selectedItems.has(item.id) ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>' : ''}
+                    </div>
+                </div>
+            `).join('');
+            renderPagination(filtered.length);
+            updatePrintArea();
+        }
+
+        function toggleItem(id) {
+            const item = allData.find(i => i.id === id);
+            if (selectedItems.has(id)) selectedItems.delete(id);
+            else {
+                selectedItems.set(id, item);
+                showPreview(item);
+            }
+            renderUI();
+            updateStats();
+        }
+
+        function showPreview(item) {
+            const preview = document.getElementById('singlePreview');
+            preview.innerHTML = `
+                <div class="label-library-header">PERPUSTAKAAN LUBANGSA</div>
+                <div class="label-title-tiny">${item.judul}</div>
+                <svg id="prevBarcode" class="barcode-svg"></svg>
+                <div class="label-code-bottom">${item.kode}</div>
+            `;
+            JsBarcode("#prevBarcode", item.kode, { format: "CODE128", width: 2, height: 40, displayValue: false, margin: 0 });
+        }
+
+        function updateStats() {
+            const count = selectedItems.size;
+            document.getElementById('selectedCount').innerText = count;
+            document.getElementById('printBtn').disabled = count === 0;
+        }
+
+        function updatePrintArea() {
+            const area = document.getElementById('printArea');
+            area.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            grid.style.gap = '5mm';
+            grid.style.padding = '10mm';
+
+            selectedItems.forEach(item => {
+                const label = document.createElement('div');
+                label.className = 'label-preview';
+                label.innerHTML = `
+                    <div class="label-library-header">PERPUSTAKAAN LUBANGSA</div>
+                    <div class="label-title-tiny">${item.judul}</div>
+                    <svg class="barcode-render" data-code="${item.kode}"></svg>
+                    <div class="label-code-bottom">${item.kode}</div>
+                `;
+                grid.appendChild(label);
+            });
+            area.appendChild(grid);
+            document.querySelectorAll('.barcode-render').forEach(el => {
+                JsBarcode(el, el.getAttribute('data-code'), { format: "CODE128", width: 2.2, height: 45, displayValue: false, margin: 0 });
+            });
+        }
+
+        function renderPagination(total) {
+            const pages = Math.ceil(total / itemsPerPage);
+            const container = document.getElementById('pagination');
+            let html = '';
+            for(let i=1; i<=pages; i++) {
+                if(i==1 || i==pages || (i >= currentPage-1 && i <= currentPage+1)) {
+                    html += `<button onclick="currentPage=${i}; renderUI();" class="w-9 h-9 rounded-lg border font-bold text-xs transition-all ${i==currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200'}">${i}</button>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function clearSelection() {
+            selectedItems.clear();
+            document.getElementById('singlePreview').innerHTML = '<span class="text-[8pt] text-slate-300 p-10">Pilih Item</span>';
+            renderUI();
+            updateStats();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            queryStr = e.target.value;
+            currentPage = 1;
+            renderUI();
+        });
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>

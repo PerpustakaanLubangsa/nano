@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<style>
+:root {
+--bg-page: #f8f9fa;
+--bg-card: #ffffff;
+--text-primary: #202124;
+--text-secondary: #5f6368;
+--border-color: #dadce0;
+--accent-color: #1a73e8;
+--danger: #d93025;
+--success: #188038;
+--skeleton: #e0e0e0;
+--toast-bg: #323232;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-page: #000000;
+--bg-card: #000000;
+--text-primary: #e8eaed;
+--text-secondary: #9aa0a6;
+--border-color: #262626;
+--accent-color: #8ab4f8;
+--skeleton: #1a1a1a;
+--toast-bg: #1f1f1f;
+}
+}
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Plus Jakarta Sans', sans-serif;
+}
+body {
+background-color: var(--bg-page);
+color: var(--text-primary);
+padding: 20px;
+transition: background-color 0.3s ease;
+}
+.container {
+max-width: 800px;
+margin: 0 auto;
+}
+.stats-row {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+gap: 16px;
+margin-bottom: 24px;
+}
+.stat-box {
+background: var(--bg-card);
+padding: 20px;
+border-radius: 16px;
+border: 1px solid var(--border-color);
+text-align: center;
+}
+.stat-val {
+font-size: 24px;
+font-weight: 800;
+display: block;
+}
+.stat-label {
+font-size: 12px;
+color: var(--text-secondary);
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+.feedback-card {
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+border-radius: 16px;
+padding: 20px;
+margin-bottom: 16px;
+position: relative;
+animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.card-header {
+display: flex;
+justify-content: space-between;
+margin-bottom: 10px;
+}
+.user-info { font-weight: 700; font-size: 16px; }
+.time-info { font-size: 12px; color: var(--text-secondary); }
+.header-right {
+display: flex;
+align-items: center;
+gap: 12px;
+position: relative;
+}
+.like-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+font-size: 11px;
+font-weight: 700;
+padding: 4px 10px;
+border-radius: 12px;
+text-transform: uppercase;
+}
+.like-true { background: rgba(24, 128, 56, 0.1); color: var(--success); }
+.like-false { background: rgba(217, 48, 37, 0.1); color: var(--danger); }
+.menu-container { position: relative; }
+.btn-menu {
+background: none;
+border: none;
+color: var(--text-secondary);
+cursor: pointer;
+font-size: 18px;
+padding: 5px;
+border-radius: 50%;
+width: 32px;
+height: 32px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.btn-menu:hover { background: rgba(128,128,128,0.1); }
+.dropdown-menu {
+position: absolute;
+top: 100%;
+right: 0;
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+border-radius: 12px;
+box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+display: none;
+z-index: 100;
+overflow: hidden;
+min-width: 160px;
+}
+.dropdown-menu.active { display: block; }
+.dropdown-item {
+padding: 12px 16px;
+font-size: 14px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 10px;
+color: var(--danger);
+transition: background 0.2s;
+}
+.dropdown-item:hover { background: rgba(217, 48, 37, 0.1); }
+.pesan-text {
+font-size: 14px;
+line-height: 1.6;
+color: var(--text-primary);
+background: rgba(128,128,128,0.05);
+padding: 12px;
+border-radius: 12px;
+margin-top: 10px;
+border: 1px solid var(--border-color);
+}
+.no-pesan { font-style: italic; color: var(--text-secondary); }
+.skeleton { background: var(--skeleton); border-radius: 16px; position: relative; overflow: hidden; height: 120px; margin-bottom: 16px; }
+.skeleton::after {
+content: "";
+position: absolute;
+top: 0; left: 0; right: 0; bottom: 0;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+animation: loading 1.5s infinite;
+}
+@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.msg-box {
+background: var(--bg-card);
+border: 1px solid var(--border-color);
+padding: 40px;
+text-align: center;
+border-radius: 20px;
+margin-top: 50px;
+}
+#toast-notification {
+position: fixed;
+bottom: 24px;
+left: 50%;
+transform: translateX(-50%) translateY(100px);
+background: var(--toast-bg);
+color: #fff;
+padding: 14px 24px;
+border-radius: 12px;
+font-size: 14px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+z-index: 1000;
+display: flex;
+align-items: center;
+gap: 10px;
+border: 1px solid var(--border-color);
+}
+#toast-notification.show { transform: translateX(-50%) translateY(0); }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="app" class="container">
+<div id="loading-state">
+<div class="stats-row">
+<div class="skeleton" style="height: 100px;"></div>
+<div class="skeleton" style="height: 100px;"></div>
+<div class="skeleton" style="height: 100px;"></div>
+</div>
+<div class="skeleton"></div>
+<div class="skeleton"></div>
+<div class="skeleton"></div>
+</div>
+<div id="access-denied" class="hidden msg-box">
+<i class="fa-solid fa-shield-halved" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 20px; opacity: 0.5;"></i>
+<h3 style="font-weight: 700;">Akses Terbatas</h3>
+<p style="color: var(--text-secondary); margin-top: 10px; font-size: 14px;">Silakan masuk menggunakan akun admin yang terdaftar.</p>
+</div>
+<div id="adminContent" class="hidden">
+<div class="stats-row">
+<div class="stat-box">
+<span id="totalFeedback" class="stat-val">0</span>
+<span class="stat-label">Total</span>
+</div>
+<div class="stat-box">
+<span id="totalLikes" class="stat-val" style="color: var(--success)">0</span>
+<span class="stat-label">Suka</span>
+</div>
+<div class="stat-box">
+<span id="totalUnlikes" class="stat-val" style="color: var(--danger)">0</span>
+<span class="stat-label">Tidak Suka</span>
+</div>
+</div>
+<div id="feedbackList"></div>
+</div>
+</div>
+<div id="toast-notification"></div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+let currentOpenMenu = null;
+async function checkAdmin() {
+try {
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) {
+showDenied();
+return;
+}
+const { data: admin } = await supabase
+.from('allowed_admins')
+.select('email')
+.eq('email', user.email)
+.maybeSingle();
+if (!admin) {
+showDenied();
+return;
+}
+document.getElementById('loading-state').classList.add('hidden');
+document.getElementById('adminContent').classList.remove('hidden');
+loadFeedback();
+} catch (err) {
+showDenied();
+}
+}
+function showDenied() {
+document.getElementById('loading-state').classList.add('hidden');
+document.getElementById('access-denied').classList.remove('hidden');
+}
+function showToast(message) {
+const toast = document.getElementById('toast-notification');
+toast.innerText = message;
+toast.classList.add('show');
+setTimeout(() => toast.classList.remove('show'), 3000);
+}
+async function loadFeedback() {
+const { data, error } = await supabase
+.from('feedback')
+.select('*')
+.order('created_at', { ascending: false });
+if (error) {
+showToast("Gagal mengambil data");
+return;
+}
+renderStats(data);
+renderList(data);
+}
+function renderStats(data) {
+const likes = data.filter(f => f.is_liked === true).length;
+const unlikes = data.filter(f => f.is_liked === false).length;
+document.getElementById('totalFeedback').innerText = data.length;
+document.getElementById('totalLikes').innerText = likes;
+document.getElementById('totalUnlikes').innerText = unlikes;
+}
+function renderList(data) {
+const container = document.getElementById('feedbackList');
+container.innerHTML = data.length === 0 ? '<div class="msg-box"><p style="color: var(--text-secondary)">Belum ada feedback masuk.</p></div>' : '';
+data.forEach(item => {
+const date = new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+const likeClass = item.is_liked ? 'like-true' : 'like-false';
+const likeIcon = item.is_liked ? 'fa-thumbs-up' : 'fa-thumbs-down';
+const likeText = item.is_liked ? 'Suka' : 'Tidak Suka';
+const card = document.createElement('div');
+card.className = 'feedback-card';
+card.innerHTML = `
+<div class="card-header">
+<div>
+<div class="user-info">${item.nama}</div>
+<div class="time-info">${date}</div>
+</div>
+<div class="header-right">
+<div class="like-badge ${likeClass}">
+<i class="fa-solid ${likeIcon}"></i> ${likeText}
+</div>
+<div class="menu-container">
+<button class="btn-menu" onclick="toggleMenu(event, '${item.id}')">
+<i class="fa-solid fa-ellipsis-vertical"></i>
+</button>
+<div id="menu-${item.id}" class="dropdown-menu">
+<div class="dropdown-item" onclick="deleteFeedback('${item.id}')">
+<i class="fa-solid fa-trash-can"></i> Hapus Masukan
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pesan-text">
+${item.pesan ? item.pesan : '<span class="no-pesan">Hanya memberikan rating jempol.</span>'}
+</div>
+`;
+container.appendChild(card);
+});
+}
+window.toggleMenu = (event, id) => {
+event.stopPropagation();
+const menu = document.getElementById(`menu-${id}`);
+if (currentOpenMenu && currentOpenMenu !== menu) {
+currentOpenMenu.classList.remove('active');
+}
+menu.classList.toggle('active');
+currentOpenMenu = menu.classList.contains('active') ? menu : null;
+};
+window.deleteFeedback = async (id) => {
+try {
+const { error } = await supabase.from('feedback').delete().eq('id', id);
+if (error) throw error;
+showToast("Masukan berhasil dihapus");
+loadFeedback();
+} catch (err) {
+showToast("Gagal menghapus masukan");
+}
+};
+document.addEventListener('click', () => {
+if (currentOpenMenu) {
+currentOpenMenu.classList.remove('active');
+currentOpenMenu = null;
+}
+});
+checkAdmin();
+</script>
+</body>
+</html>

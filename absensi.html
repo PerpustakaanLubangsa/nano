@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piket Attendance | Gemini Style</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+--bg-main: #f8f9fa;
+--bg-card: #ffffff;
+--text-main: #1f1f1f;
+--text-muted: #5f6368;
+--accent: #1a73e8;
+--border: #e2e8f0;
+--scroll-bar: #e0e0e0;
+--scroll-thumb: #cccccc;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--bg-card: #121212;
+--text-main: #e3e3e3;
+--text-muted: #9aa0a6;
+--accent: #8ab4f8;
+--border: #2d2d2d;
+--scroll-bar: #1a1a1a;
+--scroll-thumb: #333333;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--scroll-bar); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-main);
+color: var(--text-main);
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 20px;
+}
+.gemini-container {
+width: 100%;
+max-width: 500px;
+background: var(--bg-card);
+border-radius: 28px;
+padding: 32px;
+border: 1px solid var(--border);
+}
+.header-section {
+text-align: center;
+margin-bottom: 32px;
+}
+.live-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+background: var(--bg-main);
+padding: 6px 14px;
+border-radius: 50px;
+font-size: 10px;
+font-weight: 700;
+color: var(--accent);
+text-transform: uppercase;
+letter-spacing: 1px;
+margin-bottom: 16px;
+}
+.live-dot {
+width: 6px;
+height: 6px;
+background-color: var(--accent);
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+0% { transform: scale(1); opacity: 1; }
+50% { transform: scale(1.5); opacity: 0.5; }
+100% { transform: scale(1); opacity: 1; }
+}
+.shift-title {
+font-size: 24px;
+font-weight: 800;
+letter-spacing: -0.5px;
+margin-bottom: 4px;
+}
+.shift-info {
+font-size: 13px;
+color: var(--text-muted);
+font-weight: 500;
+}
+.petugas-list {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.petugas-item {
+background: var(--bg-main);
+padding: 16px;
+border-radius: 20px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.petugas-info {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.avatar {
+width: 40px;
+height: 40px;
+border-radius: 12px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: 700;
+color: white;
+font-size: 14px;
+}
+.nama-petugas {
+font-size: 14px;
+font-weight: 600;
+}
+.btn-group {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 8px;
+}
+.btn-status {
+border: 1px solid var(--border);
+background: var(--bg-card);
+color: var(--text-main);
+padding: 10px;
+border-radius: 12px;
+font-size: 11px;
+font-weight: 700;
+cursor: pointer;
+transition: all 0.2s;
+}
+.btn-status.active[data-status="Hadir"] { background: var(--accent) !important; color: white !important; border-color: var(--accent) !important; }
+.btn-status.active[data-status="Izin"] { background: #f59e0b !important; color: white !important; border-color: #f59e0b !important; }
+.btn-status.active[data-status="Alpha"] { background: #d93025 !important; color: white !important; border-color: #d93025 !important; }
+.loader {
+width: 24px;
+height: 24px;
+border: 3px solid var(--border);
+border-top-color: var(--accent);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state {
+text-align: center;
+padding: 40px 20px;
+}
+.empty-state i {
+font-size: 40px;
+color: var(--text-muted);
+margin-bottom: 16px;
+opacity: 0.3;
+}
+</style>
+</head>
+<body>
+<div id="app" class="gemini-container">
+<div id="loadingUI" class="py-10 text-center">
+<div class="loader"></div>
+<p class="text-[11px] font-bold uppercase tracking-widest mt-4 text-muted">Sinkronisasi...</p>
+</div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const getAvatarColor = (c) => {
+const colors = ['#4285F4', '#34A853', '#FBBC05', '#EA4335', '#673AB7', '#00ACC1'];
+return colors[c.charCodeAt(0) % colors.length];
+};
+async function init() {
+try {
+const now = new Date();
+const hariIni = HARI_MAP[now.getDay()];
+const jamMenit = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+const tgl = now.toISOString().split('T')[0];
+const { data: shifts } = await supabase.from('jam_master').select('*');
+const currentShift = shifts?.find(s => {
+const [m, sl] = s.waktu.split(' - ');
+return jamMenit >= m && jamMenit <= sl;
+});
+if (!currentShift) return renderEmpty("Sesi Perpustakaan Tutup");
+const { data: petugas } = await supabase.from('jadwal_detail').select('*').eq('hari', hariIni).eq('shift', currentShift.waktu);
+const { data: rekap } = await supabase.from('rekap_absensi').select('*').eq('tanggal', tgl).eq('shift', currentShift.label);
+renderMain(hariIni, currentShift, petugas || [], rekap || []);
+} catch (e) {
+renderEmpty("Koneksi Bermasalah");
+}
+}
+function renderMain(hari, shift, petugas, rekap) {
+const app = document.getElementById('app');
+app.innerHTML = `
+<div class="header-section">
+<div class="live-badge"><span class="live-dot"></span>Live Attendance</div>
+<h1 class="shift-title">${shift.label}</h1>
+<p class="shift-info">${hari}, ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long'})} • ${shift.waktu}</p>
+</div>
+<div class="petugas-list">
+${petugas.length > 0 ? petugas.map((p, idx) => {
+const abs = rekap.find(r => r.nama === p.nama);
+const char = p.nama.charAt(0);
+return `
+<div class="petugas-item">
+<div class="petugas-info">
+<div class="avatar" style="background:${getAvatarColor(char)}">${char}</div>
+<div class="nama-petugas">${p.nama}</div>
+</div>
+<div class="btn-group" id="group-${idx}">
+<button class="btn-status ${abs?.status==='Hadir'?'active':''}" data-status="Hadir" onclick="updateAbsen('${p.nama}', 'Hadir', '${hari}', '${shift.label}', ${idx})">Hadir</button>
+<button class="btn-status ${abs?.status==='Izin'?'active':''}" data-status="Izin" onclick="updateAbsen('${p.nama}', 'Izin', '${hari}', '${shift.label}', ${idx})">Izin</button>
+<button class="btn-status ${abs?.status==='Alpha'?'active':''}" data-status="Alpha" onclick="updateAbsen('${p.nama}', 'Alpha', '${hari}', '${shift.label}', ${idx})">Alpha</button>
+</div>
+</div>
+`;
+}).join('') : '<p class="text-center text-xs text-muted">Tidak ada jadwal piket jam ini.</p>'}
+</div>
+<div class="mt-8 text-center">
+<button onclick="location.reload()" class="text-[10px] font-bold opacity-30 hover:opacity-100 uppercase tracking-widest transition-all">Refresh Data</button>
+</div>
+`;
+}
+window.updateAbsen = async (nama, status, hari, shift, idx) => {
+const container = document.getElementById(`group-${idx}`);
+const btns = container.querySelectorAll('.btn-status');
+const tgl = new Date().toISOString().split('T')[0];
+btns.forEach(b => {
+b.classList.remove('active');
+if(b.getAttribute('data-status') === status) b.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i>';
+});
+try {
+await supabase.from('rekap_absensi').delete().eq('nama', nama).eq('tanggal', tgl).eq('shift', shift);
+await supabase.from('rekap_absensi').insert([{ nama, hari, shift, status, tanggal: tgl }]);
+init();
+} catch (e) {
+alert("Gagal memperbarui status");
+init();
+}
+};
+function renderEmpty(msg) {
+document.getElementById('app').innerHTML = `
+<div class="empty-state">
+<i class="fa-solid fa-clock-rotate-left"></i>
+<h2 class="font-bold text-lg">Sesi Tidak Aktif</h2>
+<p class="text-sm text-muted mt-2">${msg}</p>
+<button onclick="location.reload()" class="mt-6 px-6 py-2 bg-black text-white dark:bg-white dark:text-black rounded-full text-xs font-bold">Refresh</button>
+</div>
+`;
+}
+init();
+</script>
+</body>
+</html>

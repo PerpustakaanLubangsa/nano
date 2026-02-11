@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pemustaka</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-main: #f8fafd;
+--bg-card: #ffffff;
+--text-main: #1f1f1f;
+--text-muted: #474747;
+--accent: #1a73e8;
+--border: #eef2f7;
+--danger: #d93025;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--bg-card: #111111;
+--text-main: #e3e3e3;
+--text-muted: #9aa0a6;
+--accent: #8ab4f8;
+--border: #222222;
+--danger: #f28b82;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
+html, body { 
+width: 100%; 
+overflow-x: hidden; 
+height: 100%;
+background-color: var(--bg-main);
+color: var(--text-main);
+font-family: 'Plus Jakarta Sans', sans-serif;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+.app-wrapper {
+max-width: 600px;
+margin: 0 auto;
+width: 100%;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+padding: 16px;
+position: relative;
+}
+.list-container { flex: 1; padding-bottom: 100px; }
+.card-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 16px 12px;
+margin-bottom: 4px;
+background: var(--bg-card);
+border-radius: 14px;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+.card-item:active { background: var(--border); transform: scale(0.99); }
+.content-box { flex: 1; min-width: 0; }
+.content-box h3 { font-size: 14px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.content-box p { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+.role-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; opacity: 0.8; }
+.shimmer {
+position: relative;
+overflow: hidden;
+height: 60px;
+background: var(--bg-card);
+margin-bottom: 4px;
+border-radius: 14px;
+}
+.shimmer::after {
+content: "";
+position: absolute;
+top: 0; left: 0; width: 100%; height: 100%;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+animation: loading 1.5s infinite;
+}
+@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.floating-bar {
+position: fixed;
+bottom: 24px;
+left: 50%;
+transform: translateX(-50%);
+width: calc(100% - 32px);
+max-width: 500px;
+background: var(--bg-card);
+border-radius: 30px;
+padding: 8px 8px 8px 20px;
+display: flex;
+align-items: center;
+gap: 12px;
+box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+z-index: 100;
+border: 1px solid var(--border);
+}
+.search-input { flex: 1; background: transparent; color: var(--text-main); font-size: 14px; font-weight: 500; }
+.btn-fab {
+width: 40px;
+height: 40px;
+background: var(--accent);
+color: #fff;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+cursor: pointer;
+}
+.modal-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.4);
+backdrop-filter: blur(8px);
+display: none;
+justify-content: center;
+align-items: flex-end;
+z-index: 200;
+}
+.modal-overlay.active { display: flex; }
+.modal-pane {
+background: var(--bg-card);
+width: 100%;
+max-width: 600px;
+border-radius: 28px 28px 0 0;
+padding: 32px 24px 40px;
+animation: slideUp 0.3s cubic-bezier(0, 0, 0.2, 1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.modal-title { font-size: 18px; font-weight: 800; }
+.btn-del { color: var(--danger); font-size: 10px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+.field-group { margin-bottom: 16px; }
+.field-label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block; }
+.field-input { 
+width: 100%; 
+background: var(--bg-main); 
+padding: 14px 16px; 
+border-radius: 12px; 
+color: var(--text-main); 
+font-size: 14px; 
+font-weight: 600; 
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-submit {
+width: 100%;
+background: var(--accent);
+color: #fff;
+padding: 16px;
+border-radius: 16px;
+font-weight: 800;
+font-size: 12px;
+text-transform: uppercase;
+letter-spacing: 1px;
+margin-top: 8px;
+cursor: pointer;
+}
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.py-20 { padding: 80px 0; }
+.opacity-30 { opacity: 0.3; }
+.uppercase { text-transform: uppercase; }
+.tracking-widest { letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+<div id="memberList" class="list-container"></div>
+<div id="sentinel" style="height: 20px;"></div>
+</div>
+<div class="floating-bar">
+<i class="fa-solid fa-magnifying-glass" style="color: #94a3b8; font-size: 14px;"></i>
+<input type="text" id="memberSearch" class="search-input" placeholder="Cari pemustaka..." autocomplete="off">
+<div onclick="openModal('NEW')" class="btn-fab"><i class="fa-solid fa-plus" style="font-size: 14px;"></i></div>
+</div>
+<div id="memberModal" class="modal-overlay" onclick="if(event.target===this) closeModal()">
+<div class="modal-pane">
+<div class="modal-header">
+<h2 class="modal-title" id="modalTitle">Profil</h2>
+<div id="btnDelete" onclick="deleteMember()" class="hidden btn-del">Hapus</div>
+</div>
+<form id="memberForm">
+<input type="hidden" id="m_id">
+<div class="field-group">
+<label class="field-label">NIS</label>
+<input type="text" id="m_nis" class="field-input" required>
+</div>
+<div class="field-group">
+<label class="field-label">Nama</label>
+<input type="text" id="m_nama" class="field-input" required>
+</div>
+<div class="grid-2">
+<div class="field-group">
+<label class="field-label">Jenjang</label>
+<select id="m_jenjang" class="field-input">
+<option value="SLTP">SLTP</option>
+<option value="SLTA">SLTA</option>
+<option value="PT">PT</option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label">Kamar</label>
+<input type="text" id="m_kamar" class="field-input" style="text-transform: uppercase;">
+</div>
+</div>
+<div class="field-group">
+<label class="field-label">Role</label>
+<select id="m_role" class="field-input">
+<option value="anggota">Anggota</option>
+<option value="pustakawan">Pustakawan</option>
+<option value="admin">Admin</option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label">Password</label>
+<input type="password" id="m_password" class="field-input" placeholder="••••••••">
+</div>
+<button type="submit" class="btn-submit">Simpan Perubahan</button>
+</form>
+</div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+let page = 0;
+const perPage = 25;
+let hasMore = true;
+let isLoading = false;
+let searchQuery = '';
+let memoryCache = [];
+const CACHE_KEY = 'pemustaka_cache_v1';
+const list = document.getElementById('memberList');
+const sentinel = document.getElementById('sentinel');
+const searchInput = document.getElementById('memberSearch');
+function createSkeleton() {
+return Array(8).fill(0).map(() => `<div class="shimmer"></div>`).join('');
+}
+function renderItem(m) {
+const div = document.createElement('div');
+div.className = 'card-item';
+div.onclick = () => openModal(m.id);
+div.innerHTML = `
+<div class="content-box">
+<h3>${m.nama}</h3>
+<p>${m.nis || '-'} • ${m.jenjang || '-'} • ${m.kamar || '-'}</p>
+</div>
+<div class="role-badge">${m.role}</div>`;
+return div;
+}
+async function loadData(reset = false) {
+if (isLoading || (!hasMore && !reset)) return;
+isLoading = true;
+if (reset) {
+page = 0;
+hasMore = true;
+list.innerHTML = createSkeleton();
+if (!searchQuery) {
+const local = localStorage.getItem(CACHE_KEY);
+if (local) {
+memoryCache = JSON.parse(local);
+list.innerHTML = '';
+memoryCache.slice(0, perPage).forEach(m => list.appendChild(renderItem(m)));
+}
+}
+}
+const from = page * perPage;
+const to = from + perPage - 1;
+let query = supabase.from('anggota').select('*').order('nama', { ascending: true }).range(from, to);
+if (searchQuery) query = query.or(`nama.ilike.%${searchQuery}%,nis.ilike.%${searchQuery}%`);
+const { data, error } = await query;
+if (reset) list.innerHTML = '';
+if (data && data.length > 0) {
+data.forEach(m => list.appendChild(renderItem(m)));
+if (!searchQuery && page === 0) {
+memoryCache = data;
+localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+}
+page++;
+if (data.length < perPage) hasMore = false;
+} else {
+hasMore = false;
+if (reset && !memoryCache.length) list.innerHTML = '<div class="text-center py-20 opacity-30 uppercase tracking-widest" style="font-size: 10px; font-weight: 800;">Kosong</div>';
+}
+isLoading = false;
+}
+const observer = new IntersectionObserver((entries) => {
+if (entries[0].isIntersecting && hasMore && !isLoading) loadData();
+}, { rootMargin: '400px' });
+observer.observe(sentinel);
+let timer;
+searchInput.oninput = () => {
+clearTimeout(timer);
+timer = setTimeout(() => {
+searchQuery = searchInput.value.trim();
+loadData(true);
+}, 400);
+};
+window.openModal = async (id) => {
+const form = document.getElementById('memberForm');
+form.reset();
+document.getElementById('m_id').value = id;
+const delBtn = document.getElementById('btnDelete');
+if (id === 'NEW') {
+document.getElementById('modalTitle').innerText = 'Tambah';
+delBtn.classList.add('hidden');
+} else {
+document.getElementById('modalTitle').innerText = 'Edit';
+delBtn.classList.remove('hidden');
+const cachedMember = memoryCache.find(m => m.id === id);
+if (cachedMember) fillForm(cachedMember);
+const { data } = await supabase.from('anggota').select('*').eq('id', id).single();
+if (data) fillForm(data);
+}
+document.getElementById('memberModal').classList.add('active');
+};
+function fillForm(d) {
+document.getElementById('m_nis').value = d.nis || '';
+document.getElementById('m_nama').value = d.nama || '';
+document.getElementById('m_jenjang').value = d.jenjang || 'SLTP';
+document.getElementById('m_kamar').value = d.kamar || '';
+document.getElementById('m_role').value = d.role || 'anggota';
+}
+window.closeModal = () => document.getElementById('memberModal').classList.remove('active');
+document.getElementById('memberForm').onsubmit = async (e) => {
+e.preventDefault();
+const id = document.getElementById('m_id').value;
+const payload = {
+nis: document.getElementById('m_nis').value,
+nama: document.getElementById('m_nama').value,
+jenjang: document.getElementById('m_jenjang').value,
+kamar: document.getElementById('m_kamar').value,
+role: document.getElementById('m_role').value
+};
+const pass = document.getElementById('m_password').value;
+if (pass) payload.password = pass;
+if (id === 'NEW') await supabase.from('anggota').insert([payload]);
+else await supabase.from('anggota').update(payload).eq('id', id);
+closeModal();
+loadData(true);
+};
+window.deleteMember = async () => {
+if (confirm('Hapus permanen?')) {
+await supabase.from('anggota').delete().eq('id', document.getElementById('m_id').value);
+closeModal();
+loadData(true);
+}
+};
+loadData(true);
+</script>
+</body>
+</html>

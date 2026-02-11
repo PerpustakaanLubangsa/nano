@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bibliografi • Gemini Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+--bg-main: #f8f9fa;
+--bg-card: #ffffff;
+--text-main: #1f1f1f;
+--text-muted: #5f6368;
+--accent: #1a73e8;
+--border: #e2e8f0;
+--skeleton-bg: #eeeeee;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--bg-card: #111111;
+--text-main: #e3e3e3;
+--text-muted: #9aa0a6;
+--accent: #8ab4f8;
+--border: #1e1f20;
+--skeleton-bg: #222222;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; border: none; }
+::-webkit-scrollbar { width: 8px; transition: all 0.3s; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #ffffff; border: 0px solid transparent; width: 12px; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-main);
+color: var(--text-main);
+min-height: 100vh;
+}
+header {
+position: fixed;
+top: 0; left: 0; right: 0;
+background: var(--bg-main);
+z-index: 1000;
+display: flex;
+justify-content: center;
+padding: 10px 0;
+}
+.header-content {
+max-width: 800px;
+width: 100%;
+padding: 0 20px;
+display: flex;
+align-items: center;
+gap: 10px;
+position: relative;
+}
+.search-bar {
+flex: 1;
+background: var(--bg-card);
+border-radius: 12px;
+padding: 4px 6px 4px 14px;
+display: flex;
+align-items: center;
+gap: 8px;
+border: 1px solid var(--border) !important;
+transition: border-color 0.2s;
+}
+.search-bar:focus-within { border-color: var(--accent) !important; }
+.search-bar input {
+background: transparent;
+color: var(--text-main);
+width: 100%;
+font-size: 14px;
+outline: none;
+height: 32px;
+}
+.btn-search-trigger {
+background: var(--accent);
+color: white;
+width: 30px;
+height: 30px;
+border-radius: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+font-size: 12px;
+transition: opacity 0.2s;
+}
+.btn-search-trigger:hover { opacity: 0.8; }
+.suggestion-box {
+position: absolute;
+top: 100%; left: 20px; right: 64px;
+background: var(--bg-card);
+border: 1px solid var(--border) !important;
+border-radius: 0 0 12px 12px;
+max-height: 300px;
+overflow-y: auto;
+z-index: 1001;
+display: none;
+box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+.suggestion-item {
+padding: 12px 16px;
+font-size: 13px;
+cursor: pointer;
+border-bottom: 1px solid var(--border) !important;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.suggestion-item:hover { background: var(--bg-main); color: var(--accent); }
+.btn-wa-add {
+width: 40px; height: 40px;
+background: var(--accent);
+color: white;
+border-radius: 12px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 16px;
+flex-shrink: 0;
+text-decoration: none;
+}
+.container { 
+max-width: 800px; 
+margin: 0 auto; 
+width: 100%;
+padding: 80px 20px 40px 20px;
+}
+.list-item {
+display: flex;
+background: var(--bg-card);
+margin-bottom: 12px;
+height: 150px;
+cursor: pointer;
+border-radius: 8px;
+overflow: hidden;
+transition: transform 0.2s;
+border: 1px solid var(--border) !important;
+}
+.list-item:hover { transform: translateY(-2px); border-color: var(--accent) !important; }
+.sampul-box {
+width: 100px; height: 150px;
+flex-shrink: 0;
+background: var(--border);
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.sampul-box img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { flex: 1; padding: 16px; display: flex; flex-direction: column; justify-content: center; }
+.item-info h3 { font-size: 15px; font-weight: 800; line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.item-info p { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.skeleton-wrapper { display: none; }
+.skeleton-wrapper.active { display: block; }
+.skeleton { background: linear-gradient(90deg, var(--bg-card) 25%, var(--skeleton-bg) 50%, var(--bg-card) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite linear; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+#sentinel { height: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<header>
+<div class="header-content">
+<div class="search-bar">
+<input type="text" id="searchInput" placeholder="Cari judul..." autocomplete="off">
+<div class="btn-search-trigger" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i></div>
+</div>
+<div id="suggestionBox" class="suggestion-box"></div>
+<a href="entri-biblio.html" class="btn-wa-add"><i class="fa-solid fa-plus"></i></a>
+</div>
+</header>
+<div class="container">
+<div id="dataList"></div>
+<div id="skeleton" class="skeleton-wrapper">
+<div class="list-item"><div class="sampul-box skeleton"></div><div class="item-info"><div class="skeleton" style="height:14px; width:80%; margin-bottom:10px; border-radius:4px;"></div><div class="skeleton" style="height:10px; width:50%; border-radius:4px;"></div></div></div>
+</div>
+<div id="sentinel"></div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const VER = 'v14_permanent_cache';
+let page = 0;
+const perPage = 15;
+let hasMore = true;
+let isLoading = false;
+let queryText = '';
+let searchTimeout;
+let suggestionCache = JSON.parse(localStorage.getItem(`biblio_suggest_${VER}`)) || [];
+let dataCache = JSON.parse(localStorage.getItem(`biblio_data_${VER}`)) || [];
+async function initRealtime() {
+supabase.channel('global-sync')
+.on('postgres_changes', { event: '*', table: 'biblio' }, (payload) => {
+if (payload.eventType === 'INSERT') {
+if (!queryText) {
+appendItem(payload.new, true);
+dataCache.unshift(payload.new);
+if (dataCache.length > 50) dataCache.pop();
+}
+if (payload.new.judul && !suggestionCache.includes(payload.new.judul)) {
+suggestionCache.push(payload.new.judul);
+}
+saveCaches();
+} else if (payload.eventType === 'DELETE') {
+dataCache = dataCache.filter(d => d.id !== payload.old.id);
+const el = document.getElementById(`item-${payload.old.id}`);
+if (el) el.remove();
+const deletedTitle = payload.old.judul || '';
+if (deletedTitle) suggestionCache = suggestionCache.filter(t => t !== deletedTitle);
+saveCaches();
+} else if (payload.eventType === 'UPDATE') {
+const oldId = payload.new.id;
+const oldItem = dataCache.find(d => d.id === oldId);
+if (oldItem && oldItem.judul !== payload.new.judul) {
+suggestionCache = suggestionCache.filter(t => t !== oldItem.judul);
+if (!suggestionCache.includes(payload.new.judul)) suggestionCache.push(payload.new.judul);
+}
+const dIdx = dataCache.findIndex(d => d.id === oldId);
+if (dIdx !== -1) {
+dataCache[dIdx] = payload.new;
+if (!queryText) {
+const el = document.getElementById(`item-${oldId}`);
+if (el) {
+el.querySelector('h3').textContent = payload.new.judul;
+el.querySelector('p').textContent = payload.new.penulis || 'Tanpa Pengarang';
+}
+}
+}
+saveCaches();
+}
+}).subscribe();
+}
+function saveCaches() {
+suggestionCache = [...new Set(suggestionCache.filter(t => t && String(t).trim() !== ''))];
+localStorage.setItem(`biblio_suggest_${VER}`, JSON.stringify(suggestionCache));
+localStorage.setItem(`biblio_data_${VER}`, JSON.stringify(dataCache));
+}
+function appendItem(b, prepend = false) {
+const list = document.getElementById('dataList');
+if (document.getElementById(`item-${b.id}`)) return;
+const div = document.createElement('div');
+div.id = `item-${b.id}`;
+div.className = 'list-item';
+div.onclick = () => location.href = `entri-biblio.html?id=${b.id}`;
+const imgHtml = b.sampul_url ? `<img src="${b.sampul_url}" crossorigin="anonymous" loading="lazy">` : `<div style="opacity: 0.1"><i class="fa-solid fa-book fa-2x"></i></div>`;
+div.innerHTML = `<div class="sampul-box">${imgHtml}</div><div class="item-info"><h3>${b.judul}</h3><p>${b.penulis || 'Tanpa Pengarang'}</p></div>`;
+if (prepend) list.prepend(div); else list.appendChild(div);
+}
+async function loadData(reset = false) {
+if (isLoading || (!hasMore && !reset)) return;
+isLoading = true;
+if (reset) { 
+page = 0; hasMore = true; 
+document.getElementById('dataList').innerHTML = '';
+}
+if (!queryText && page === 0 && dataCache.length > 0 && !reset) {
+dataCache.forEach(b => appendItem(b));
+}
+document.getElementById('skeleton').classList.add('active');
+const from = page * perPage;
+const to = from + perPage - 1;
+try {
+let query = supabase.from('biblio').select('id, judul, penulis, sampul_url, updated_at').order('updated_at', { ascending: false }).range(from, to);
+if (queryText) query = query.ilike('judul', `%${queryText}%`);
+const { data, error } = await query;
+if (error) throw error;
+if (!data || data.length < perPage) hasMore = false;
+data?.forEach(b => {
+appendItem(b);
+if (!queryText && !dataCache.find(d => d.id === b.id)) {
+dataCache.push(b);
+if (dataCache.length > 50) dataCache.pop();
+}
+});
+if (!queryText) saveCaches();
+page++;
+} finally { isLoading = false; document.getElementById('skeleton').classList.remove('active'); }
+}
+function showSuggestions(list) {
+sBox.innerHTML = '';
+if (list.length > 0) {
+sBox.style.display = 'block';
+list.forEach(m => {
+const div = document.createElement('div');
+div.className = 'suggestion-item';
+div.textContent = m;
+div.onclick = () => { input.value = m; queryText = m; sBox.style.display = 'none'; loadData(true); };
+sBox.appendChild(div);
+});
+} else { sBox.style.display = 'none'; }
+}
+const input = document.getElementById('searchInput');
+const sBox = document.getElementById('suggestionBox');
+const btnSearch = document.getElementById('btnSearch');
+input.addEventListener('input', () => {
+clearTimeout(searchTimeout);
+const val = input.value.trim().toLowerCase();
+if (!val) { sBox.style.display = 'none'; return; }
+const localMatches = suggestionCache.filter(t => t.toLowerCase().includes(val)).slice(0, 15);
+if (localMatches.length > 0) showSuggestions(localMatches);
+searchTimeout = setTimeout(async () => {
+const { data, error } = await supabase.rpc('search_biblio_titles', { search_text: val });
+if (!error && data) {
+const remoteTitles = data.map(d => d.judul);
+let added = false;
+remoteTitles.forEach(t => { 
+if (!suggestionCache.includes(t)) {
+suggestionCache.push(t);
+added = true;
+}
+});
+if (added) saveCaches();
+showSuggestions([...new Set([...localMatches, ...remoteTitles])].slice(0, 20));
+}
+}, 400);
+});
+const performSearch = () => { queryText = input.value.trim(); sBox.style.display = 'none'; loadData(true); };
+btnSearch.onclick = performSearch;
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
+document.addEventListener('click', (e) => { if (!e.target.closest('.header-content')) sBox.style.display = 'none'; });
+const observer = new IntersectionObserver(entries => { if (entries[0].isIntersecting && hasMore && !isLoading) loadData(); }, { threshold: 0.1 });
+observer.observe(document.getElementById('sentinel'));
+window.onload = () => { loadData(true); initRealtime(); };
+</script>
+</body>
+</html>
