@@ -18,13 +18,17 @@ body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus J
 .detail-container { max-width: 1000px; margin: 40px auto; padding: 0 24px; }
 .cover-img { width: 100%; max-width: 300px; border-radius: 32px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
 .eks-card { background: var(--google-gray); border-radius: 20px !important; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+.badge-topic { background: var(--bg-card); border: 1px solid var(--border) !important; padding: 4px 12px; border-radius: 10px !important; font-size: 11px; font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="detail-container">
 <button onclick="history.back()" class="btn-back mb-8"><i class="fa-solid fa-arrow-left"></i></button>
 <div id="content" class="flex flex-col md:flex-row gap-12 opacity-0 transition-opacity duration-500">
-<div class="md:w-1/3 flex justify-center"><img id="cover" class="cover-img"></div>
+<div class="md:w-1/3 flex flex-col items-center">
+<img id="cover" class="cover-img mb-6">
+<div id="topikList" class="flex flex-wrap gap-2 justify-center"></div>
+</div>
 <div class="md:w-2/3">
 <h1 id="judul" class="text-3xl md:text-4xl font-600 mb-2 leading-tight tracking-tight"></h1>
 <p id="penulis" class="text-blue-500 font-700 uppercase text-xs mb-8"></p>
@@ -33,6 +37,11 @@ body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus J
 <div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Penerbit</p><p id="penerbit" class="font-600"></p></div>
 <div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Tahun Terbit</p><p id="tahun" class="font-600"></p></div>
 <div><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Kategori</p><p id="kategori" class="font-600"></p></div>
+<div class="col-span-2"><p class="opacity-40 font-800 text-[10px] uppercase mb-1">Deskripsi Fisik</p><p id="deskripsi" class="font-600"></p></div>
+</div>
+<div class="mb-10">
+<h3 class="font-800 text-[10px] uppercase opacity-40 mb-2 tracking-widest">Abstrak / Catatan</h3>
+<p id="abstrak" class="text-sm leading-relaxed opacity-80"></p>
 </div>
 <h3 class="font-800 text-[10px] uppercase opacity-40 mb-4 tracking-widest">Ketersediaan Eksemplar</h3>
 <div id="eksList" class="space-y-3"></div>
@@ -55,10 +64,23 @@ document.getElementById('isbn').innerText = b.isbn_issn || '-';
 document.getElementById('penerbit').innerText = b.penerbit || '-';
 document.getElementById('tahun').innerText = b.tahun_terbit || '-';
 document.getElementById('kategori').innerText = b.kategori || '-';
+document.getElementById('deskripsi').innerText = b.deskripsi_fisik || '-';
+document.getElementById('abstrak').innerText = b.abstrak || 'Tidak ada deskripsi tersedia.';
+if (b.topik && Array.isArray(b.topik)) {
+document.getElementById('topikList').innerHTML = b.topik.map(t => `<span class="badge-topic">${t}</span>`).join('');
+}
 document.getElementById('eksList').innerHTML = b.ekslempar.map(e => `
 <div class="eks-card">
-<div><p class="text-xs font-800">${e.kode}</p><p class="text-[10px] opacity-40 uppercase font-700">${e.lokasi_rak || 'UMUM'}</p></div>
+<div class="flex flex-col gap-1">
+<p class="text-xs font-800">${e.kode}</p>
+<div class="flex gap-3">
+<p class="text-[9px] opacity-60 font-700 uppercase"><i class="fa-solid fa-map-marker-alt mr-1"></i>${e.lokasi_rak || 'UMUM'}</p>
+<p class="text-[9px] opacity-60 font-700 uppercase"><i class="fa-solid fa-bookmark mr-1"></i>${e.nomor_panggil || '-'}</p>
+</div>
+</div>
+<div class="text-right">
 <span class="text-[10px] font-800 uppercase px-4 py-1.5 rounded-full ${e.status === 'Tersedia' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">${e.status}</span>
+</div>
 </div>`).join('') || '<p class="text-xs opacity-50">Tidak ada eksemplar.</p>';
 document.getElementById('content').classList.remove('opacity-0');
 }
