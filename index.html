@@ -1,338 +1,356 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perpustakaan Lubangsa</title>
-<link rel="icon" type="image/png" href="image/logo/logo.png">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root {
---bg-body: #f8fafd;
---bg-card: #ffffff;
---text-main: #1f1f1f;
---text-muted: #70757a;
---border: #dee2e6;
---accent: #0b57d0;
---google-gray: #f1f3f4;
---skeleton-base: #e0e0e0;
---skeleton-highlight: #f5f5f5;
-}
-@media (prefers-color-scheme: dark) {
-:root {
---bg-body: #131314;
---bg-card: #1e1f20;
---text-main: #e3e3e3;
---text-muted: #9aa0a6;
---border: #444746;
---google-gray: #2b2b2b;
---skeleton-base: #333333;
---skeleton-highlight: #444444;
-}
-}
-* { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none !important; -webkit-tap-highlight-color: transparent; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-body); }
-::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 10px; border: 2px solid var(--bg-body); }
-::-webkit-scrollbar-thumb:hover { background: #9e9e9e; }
-@media (prefers-color-scheme: dark) {
-::-webkit-scrollbar-thumb { background: #444746; }
-::-webkit-scrollbar-thumb:hover { background: #5f6368; }
-}
-body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.5; overflow-x: hidden; }
-header { position: absolute; top: 0; left: 0; right: 0; background: transparent; padding: 16px 24px; display: flex; justify-content: center; z-index: 1000; }
-.header-top { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; }
-.brand-container { display: flex; align-items: center; gap: 16px; text-decoration: none; }
-.logo-frame { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.logo-img { height: 100%; width: auto; object-fit: contain; }
-.brand-text { font-size: 13px; font-weight: 700; color: #ffffff; line-height: 1.2; max-width: 220px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-@media (max-width: 600px) { .brand-text { display: none; } }
-.header-actions { display: flex; align-items: center; gap: 12px; }
-.btn-dual-page { height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); color: #ffffff; border-radius: 4px; text-decoration: none; font-size: 16px; transition: background 0.2s; }
-.btn-dual-page:hover { background: rgba(255,255,255,0.3); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perpustakaan Lubangsa</title>
+    <link rel="icon" type="image/png" href="image/logo/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f8fafd;
+            --bg-card: #ffffff;
+            --text-main: #1f1f1f;
+            --text-muted: #70757a;
+            --border: #dee2e6;
+            --accent: #0b57d0;
+            --accent-hover: #0842a0;
+            --google-gray: #f1f3f4;
+            --skeleton-base: #e0e0e0;
+            --skeleton-highlight: #f5f5f5;
+        }
 
-/* Tombol Masuk Diperbarui */
-.btn-login { display: flex; align-items: center; gap: 10px; padding: 8px 20px; background: #ffffff; border-radius: 4px; text-decoration: none; color: #1f1f1f; font-size: 14px; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.btn-login:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-body: #131314;
+                --bg-card: #1e1f20;
+                --text-main: #e3e3e3;
+                --text-muted: #9aa0a6;
+                --border: #444746;
+                --google-gray: #2b2b2b;
+                --skeleton-base: #333333;
+                --skeleton-highlight: #444444;
+            }
+        }
 
-.hero-slider { position: relative; width: 100%; height: 550px; overflow: hidden; background: #000; }
-.slide { position: absolute; inset: 0; background-size: cover; background-position: center; background-image: url('image/hero/hero.png'); }
-.hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 40%, var(--bg-body) 100%); }
-.search-container { position: relative; width: 90%; max-width: 720px; margin: -45px auto 0; z-index: 1100; }
-.search-wrapper { background: var(--bg-card); border-radius: 32px; padding: 10px 14px 10px 24px; display: flex; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-.search-input { background: transparent; width: 100%; font-size: 16px; color: var(--text-main); padding: 8px 0; }
-.search-btn { background: var(--accent); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 8px; }
-#suggestionBox { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border-radius: 0 0 24px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 1000; overflow: hidden; margin-top: -10px; padding-top: 15px; }
-.suggestion-item { padding: 12px 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
-.suggestion-item:hover { background: var(--google-gray); }
-.main-content { max-width: 1100px; margin: 60px auto; padding: 0 40px; }
-@media (max-width: 768px) { .main-content { padding: 0 16px; } }
-.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-@media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
-@media (min-width: 768px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 28px; } }
-@media (min-width: 1024px) { .grid { grid-template-columns: repeat(6, 1fr); gap: 32px; } }
-.book-card { background: var(--bg-body); text-decoration: none; color: inherit; transition: transform 0.2s; display: flex; flex-direction: column; width: 100%; }
-.book-card:hover { transform: translateY(-5px); }
-.book-img { width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 0; background: var(--google-gray); margin-bottom: 12px; opacity: 0; transition: opacity 0.4s; }
-.book-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.8em; margin-bottom: 4px; }
-.book-author { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none !important; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.5; overflow-x: hidden; }
 
-/* Back To Top dengan Indikator Progress */
-.btt-container { position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transform: scale(0.5); pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.btt-container.show { opacity: 1; transform: scale(1); pointer-events: auto; }
-.btt-btn { width: 40px; height: 40px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 2; }
-.btt-svg { position: absolute; width: 50px; height: 50px; transform: rotate(-90deg); pointer-events: none; }
-.btt-svg circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 126; stroke-dashoffset: 126; transition: none; opacity: 0; }
-.btt-container.counting circle { opacity: 1; transition: stroke-dashoffset 20s linear; stroke-dashoffset: 0; }
+        /* --- HEADER --- */
+        header { 
+            position: absolute; top: 0; left: 0; right: 0; 
+            padding: 20px 24px; display: flex; justify-content: center; z-index: 1000; 
+        }
+        .header-top { width: 100%; max-width: 1400px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .brand-container { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+        .logo-frame { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+        .logo-img { height: 100%; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .brand-text { font-size: 13px; font-weight: 700; color: #ffffff; line-height: 1.2; max-width: 240px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        @media (max-width: 650px) { .brand-text { display: none; } }
 
-.skeleton-card { background: var(--bg-body); }
-#sentinel { height: 100px; width: 100%; }
-.hidden { display: none !important; }
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-</style>
+        .header-actions { display: flex; align-items: center; gap: 14px; }
+        
+        /* Glassmorphism Button */
+        .btn-dual-page { 
+            height: 40px; width: 40px; display: flex; align-items: center; justify-content: center; 
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: #ffffff; 
+            border-radius: 10px; text-decoration: none; font-size: 16px; transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+        }
+        .btn-dual-page:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
+
+        /* Elegant Login Button */
+        .btn-login { 
+            display: flex; align-items: center; gap: 8px; padding: 10px 24px; 
+            background: #ffffff; color: #1a73e8; border-radius: 50px; 
+            text-decoration: none; font-size: 14px; font-weight: 700; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .btn-login i { font-size: 18px; }
+        .btn-login:hover { 
+            background: var(--accent); color: #ffffff; 
+            transform: translateY(-2px); box-shadow: 0 8px 25px rgba(11, 87, 208, 0.4);
+        }
+
+        /* --- HERO & SEARCH --- */
+        .hero-slider { position: relative; width: 100%; height: 500px; overflow: hidden; background: #000; }
+        .slide { position: absolute; inset: 0; background-size: cover; background-position: center; background-image: url('image/hero/hero.png'); }
+        .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 50%, var(--bg-body) 100%); }
+
+        .search-container { position: relative; width: 90%; max-width: 720px; margin: -50px auto 0; z-index: 1100; }
+        .search-wrapper { 
+            background: var(--bg-card); border-radius: 32px; padding: 10px 14px 10px 24px; 
+            display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: box-shadow 0.3s;
+        }
+        .search-wrapper:focus-within { box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+        .search-input { background: transparent; width: 100%; font-size: 16px; color: var(--text-main); padding: 8px 0; }
+        .search-btn { 
+            background: var(--accent); color: white; width: 46px; height: 46px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; margin-left: 8px; transition: background 0.2s;
+        }
+        .search-btn:hover { background: var(--accent-hover); }
+
+        #suggestionBox { 
+            position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); 
+            border-radius: 0 0 24px 24px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); 
+            display: none; z-index: 1000; overflow: hidden; margin-top: -15px; padding-top: 20px; 
+        }
+        .suggestion-item { padding: 14px 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; }
+        .suggestion-item:hover { background: var(--google-gray); color: var(--accent); }
+
+        /* --- GRID CATALOG --- */
+        .main-content { max-width: 1300px; margin: 60px auto; padding: 0 24px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 850px) { .grid { grid-template-columns: repeat(4, 1fr); gap: 28px; } }
+        @media (min-width: 1100px) { .grid { grid-template-columns: repeat(6, 1fr); gap: 32px; } }
+
+        .book-card { background: transparent; text-decoration: none; color: inherit; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .book-card:hover { transform: translateY(-8px); }
+        .book-img { 
+            width: 100%; aspect-ratio: 3/4.5; object-fit: cover; border-radius: 12px; 
+            background: var(--google-gray); margin-bottom: 12px; opacity: 0; 
+            transition: opacity 0.5s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .book-title { 
+            font-size: 11px; font-weight: 800; text-transform: uppercase; 
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
+            overflow: hidden; height: 2.8em; margin-bottom: 4px; line-height: 1.4;
+        }
+        .book-author { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* --- BACK TO TOP --- */
+        .btt-container { position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transform: scale(0.5); pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btt-container.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .btt-btn { width: 44px; height: 44px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 8px 20px rgba(11, 87, 208, 0.3); z-index: 2; }
+        .btt-svg { position: absolute; width: 54px; height: 54px; transform: rotate(-90deg); pointer-events: none; }
+        .btt-svg circle { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 126; stroke-dashoffset: 126; transition: none; opacity: 0; }
+        .btt-container.counting circle { opacity: 1; transition: stroke-dashoffset 20s linear; stroke-dashoffset: 0; }
+
+        .skeleton-card { background: transparent; }
+        #sentinel { height: 100px; width: 100%; }
+        .hidden { display: none !important; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body>
+
 <header>
-<div class="header-top">
-<a href="#" class="brand-container">
-<div class="logo-frame"><img src="image/logo/logo2.png" class="logo-img" alt="Logo"></div>
-<span class="brand-text">Perpustakaan PP. Annuqayah Daerah Lubangsa</span>
-</a>
-<div class="header-actions">
-<a href="dual_page_login.html" class="btn-dual-page" title="Dual Page Mode"><i class="fa-solid fa-layer-group"></i></a>
-<a href="login.html" class="btn-login">
-<i class="fa-solid fa-circle-user" style="font-size: 18px;"></i>
-<span>Masuk</span>
-</a>
-</div>
-</div>
+    <div class="header-top">
+        <a href="#" class="brand-container">
+            <div class="logo-frame"><img src="image/logo/logo2.png" class="logo-img" alt="Logo"></div>
+            <span class="brand-text">Perpustakaan PP. Annuqayah Daerah Lubangsa</span>
+        </a>
+        <div class="header-actions">
+            <a href="dual_page_login.html" class="btn-dual-page" title="Mode Dual Halaman"><i class="fa-solid fa-layer-group"></i></a>
+            <a href="login.html" class="btn-login">
+                <i class="fa-solid fa-circle-user"></i>
+                <span>Masuk</span>
+            </a>
+        </div>
+    </div>
 </header>
 
 <section class="hero-slider"><div class="slide"></div><div class="hero-overlay"></div></section>
 
 <div class="search-container">
-<div class="search-wrapper">
-<i class="fa-solid fa-search" style="color: #9aa0a6; font-size: 16px; margin-right: 14px;"></i>
-<input type="text" id="searchInput" class="search-input" placeholder="Cari judul buku atau penulis..." autocomplete="off">
-<button onclick="window.resetAndFetch()" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-</div>
-<div id="suggestionBox"></div>
+    <div class="search-wrapper">
+        <i class="fa-solid fa-search" style="color: #9aa0a6; font-size: 16px; margin-right: 14px;"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Cari judul buku atau penulis..." autocomplete="off">
+        <button onclick="window.resetAndFetch()" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </div>
+    <div id="suggestionBox"></div>
 </div>
 
 <main class="main-content">
-<div id="catalogGrid" class="grid"></div>
-<div id="skeletonContainer" class="grid hidden">
-<script>
-for(let i=0; i<6; i++) {
-document.write('<div class="skeleton-card" style="padding:0;"><div style="width:100%;aspect-ratio:3/4.5;border-radius:0;background:var(--skeleton-base);animation:pulse 1.5s infinite"></div><div style="height:12px;background:var(--skeleton-base);margin-top:12px;width:80%"></div></div>');
-}
-</script>
-</div>
-<div id="sentinel"></div>
+    <div id="catalogGrid" class="grid"></div>
+    <div id="skeletonContainer" class="grid hidden">
+        <script>
+            for(let i=0; i<12; i++) {
+                document.write('<div class="skeleton-card"><div style="width:100%;aspect-ratio:3/4.5;border-radius:12px;background:var(--skeleton-base);animation:pulse 1.5s infinite"></div><div style="height:12px;background:var(--skeleton-base);margin-top:12px;width:80%;border-radius:4px"></div></div>');
+            }
+        </script>
+    </div>
+    <div id="sentinel"></div>
 </main>
 
 <div class="btt-container" id="bttContainer">
-<svg class="btt-svg"><circle cx="25" cy="25" r="20"></circle></svg>
-<div class="btt-btn" onclick="window.scrollToTop()"><i class="fa-solid fa-arrow-up"></i></div>
+    <svg class="btt-svg"><circle cx="27" cy="27" r="20"></circle></svg>
+    <div class="btt-btn" onclick="window.scrollToTop()"><i class="fa-solid fa-arrow-up"></i></div>
 </div>
 
 <script type="module">
-import { supabase } from './supa/supa.js';
+    import { supabase } from './supa/supa.js';
 
-const DB_NAME = 'LubangsaCache';
-const STORE_CATALOG = 'catalog';
-const STORE_SUGGESTIONS = 'suggestions';
-const TTL = 7 * 24 * 60 * 60 * 1000;
-let db;
-let currentPage = 0, perPage = 18, isFetching = false, query = '', hasMore = true;
-const SVG_DATA = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23f1f3f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239aa0a6'%3ENo Cover%3C/text%3E%3C/svg%3E";
+    let currentPage = 0, perPage = 18, isFetching = false, query = '', hasMore = true;
+    const SVG_DATA = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23f1f3f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239aa0a6'%3ENo Cover%3C/text%3E%3C/svg%3E";
 
-// Indikator Auto Click Back to Top
-let idleTimer, autoClickTimer;
-const bttContainer = document.getElementById('bttContainer');
+    let idleTimer, autoClickTimer;
+    const bttContainer = document.getElementById('bttContainer');
 
-const initDB = () => {
-    return new Promise((resolve) => {
+    // --- FETCH DATA (DIRECT - NO CACHE) ---
+    async function fetchBooks() {
+        if (isFetching || !hasMore) return;
+        isFetching = true;
+        
+        document.getElementById('skeletonContainer').classList.remove('hidden');
+
         try {
-            const request = indexedDB.open(DB_NAME, 1);
-            request.onupgradeneeded = (e) => {
-                const d = e.target.result;
-                if (!d.objectStoreNames.contains(STORE_CATALOG)) d.createObjectStore(STORE_CATALOG);
-                if (!d.objectStoreNames.contains(STORE_SUGGESTIONS)) d.createObjectStore(STORE_SUGGESTIONS);
-            };
-            request.onsuccess = (e) => { db = e.target.result; resolve(); };
-            request.onerror = () => resolve();
-        } catch (e) { resolve(); }
-    });
-};
+            const { data, error } = await supabase.rpc('get_catalog', {
+                search_query: query || '',
+                page_size: perPage,
+                page_number: currentPage
+            });
 
-const setCache = (store, key, data) => {
-    if (!db) return;
-    const tx = db.transaction(store, 'readwrite');
-    tx.objectStore(store).put({ data, timestamp: Date.now() }, key);
-};
+            if (error) throw error;
 
-const getCache = (store, key) => {
-    return new Promise((resolve) => {
-        if (!db) return resolve(null);
-        const tx = db.transaction(store, 'readonly');
-        const request = tx.objectStore(store).get(key);
-        request.onsuccess = () => {
-            if (request.result) {
-                const { data, timestamp } = request.result;
-                if (Date.now() - timestamp < TTL) resolve(data);
-                else resolve(null);
-            } else resolve(null);
-        };
-        request.onerror = () => resolve(null);
-    });
-};
-
-async function fetchBooks() {
-    if (isFetching || !hasMore) return;
-    isFetching = true;
-    const cacheKey = `list_${query || 'all'}_${currentPage}`;
-    const cachedData = await getCache(STORE_CATALOG, cacheKey);
-    if (cachedData) {
-        renderBooks(cachedData);
-        isFetching = false;
-        currentPage++;
-        return;
-    }
-    document.getElementById('skeletonContainer').classList.remove('hidden');
-    try {
-        const { data, error } = await supabase.rpc('get_catalog', {
-            search_query: query || '',
-            page_size: perPage,
-            page_number: currentPage
-        });
-        if (error) throw error;
-        if (data) {
-            if (data.length < perPage) hasMore = false;
-            setCache(STORE_CATALOG, cacheKey, data);
-            renderBooks(data);
-            currentPage++;
-        }
-    } catch (err) {
-        console.error("Fetch error:", err);
-    } finally {
-        isFetching = false;
-        document.getElementById('skeletonContainer').classList.add('hidden');
-    }
-}
-
-function renderBooks(data) {
-    const grid = document.getElementById('catalogGrid');
-    data.forEach(item => {
-        const card = document.createElement('a');
-        card.href = `detail.html?id=${item.id}`;
-        card.className = 'book-card';
-        const imgUrl = item.sampul_url || SVG_DATA;
-        card.innerHTML = `<img data-src="${imgUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="book-img lazy" alt="${item.judul}"><h3 class="book-title">${item.judul}</h3><p class="book-author">${item.penulis || 'ANONIM'}</p>`;
-        grid.appendChild(card);
-    });
-    initLazy();
-}
-
-function initLazy() {
-    const obs = new IntersectionObserver((es) => {
-        es.forEach(e => {
-            if(e.isIntersecting) {
-                const img = e.target;
-                img.src = img.dataset.src;
-                img.onload = () => img.style.opacity = '1';
-                img.onerror = () => { img.src = SVG_DATA; img.style.opacity = '1'; };
-                obs.unobserve(img);
+            if (data) {
+                if (data.length < perPage) hasMore = false;
+                renderBooks(data);
+                currentPage++;
             }
-        });
-    }, { rootMargin: '100px' });
-    document.querySelectorAll('.lazy').forEach(i => obs.observe(i));
-}
-
-const handleSuggestions = async (val) => {
-    const box = document.getElementById('suggestionBox');
-    const wrapper = document.querySelector('.search-wrapper');
-    if (!val || val.trim().length < 2) { box.style.display = 'none'; wrapper.style.borderRadius = '32px'; return; }
-    const cacheKey = `sug_${val.trim()}`;
-    let sugs = await getCache(STORE_SUGGESTIONS, cacheKey);
-    if (!sugs) {
-        const { data } = await supabase.rpc('get_suggestions', { search_term: val.trim() });
-        sugs = data ? data.map(d => d.judul) : [];
-        if (sugs.length > 0) setCache(STORE_SUGGESTIONS, cacheKey, sugs);
-    }
-    if (sugs && sugs.length > 0) {
-        wrapper.style.borderRadius = '24px 24px 0 0';
-        box.innerHTML = sugs.map(s => `<div class="suggestion-item" onclick="window.selectSug('${s.replace(/'/g, "\\'")}')"><i class="fa-solid fa-clock-rotate-left" style="color: #9aa0a6; font-size: 12px;"></i>${s}</div>`).join('');
-        box.style.display = 'block';
-    } else { box.style.display = 'none'; wrapper.style.borderRadius = '32px'; }
-};
-
-window.selectSug = (val) => {
-    document.getElementById('searchInput').value = val;
-    document.getElementById('suggestionBox').style.display = 'none';
-    document.querySelector('.search-wrapper').style.borderRadius = '32px';
-    window.resetAndFetch();
-};
-
-window.resetAndFetch = () => {
-    query = document.getElementById('searchInput').value.trim();
-    document.getElementById('catalogGrid').innerHTML = '';
-    currentPage = 0; hasMore = true;
-    fetchBooks();
-};
-
-window.scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    resetIdleSystem();
-};
-
-// Logika Auto-Scroll System
-function resetIdleSystem() {
-    clearTimeout(idleTimer);
-    clearTimeout(autoClickTimer);
-    bttContainer.classList.remove('counting');
-    
-    // Mulai hitung mundur idle (4 detik)
-    idleTimer = setTimeout(() => {
-        if (window.scrollY > 300) {
-            bttContainer.classList.add('counting');
-            autoClickTimer = setTimeout(() => {
-                window.scrollToTop();
-            }, 20000); // Hitung mundur 20 detik
+        } catch (err) {
+            console.error("Fetch error:", err);
+        } finally {
+            isFetching = false;
+            document.getElementById('skeletonContainer').classList.add('hidden');
         }
-    }, 4000);
-}
+    }
 
-// Global Listeners
-document.getElementById('searchInput').oninput = (e) => { handleSuggestions(e.target.value); resetIdleSystem(); };
-document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); resetIdleSystem(); };
-document.addEventListener('click', (e) => { 
-    resetIdleSystem();
-    if(!e.target.closest('.search-container')) {
+    function renderBooks(data) {
+        const grid = document.getElementById('catalogGrid');
+        data.forEach(item => {
+            const card = document.createElement('a');
+            card.href = `detail.html?id=${item.id}`;
+            card.className = 'book-card';
+            const imgUrl = item.sampul_url || SVG_DATA;
+            card.innerHTML = `
+                <img data-src="${imgUrl}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="book-img lazy" alt="${item.judul}">
+                <h3 class="book-title">${item.judul}</h3>
+                <p class="book-author">${item.penulis || 'ANONIM'}</p>
+            `;
+            grid.appendChild(card);
+        });
+        initLazy();
+    }
+
+    function initLazy() {
+        const obs = new IntersectionObserver((es) => {
+            es.forEach(e => {
+                if(e.isIntersecting) {
+                    const img = e.target;
+                    img.src = img.dataset.src;
+                    img.onload = () => img.style.opacity = '1';
+                    img.onerror = () => { img.src = SVG_DATA; img.style.opacity = '1'; };
+                    obs.unobserve(img);
+                }
+            });
+        }, { rootMargin: '100px' });
+        document.querySelectorAll('.lazy').forEach(i => obs.observe(i));
+    }
+
+    // --- SUGGESTIONS (DIRECT FROM DB) ---
+    const handleSuggestions = async (val) => {
+        const box = document.getElementById('suggestionBox');
+        const wrapper = document.querySelector('.search-wrapper');
+        
+        if (!val || val.trim().length < 2) { 
+            box.style.display = 'none'; 
+            wrapper.style.borderRadius = '32px'; 
+            return; 
+        }
+
+        try {
+            const { data } = await supabase.rpc('get_suggestions', { search_term: val.trim() });
+            const sugs = data ? data.map(d => d.judul) : [];
+
+            if (sugs.length > 0) {
+                wrapper.style.borderRadius = '24px 24px 0 0';
+                box.innerHTML = sugs.map(s => `
+                    <div class="suggestion-item" onclick="window.selectSug('${s.replace(/'/g, "\\'")}')">
+                        <i class="fa-solid fa-magnifying-glass" style="color: #9aa0a6; font-size: 12px;"></i>
+                        ${s}
+                    </div>
+                `).join('');
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+                wrapper.style.borderRadius = '32px';
+            }
+        } catch (e) {
+            box.style.display = 'none';
+        }
+    };
+
+    window.selectSug = (val) => {
+        document.getElementById('searchInput').value = val;
         document.getElementById('suggestionBox').style.display = 'none';
         document.querySelector('.search-wrapper').style.borderRadius = '32px';
+        window.resetAndFetch();
+    };
+
+    window.resetAndFetch = () => {
+        query = document.getElementById('searchInput').value.trim();
+        document.getElementById('catalogGrid').innerHTML = '';
+        currentPage = 0; 
+        hasMore = true;
+        fetchBooks();
+    };
+
+    window.scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        resetIdleSystem();
+    };
+
+    // Auto-Scroll Logic
+    function resetIdleSystem() {
+        clearTimeout(idleTimer);
+        clearTimeout(autoClickTimer);
+        bttContainer.classList.remove('counting');
+        
+        idleTimer = setTimeout(() => {
+            if (window.scrollY > 300) {
+                bttContainer.classList.add('counting');
+                autoClickTimer = setTimeout(() => {
+                    window.scrollToTop();
+                }, 20000); 
+            }
+        }, 4000);
     }
-});
 
-window.onscroll = () => {
-    if (window.scrollY > 300) bttContainer.classList.add('show');
-    else bttContainer.classList.remove('show');
-    resetIdleSystem();
-};
+    // Event Listeners
+    document.getElementById('searchInput').oninput = (e) => handleSuggestions(e.target.value);
+    document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); };
+    document.addEventListener('click', (e) => { 
+        if(!e.target.closest('.search-container')) {
+            document.getElementById('suggestionBox').style.display = 'none';
+            document.querySelector('.search-wrapper').style.borderRadius = '32px';
+        }
+    });
 
-// Start Initialization
-(async () => {
-    await initDB();
-    fetchBooks();
-    const sentinel = document.getElementById('sentinel');
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isFetching && hasMore) fetchBooks();
-    }, { rootMargin: '400px' });
-    observer.observe(sentinel);
-    resetIdleSystem();
-})();
+    window.onscroll = () => {
+        if (window.scrollY > 300) bttContainer.classList.add('show');
+        else bttContainer.classList.remove('show');
+        resetIdleSystem();
+    };
+
+    // Init
+    (() => {
+        fetchBooks();
+        const sentinel = document.getElementById('sentinel');
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isFetching && hasMore) fetchBooks();
+        }, { rootMargin: '400px' });
+        observer.observe(sentinel);
+        resetIdleSystem();
+    })();
 </script>
 </body>
 </html>

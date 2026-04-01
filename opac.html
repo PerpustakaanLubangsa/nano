@@ -43,7 +43,6 @@
         }
         body { background: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.5; overflow-x: hidden; }
         
-        /* Header dikosongkan sesuai permintaan */
         header { position: absolute; top: 0; left: 0; right: 0; background: transparent; padding: 16px 24px; z-index: 1000; height: 80px; }
 
         .hero-slider { position: relative; width: 100%; height: 550px; overflow: hidden; background: #000; }
@@ -88,7 +87,8 @@
 </head>
 <body>
 
-<header></header> <section class="hero-slider"><div class="slide"></div><div class="hero-overlay"></div></section>
+<header></header> 
+<section class="hero-slider"><div class="slide"></div><div class="hero-overlay"></div></section>
 
 <div class="search-container">
     <div class="search-wrapper">
@@ -119,76 +119,29 @@
 <script type="module">
     import { supabase } from './supa/supa.js';
 
-    const DB_NAME = 'LubangsaCache';
-    const STORE_CATALOG = 'catalog';
-    const STORE_SUGGESTIONS = 'suggestions';
-    const TTL = 7 * 24 * 60 * 60 * 1000;
-    let db;
     let currentPage = 0, perPage = 18, isFetching = false, query = '', hasMore = true;
     const SVG_DATA = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23f1f3f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239aa0a6'%3ENo Cover%3C/text%3E%3C/svg%3E";
 
     let idleTimer, autoClickTimer;
     const bttContainer = document.getElementById('bttContainer');
 
-    const initDB = () => {
-        return new Promise((resolve) => {
-            try {
-                const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (e) => {
-                    const d = e.target.result;
-                    if (!d.objectStoreNames.contains(STORE_CATALOG)) d.createObjectStore(STORE_CATALOG);
-                    if (!d.objectStoreNames.contains(STORE_SUGGESTIONS)) d.createObjectStore(STORE_SUGGESTIONS);
-                };
-                request.onsuccess = (e) => { db = e.target.result; resolve(); };
-                request.onerror = () => resolve();
-            } catch (e) { resolve(); }
-        });
-    };
-
-    const setCache = (store, key, data) => {
-        if (!db) return;
-        const tx = db.transaction(store, 'readwrite');
-        tx.objectStore(store).put({ data, timestamp: Date.now() }, key);
-    };
-
-    const getCache = (store, key) => {
-        return new Promise((resolve) => {
-            if (!db) return resolve(null);
-            const tx = db.transaction(store, 'readonly');
-            const request = tx.objectStore(store).get(key);
-            request.onsuccess = () => {
-                if (request.result) {
-                    const { data, timestamp } = request.result;
-                    if (Date.now() - timestamp < TTL) resolve(data);
-                    else resolve(null);
-                } else resolve(null);
-            };
-            request.onerror = () => resolve(null);
-        });
-    };
-
     async function fetchBooks() {
         if (isFetching || !hasMore) return;
         isFetching = true;
-        const cacheKey = `list_${query || 'all'}_${currentPage}`;
-        const cachedData = await getCache(STORE_CATALOG, cacheKey);
-        if (cachedData) {
-            renderBooks(cachedData);
-            isFetching = false;
-            currentPage++;
-            return;
-        }
+        
         document.getElementById('skeletonContainer').classList.remove('hidden');
+        
         try {
             const { data, error } = await supabase.rpc('get_catalog', {
                 search_query: query || '',
                 page_size: perPage,
                 page_number: currentPage
             });
+
             if (error) throw error;
+
             if (data) {
                 if (data.length < perPage) hasMore = false;
-                setCache(STORE_CATALOG, cacheKey, data);
                 renderBooks(data);
                 currentPage++;
             }
@@ -231,19 +184,28 @@
     const handleSuggestions = async (val) => {
         const box = document.getElementById('suggestionBox');
         const wrapper = document.querySelector('.search-wrapper');
-        if (!val || val.trim().length < 2) { box.style.display = 'none'; wrapper.style.borderRadius = '32px'; return; }
-        const cacheKey = `sug_${val.trim()}`;
-        let sugs = await getCache(STORE_SUGGESTIONS, cacheKey);
-        if (!sugs) {
-            const { data } = await supabase.rpc('get_suggestions', { search_term: val.trim() });
-            sugs = data ? data.map(d => d.judul) : [];
-            if (sugs.length > 0) setCache(STORE_SUGGESTIONS, cacheKey, sugs);
+        
+        if (!val || val.trim().length < 2) { 
+            box.style.display = 'none'; 
+            wrapper.style.borderRadius = '32px'; 
+            return; 
         }
-        if (sugs && sugs.length > 0) {
-            wrapper.style.borderRadius = '24px 24px 0 0';
-            box.innerHTML = sugs.map(s => `<div class="suggestion-item" onclick="window.selectSug('${s.replace(/'/g, "\\'")}')"><i class="fa-solid fa-clock-rotate-left" style="color: #9aa0a6; font-size: 12px;"></i>${s}</div>`).join('');
-            box.style.display = 'block';
-        } else { box.style.display = 'none'; wrapper.style.borderRadius = '32px'; }
+
+        try {
+            const { data } = await supabase.rpc('get_suggestions', { search_term: val.trim() });
+            const sugs = data ? data.map(d => d.judul) : [];
+
+            if (sugs.length > 0) {
+                wrapper.style.borderRadius = '24px 24px 0 0';
+                box.innerHTML = sugs.map(s => `<div class="suggestion-item" onclick="window.selectSug('${s.replace(/'/g, "\\'")}')"><i class="fa-solid fa-clock-rotate-left" style="color: #9aa0a6; font-size: 12px;"></i>${s}</div>`).join('');
+                box.style.display = 'block';
+            } else { 
+                box.style.display = 'none'; 
+                wrapper.style.borderRadius = '32px'; 
+            }
+        } catch (e) {
+            box.style.display = 'none';
+        }
     };
 
     window.selectSug = (val) => {
@@ -256,7 +218,8 @@
     window.resetAndFetch = () => {
         query = document.getElementById('searchInput').value.trim();
         document.getElementById('catalogGrid').innerHTML = '';
-        currentPage = 0; hasMore = true;
+        currentPage = 0; 
+        hasMore = true;
         fetchBooks();
     };
 
@@ -295,8 +258,8 @@
         resetIdleSystem();
     };
 
-    (async () => {
-        await initDB();
+    // Auto-init on load
+    (() => {
         fetchBooks();
         const sentinel = document.getElementById('sentinel');
         const observer = new IntersectionObserver((entries) => {

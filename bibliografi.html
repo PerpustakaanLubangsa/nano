@@ -237,7 +237,6 @@
         window.location.replace('login.html');
     }
 
-    const VER = 'v16_rpc_backend';
     let page = 0;
     const perPage = 15;
     let hasMore = true;
@@ -245,54 +244,38 @@
     let queryText = '';
     let searchTimeout;
 
-    // Cache Management
-    let suggestionCache = JSON.parse(localStorage.getItem(`biblio_suggest_${VER}`)) || [];
-    let dataCache = JSON.parse(localStorage.getItem(`biblio_data_${VER}`)) || [];
-
     const input = document.getElementById('searchInput');
     const sBox = document.getElementById('suggestionBox');
     const btnSearch = document.getElementById('btnSearch');
     const btnAdd = document.getElementById('btnAdd');
 
-    // --- MODIFIKASI: LOGIKA TOMBOL TAMBAH BARU (SESSION STORAGE) ---
     btnAdd.onclick = () => {
-        // Pastikan ID lama terhapus agar Form di Editor terbuka kosong
         sessionStorage.removeItem('editBiblioId');
         window.location.href = 'entri-biblio.html';
     };
 
-    // Realtime Sync
+    // --- REALTIME SYNC ---
     async function initRealtime() {
         supabase.channel('biblio-realtime')
         .on('postgres_changes', { event: '*', table: 'biblio' }, (payload) => {
-            if (['INSERT', 'DELETE', 'UPDATE'].includes(payload.eventType)) {
-                localStorage.removeItem(`biblio_data_${VER}`);
-            }
+            // Jika ada perubahan (insert/update/delete), langsung reset UI dan muat ulang dari DB
+            loadData(true);
         }).subscribe();
     }
 
-    function saveCaches() {
-        const uniqueSuggest = [...new Set(suggestionCache.filter(t => t))].slice(0, 100);
-        localStorage.setItem(`biblio_suggest_${VER}`, JSON.stringify(uniqueSuggest));
-        localStorage.setItem(`biblio_data_${VER}`, JSON.stringify(dataCache));
-    }
-
-    // --- RENDER DATA KE LIST ---
     function appendItem(b, prepend = false) {
         const list = document.getElementById('dataList');
+        
+        // Hindari duplikasi elemen di UI
         if (document.getElementById(`item-${b.id}`)) return;
 
         const div = document.createElement('div');
         div.id = `item-${b.id}`;
         div.className = 'list-item';
         
-        // --- MODIFIKASI: LOGIKA KLIK ITEM (SESSION STORAGE) ---
         div.onclick = () => {
-            // 1. Hapus ID lama jika ada untuk mencegah tabrakan data
             sessionStorage.removeItem('editBiblioId');
-            // 2. Simpan ID buku yang dipilih
             sessionStorage.setItem('editBiblioId', b.id);
-            // 3. Pindah ke halaman editor tanpa parameter ID di URL
             window.location.href = 'entri-biblio.html';
         };
 
@@ -316,12 +299,9 @@
         isLoading = true;
         
         if (reset) { 
-            page = 0; hasMore = true; 
+            page = 0; 
+            hasMore = true; 
             document.getElementById('dataList').innerHTML = '';
-        }
-
-        if (!queryText && page === 0 && dataCache.length > 0 && !reset) {
-            dataCache.forEach(b => appendItem(b));
         }
 
         document.getElementById('skeleton').classList.add('active');
@@ -334,45 +314,42 @@
             });
 
             if (error) throw error;
+
             if (!data || data.length < perPage) hasMore = false;
             
-            data?.forEach(b => {
-                appendItem(b);
-                if (!queryText && page === 0) {
-                    if (!dataCache.find(d => d.id === b.id)) dataCache.push(b);
-                }
-            });
+            if (data) {
+                data.forEach(b => appendItem(b));
+            }
 
-            if (!queryText && page === 0) saveCaches();
             page++;
         } catch (e) {
-            console.error("RPC Error:", e);
+            console.error("Fetch Error:", e);
         } finally { 
             isLoading = false; 
             document.getElementById('skeleton').classList.remove('active'); 
         }
     }
 
-    // --- SEARCH & SUGGESTIONS ---
+    // --- SEARCH & SUGGESTIONS (NO CACHE) ---
     input.addEventListener('input', () => {
         const val = input.value.trim();
-        if (!val) { sBox.style.display = 'none'; return; }
-
-        const localMatches = suggestionCache.filter(t => t.toLowerCase().includes(val.toLowerCase())).slice(0, 10);
-        if (localMatches.length > 0) showSuggestions(localMatches);
+        if (!val) { 
+            sBox.style.display = 'none'; 
+            if (queryText !== '') {
+                queryText = '';
+                loadData(true);
+            }
+            return; 
+        }
 
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
             const { data } = await supabase.rpc('search_biblio_titles', { search_text: val });
-            if (data) {
+            if (data && data.length > 0) {
                 const titles = data.map(d => d.judul);
-                const combined = [...new Set([...localMatches, ...titles])].slice(0, 15);
-                showSuggestions(combined);
-                
-                titles.forEach(t => {
-                    if(!suggestionCache.includes(t)) suggestionCache.push(t);
-                });
-                saveCaches();
+                showSuggestions(titles);
+            } else {
+                sBox.style.display = 'none';
             }
         }, 400);
     });
@@ -403,9 +380,13 @@
 
     btnSearch.onclick = performSearch;
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
-    document.addEventListener('click', (e) => { if (!e.target.closest('.header-content')) sBox.style.display = 'none'; });
+    
+    // Klik di luar untuk tutup suggest
+    document.addEventListener('click', (e) => { 
+        if (!e.target.closest('.header-content')) sBox.style.display = 'none'; 
+    });
 
-    // --- INFINITE SCROLL ---
+    // Infinite Scroll
     const observer = new IntersectionObserver(entries => { 
         if (entries[0].isIntersecting && hasMore && !isLoading) loadData(); 
     }, { threshold: 0.1 });
