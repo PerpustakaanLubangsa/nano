@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Manajemen | Perpustakaan Lubangsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --md-sys-color-surface: #0f0f10;
+            --md-sys-color-on-surface: #f5f5f7;
+            --md-sys-color-surface-container-high: #1c1c1e;
+            --md-sys-color-primary: #0a84ff;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-outline: transparent;
+            --md-sys-color-error: #ff453a;
+            --md-sys-color-on-error: #ffffff;
+            --md-sys-color-secondary-container: #2c2c2e;
+            --md-sys-color-on-secondary-container: #ffffff;
+            --bg-sidebar: #161618;
+            --item-hover: #2c2c2e;
+            --active-box: #0a84ff;
+            --highlight-bg: #1e2632;
+            --highlight-text: #8ab4f8;
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            border: none !important; outline: none !important; 
+        }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--md-sys-color-surface); 
+            color: var(--md-sys-color-on-surface); 
+            overflow: hidden; 
+            display: flex; 
+            height: 100vh; 
+            width: 100vw; 
+        }
+
+        #sidebar { 
+            width: 280px; 
+            background-color: var(--bg-sidebar); 
+            display: flex; 
+            flex-direction: column; 
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 100; 
+            flex-shrink: 0; 
+            position: relative; 
+        }
+
+        .sidebar-header { 
+            min-height: 80px; 
+            display: flex; 
+            align-items: center; 
+            padding: 20px; 
+            flex-shrink: 0;
+            gap: 12px;
+        }
+
+        .lib-logo { 
+            height: 38px; width: 38px; 
+            object-fit: contain; flex-shrink: 0;
+        }
+
+        .lib-brand-text {
+            font-size: 16px; font-weight: 800; color: white;
+            line-height: 1.2; white-space: normal;
+        }
+
+        nav { flex: 1; overflow-y: auto; scrollbar-width: none; padding-top: 8px; }
+        nav::-webkit-scrollbar { display: none; }
+
+        .sidebar-item { 
+            margin: 4px 12px; 
+            padding: 14px 20px; 
+            border-radius: 12px; 
+            color: #8e918f; 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            display: flex; 
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none; 
+        }
+
+        .sidebar-item:hover { background-color: var(--item-hover); color: white; }
+        .sidebar-item.active { background-color: var(--active-box) !important; font-weight: 700; color: white; }
+        .sidebar-item.frequent { background-color: var(--highlight-bg); color: var(--highlight-text); }
+
+        /* Dropdown Logic */
+        .dropdown-container {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255,255,255,0.02);
+            margin: 0 12px;
+            border-radius: 0 0 12px 12px;
+        }
+        .submenu.open {
+            max-height: 200px; /* Sesuaikan dengan jumlah item */
+            margin-bottom: 8px;
+        }
+        .sub-item {
+            padding: 12px 20px 12px 45px;
+            font-size: 13px;
+            color: #8e918f;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 8px;
+            margin: 2px 0;
+            display: block;
+        }
+        .sub-item:hover { color: white; background: var(--item-hover); }
+        .sub-item.active { color: var(--md-sys-color-primary); font-weight: 700; }
+
+        .chevron { transition: transform 0.3s; font-size: 10px; }
+        .rotate { transform: rotate(180deg); }
+
+        .nav-label { 
+            padding: 20px 24px 8px; 
+            font-size: 11px; font-weight: 700; 
+            color: #444746; text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+
+        /* Main Content */
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        .top-nav { 
+            height: 72px; display: flex; align-items: center; 
+            justify-content: space-between; padding: 0 24px; 
+            background-color: var(--md-sys-color-surface) !important; 
+        }
+
+        .nav-right { 
+            display: flex; align-items: center; gap: 12px; cursor: pointer; 
+            padding: 6px 12px; border-radius: 12px; transition: 0.2s; 
+        }
+        .nav-right:hover { background: #1c1c1e; }
+
+        .user-info-text { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+        .user-name { font-size: 14px; font-weight: 700; color: white; }
+        .user-role { font-size: 10px; font-weight: 600; color: var(--md-sys-color-primary); text-transform: uppercase; }
+        .profile-img { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; background: #333; }
+
+        /* Modal Logout */
+        .modal-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            display: none; align-items: center; justify-content: center; 
+            z-index: 2000; backdrop-filter: blur(4px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content { 
+            background: var(--md-sys-color-surface-container-high); 
+            width: 90%; max-width: 320px; border-radius: 24px; 
+            padding: 30px; text-align: center;
+        }
+        .modal-avatar { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; }
+        
+        .m3-btn { 
+            width: 100%; height: 48px; border-radius: 14px; 
+            font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px;
+        }
+        .btn-tonal { background: var(--md-sys-color-error); color: white; }
+        .btn-text { background: transparent; color: #8e918f; }
+
+        #contentArea { flex: 1; background: var(--md-sys-color-surface); overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; transition: opacity 0.3s; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="logoutModal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <img id="modalAvatar" src="" class="modal-avatar">
+        <h2 id="modalName" style="font-size: 20px; margin-bottom: 4px;">User</h2>
+        <p id="modalRole" style="font-size: 12px; color: var(--md-sys-color-primary); text-transform: uppercase; margin-bottom: 20px;">Role</p>
+        <button onclick="confirmLogout()" class="m3-btn btn-tonal">Keluar Sekarang</button>
+        <button onclick="closeModal()" class="m3-btn btn-text">Batalkan</button>
+    </div>
+</div>
+
+<aside id="sidebar">
+    <div class="sidebar-header">
+        <img src="image/logo/logo.png" alt="Logo" class="lib-logo">
+        <span class="lib-brand-text">Perpustakaan Lubangsa</span>
+    </div>
+    <nav>
+        <div onclick="loadPage('beranda.html', this)" class="sidebar-item active">
+            <span>Beranda</span>
+        </div>
+
+        <p class="nav-label">Operasional</p>
+        <div onclick="loadPage('absensi.html', this)" class="sidebar-item frequent">
+            <span>Buka Absensi</span>
+        </div>
+        
+        <div class="dropdown-container">
+            <div class="sidebar-item" onclick="toggleDropdown('auditSubmenu', this)">
+                <span>Audit Buku</span>
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </div>
+            <div id="auditSubmenu" class="submenu">
+                <div class="sub-item" onclick="loadPage('audit-scanner.html', this)">Scanner</div>
+                <div class="sub-item" onclick="loadPage('audit-hasil.html', this)">Hasil</div>
+                <div class="sub-item" onclick="loadPage('audit-belum.html', this)">Belum</div>
+            </div>
+        </div>
+
+        <div id="menuManajemenAbsen" onclick="loadPage('manajemen-absensi.html', this)" class="sidebar-item hidden">
+            <span>Manajemen Absen</span>
+        </div>
+        <div onclick="loadPage('rekap.html', this)" class="sidebar-item">
+            <span>Rekapitulasi</span>
+        </div>
+
+        <p class="nav-label">Koleksi & Anggota</p>
+        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item frequent">
+            <span>Bibliografi</span>
+        </div>
+        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item frequent">
+            <span>Transaksi</span>
+        </div>
+        <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item">
+            <span>Keanggotaan</span>
+        </div>
+
+        <p class="nav-label">Sistem</p>
+        <div id="menuAkun" onclick="loadPage('account.html', this)" class="sidebar-item hidden">
+            <span>Kelola Akun</span>
+        </div>
+        <div id="menuFeedback" onclick="loadPage('admin_feedback.html', this)" class="sidebar-item hidden">
+            <span>Feedback</span>
+        </div>
+        <div onclick="loadPage('about.html', this)" class="sidebar-item">
+            <span>Tentang</span>
+        </div>
+    </nav>
+</aside>
+
+<main>
+    <header class="top-nav">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-weight: 800; letter-spacing: -0.5px; font-size: 12px; color: #444746;">PANEL KONTROL</span>
+        </div>
+        <div class="nav-right" onclick="openLogoutModal()">
+            <div class="user-info-text">
+                <span id="headerUserName" class="user-name">Memuat...</span>
+                <span id="headerUserRole" class="user-role">Role</span>
+            </div>
+            <img id="userAvatar" src="" class="profile-img">
+        </div>
+    </header>
+
+    <div id="contentArea">
+        <iframe id="contentFrame" src="beranda.html"></iframe>
+    </div>
+</main>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // Toggle Dropdown Function
+    window.toggleDropdown = (id, el) => {
+        const submenu = document.getElementById(id);
+        const chevron = el.querySelector('.chevron');
+        
+        submenu.classList.toggle('open');
+        chevron.classList.toggle('rotate');
+    };
+
+    window.loadPage = (page, el) => {
+        const f = document.getElementById('contentFrame');
+        if (f.src.includes(page)) return;
+        
+        f.style.opacity = '0';
+        setTimeout(() => {
+            f.src = page;
+            f.onload = () => f.style.opacity = '1';
+        }, 200);
+
+        // Reset active state for all
+        document.querySelectorAll('.sidebar-item, .sub-item').forEach(i => i.classList.remove('active'));
+        if (el) el.classList.add('active');
+        
+        // Prevent event bubbling jika diklik dari submenu agar dropdown tidak tertutup (opsional)
+        if (event) event.stopPropagation();
+    };
+
+    function checkProtection() {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        const user = sessionStorage.getItem('adminUser');
+        const role = sessionStorage.getItem('adminRole');
+
+        if (isLoggedIn !== 'true' || !user) {
+            window.location.replace('login.html');
+            return;
+        }
+
+        const name = user;
+        const displayRole = role === 'admin' ? 'Administrator' : 'Pustakawan';
+        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1c1c1e&color=0a84ff&bold=true&rounded=false`;
+
+        document.getElementById('headerUserName').textContent = name;
+        document.getElementById('headerUserRole').textContent = displayRole;
+        document.getElementById('userAvatar').src = avatar;
+        
+        document.getElementById('modalAvatar').src = avatar;
+        document.getElementById('modalName').textContent = name;
+        document.getElementById('modalRole').textContent = displayRole;
+
+        if (role === 'admin') {
+            document.getElementById('menuManajemenAbsen').classList.remove('hidden');
+            document.getElementById('menuFeedback').classList.remove('hidden');
+            document.getElementById('menuAkun').classList.remove('hidden');
+        }
+    }
+
+    window.openLogoutModal = () => document.getElementById('logoutModal').classList.add('show');
+    window.closeModal = () => document.getElementById('logoutModal').classList.remove('show');
+    window.confirmLogout = () => {
+        sessionStorage.clear();
+        window.location.replace('login.html');
+    };
+
+    checkProtection();
+</script>
+
+</body>
+</html>

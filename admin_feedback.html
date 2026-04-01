@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Hub - Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            /* Google Material 3 Dark Theme Palette */
+            --md-sys-color-surface: #0f0f10;
+            --md-sys-color-on-surface: #e3e3e3;
+            --md-sys-color-surface-container: #1c1c1e;
+            --md-sys-color-primary: #a8c7fa;
+            --md-sys-color-on-primary: #062e6f;
+            --md-sys-color-outline: #444746;
+            --md-sys-color-error: #f2b8b5;
+            --md-sys-color-on-error: #601410;
+            --md-sys-color-success: #c4eed0;
+            --md-sys-color-on-success: #072711;
+            --skeleton: #252525;
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+        }
+        
+        body {
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            padding: 24px;
+            min-height: 100vh;
+            scrollbar-width: thin;
+            scrollbar-color: var(--md-sys-color-outline) transparent;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* Header Section */
+        .page-header { margin-bottom: 32px; }
+        .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+        .page-header p { color: #9aa0a6; font-size: 14px; }
+
+        /* Stats Row - Material Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .stat-box {
+            background: var(--md-sys-color-surface-container);
+            padding: 24px;
+            border-radius: 24px; /* M3 Large Corner */
+            border: 1px solid var(--md-sys-color-outline);
+            transition: all 0.2s ease;
+        }
+        .stat-val { font-size: 36px; font-weight: 700; display: block; color: var(--md-sys-color-primary); }
+        .stat-label { font-size: 12px; color: #9aa0a6; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+        
+        /* Feedback Cards */
+        .feedback-card {
+            background: var(--md-sys-color-surface-container);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid transparent;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .feedback-card:hover { border-color: var(--md-sys-color-outline); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .user-info { font-weight: 600; font-size: 16px; color: #fff; }
+        .time-info { font-size: 12px; color: #9aa0a6; }
+        
+        /* Badges */
+        .like-badge {
+            display: inline-flex; align-items: center; gap: 8px; font-size: 11px;
+            font-weight: 700; padding: 6px 16px; border-radius: 100px;
+        }
+        .like-true { background: var(--md-sys-color-success); color: var(--md-sys-color-on-success); }
+        .like-false { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+        
+        .pesan-text {
+            font-size: 14px; line-height: 1.6; color: #e3e3e3;
+            background: #121212; padding: 16px; border-radius: 16px;
+            border: 1px solid var(--md-sys-color-outline);
+        }
+        .no-pesan { font-style: italic; color: #5f6368; }
+        
+        /* Google Style Button */
+        .btn-delete {
+            background: transparent; color: var(--md-sys-color-error);
+            border: 1px solid var(--md-sys-color-outline); 
+            padding: 10px; border-radius: 12px;
+            cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-delete:hover { background: rgba(242, 184, 181, 0.1); border-color: var(--md-sys-color-error); }
+
+        /* Skeleton & States */
+        .skeleton { background: var(--skeleton); border-radius: 24px; height: 150px; margin-bottom: 16px; position: relative; overflow: hidden; }
+        .skeleton::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        .msg-box {
+            background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline);
+            padding: 60px; text-align: center; border-radius: 28px; margin-top: 40px;
+        }
+        
+        #toast {
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(120px);
+            background: #2c2c2e; color: #fff; padding: 14px 28px; border-radius: 16px;
+            font-size: 14px; font-weight: 500; box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000;
+            border: 1px solid var(--md-sys-color-outline);
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container">
+    <div id="access-denied" class="hidden msg-box">
+        <i class="fa-solid fa-shield-cat" style="font-size: 56px; color: var(--md-sys-color-error); margin-bottom: 24px; opacity: 0.8;"></i>
+        <h2 style="font-weight: 700;">Area Terbatas</h2>
+        <p style="color: #9aa0a6; margin-top: 8px;">Silakan gunakan akun Administrator untuk mengakses data.</p>
+    </div>
+
+    <div id="adminContent" class="hidden">
+        <div class="page-header">
+            <h1>Feedback Santri</h1>
+            <p>Data masukan dan tingkat kepuasan layanan perpustakaan.</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <span id="totalFeedback" class="stat-val">0</span>
+                <span class="stat-label">Total Masukan</span>
+            </div>
+            <div class="stat-box">
+                <span id="totalLikes" class="stat-val" style="color: var(--md-sys-color-success)">0</span>
+                <span class="stat-label">Puas</span>
+            </div>
+            <div class="stat-box">
+                <span id="totalUnlikes" class="stat-val" style="color: var(--md-sys-color-error)">0</span>
+                <span class="stat-label">Kurang</span>
+            </div>
+        </div>
+
+        <div id="loading-list">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+        </div>
+
+        <div id="feedbackList"></div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // 1. Validasi Akses Admin
+    function init() {
+        const logged = sessionStorage.getItem('isLoggedIn');
+        const role = sessionStorage.getItem('adminRole');
+
+        if (logged === 'true' && role === 'admin') {
+            document.getElementById('adminContent').classList.remove('hidden');
+            loadData();
+        } else {
+            document.getElementById('access-denied').classList.remove('hidden');
+            document.getElementById('loading-list').classList.add('hidden');
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // 2. Ambil Data (Menggunakan RPC get_all_feedback)
+    async function loadData() {
+        try {
+            const { data, error } = await supabase.rpc('get_all_feedback');
+            if (error) throw error;
+
+            renderUI(data);
+        } catch (err) {
+            console.error(err);
+            showToast("Sinkronisasi gagal");
+        } finally {
+            document.getElementById('loading-list').classList.add('hidden');
+        }
+    }
+
+    function renderUI(data) {
+        // Update Stats
+        const likes = data.filter(f => f.is_liked).length;
+        const unlikes = data.filter(f => f.is_liked === false).length;
+        document.getElementById('totalFeedback').innerText = data.length;
+        document.getElementById('totalLikes').innerText = likes;
+        document.getElementById('totalUnlikes').innerText = unlikes;
+
+        // Render List
+        const list = document.getElementById('feedbackList');
+        list.innerHTML = data.length === 0 
+            ? '<div class="msg-box"><p style="color: #9aa0a6">Belum ada masukan tersimpan.</p></div>' 
+            : '';
+
+        data.forEach(item => {
+            const date = new Date(item.created_at).toLocaleString('id-ID', { 
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+            });
+            
+            const card = document.createElement('div');
+            card.className = 'feedback-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <div class="user-info">${item.nama}</div>
+                        <div class="time-info">${date}</div>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div class="like-badge ${item.is_liked ? 'like-true' : 'like-false'}">
+                            <i class="fa-solid ${item.is_liked ? 'fa-face-smile' : 'fa-face-frown'}"></i> 
+                            ${item.is_liked ? 'PUAS' : 'KURANG'}
+                        </div>
+                        <button class="btn-delete" onclick="handleDelete('${item.id}')" title="Hapus">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="pesan-text">
+                    ${item.pesan ? item.pesan : '<span class="no-pesan">Rating saja.</span>'}
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    // 3. Hapus Data via RPC (Solusi 2)
+    window.handleDelete = async (id) => {
+        if (!confirm("Hapus feedback ini?")) return;
+
+        try {
+            // Memanggil fungsi SQL: delete_feedback_by_id(p_id)
+            const { error } = await supabase.rpc('delete_feedback_by_id', { p_id: id });
+            
+            if (error) throw error;
+
+            showToast("Berhasil dihapus");
+            loadData(); // Reload list
+        } catch (err) {
+            showToast("Gagal menghapus data");
+            console.error(err);
+        }
+    };
+
+    init();
+</script>
+
+</body>
+</html>

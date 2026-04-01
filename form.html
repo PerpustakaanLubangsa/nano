@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Tamu - Luvionics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        :root {
+            --bg-page: #000000;
+            --bg-card: #0a0a0a;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border-color: #333333;
+            --accent-color: #8ab4f8;
+            --input-bg: #000000;
+            --drop-bg: #121212;
+            --item-hover: rgba(138, 180, 248, 0.1);
+            --item-active: rgba(138, 180, 248, 0.25);
+            --modal-overlay: rgba(0, 0, 0, 0.85);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-shrink: 0;
+        }
+        .header-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+        .field-group { position: relative; display: flex; flex-direction: column; gap: 6px; }
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+        label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; }
+        
+        input, select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 15px;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
+
+        .drop-box {
+            position: absolute;
+            top: 100%; left: 0; right: 0;
+            background-color: var(--drop-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+        }
+        .drop-item {
+            padding: 14px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #1f1f1f;
+            transition: all 0.1s;
+        }
+        .drop-item:hover, .drop-item.selected { background-color: var(--item-hover); }
+        .drop-item.selected { border-left: 3px solid var(--accent-color); }
+        .drop-item .main-text { font-size: 14px; font-weight: 700; color: #fff; }
+        .drop-item .sub-text { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+        .actions { margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 10px 0; flex-shrink: 0; }
+        button { padding: 15px; border-radius: 30px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; }
+        .btn-rank { background-color: transparent; color: var(--accent-color); border: 1px solid var(--border-color); }
+        .btn-submit { background-color: var(--accent-color); color: #000; }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.4; pointer-events: none; }
+
+        #customModal {
+            display: none; position: fixed; inset: 0; background: var(--modal-overlay);
+            z-index: 9999; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(8px);
+        }
+        .modal-content {
+            background: #121212; border: 1px solid var(--border-color); border-radius: 24px;
+            width: 100%; max-width: 340px; padding: 32px 24px; text-align: center;
+        }
+        .modal-icon { font-size: 40px; margin-bottom: 16px; display: block; }
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #ff6b6b; }
+        .modal-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+        .btn-modal-close { background: #333; color: white; width: 100%; border-radius: 12px; }
+
+        ::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body>
+
+<div id="customModal">
+    <div class="modal-content">
+        <span class="modal-icon">⏳</span>
+        <div class="modal-title">Sudah Terabsen</div>
+        <div class="modal-text" id="modalMessage">Pesan pembatasan akan muncul di sini.</div>
+        <button class="btn-modal-close" onclick="closeModal()">Tutup</button>
+    </div>
+</div>
+
+<header>
+    <div class="header-title">BUKU TAMU</div>
+</header>
+
+<form id="guestForm" autocomplete="off">
+    <div class="field-group">
+        <label>Nama Pengunjung</label>
+        <input type="text" id="inputNama" placeholder="Cari Nama atau NIS..." required>
+        <div id="dropNama" class="drop-box"></div>
+    </div>
+
+    <div class="row">
+        <div class="field-group">
+            <label>Kamar</label>
+            <input type="text" id="inputKamar" placeholder="Contoh: A-01" required>
+        </div>
+        <div class="field-group">
+            <label>Jenjang</label>
+            <select id="inputJenjang" required>
+                <option value="" disabled selected>Pilih</option>
+                <option value="SLTP">SLTP</option>
+                <option value="SLTA">SLTA</option>
+                <option value="PT">PT</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="field-group">
+        <label>Koleksi Buku</label>
+        <input type="text" id="inputBuku" placeholder="Ketik Judul atau Kode..." required>
+        <div id="dropBuku" class="drop-box"></div>
+    </div>
+
+    <div class="row">
+        <div class="field-group">
+            <label>Kategori</label>
+            <select id="inputKategori" required>
+                <option value="" disabled selected>Pilih</option>
+                <option value="Kesusastraan">Kesusastraan</option>
+                <option value="Komik">Komik</option>
+                <option value="Filsafat dan Psikologi">Filsafat dan Psikologi</option>
+                <option value="Agama">Agama</option>
+                <option value="Ilmu Sosial">Ilmu Sosial</option>
+                <option value="Sejarah dan Geografi">Sejarah dan Geografi</option>
+                <option value="Ilmu Murni">Ilmu Murni</option>
+                <option value="Ilmu Bahasa">Ilmu Bahasa</option>
+                <option value="Managemen">Managemen</option>
+                <option value="Majalah">Majalah</option>
+            </select>
+        </div>
+        <div class="field-group">
+            <label>Aktivitas</label>
+            <select id="inputAktivitas" required>
+                <option value="" disabled selected>Pilih</option>
+                <option value="Baca">Baca</option>
+                <option value="Pinjam">Pinjam</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button type="button" class="btn-rank" onclick="window.location.href='rank.html'">Lihat Leaderboard</button>
+        <button type="submit" id="btnSubmit" class="btn-submit">Simpan Kunjungan</button>
+    </div>
+</form>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let isValidAnggota = false;
+    let isValidBuku = false;
+    let currentFocus = -1;
+    let activeDropdown = null;
+
+    window.closeModal = () => document.getElementById('customModal').style.display = 'none';
+    
+    function showToast(msg, isError = true) {
+        Toastify({ 
+            text: msg, duration: 2500, gravity: "top", position: "center",
+            style: { background: isError ? "#ff4d4d" : "#00c853", borderRadius: "10px", fontSize: "13px" }
+        }).showToast();
+    }
+
+    function bindSmartSearch(inputId, dropId, rpcName) {
+        const input = document.getElementById(inputId);
+        const drop = document.getElementById(dropId);
+        let timer;
+
+        input.addEventListener('input', () => {
+            if (inputId === 'inputNama') isValidAnggota = false;
+            if (inputId === 'inputBuku') isValidBuku = false;
+            
+            const val = input.value.trim();
+            if (val.length < 2) { 
+                drop.style.display = 'none'; 
+                return; 
+            }
+
+            clearTimeout(timer);
+            timer = setTimeout(async () => {
+                const { data, error } = await supabase.rpc(rpcName, { search_term: val });
+                if (error) { console.error(error); return; }
+                renderSuggestions(drop, inputId, data || []);
+            }, 300);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            const items = drop.querySelectorAll('.drop-item');
+            if (items.length === 0) return;
+
+            if (e.key === "ArrowDown") {
+                currentFocus++;
+                addActive(items);
+            } else if (e.key === "ArrowUp") {
+                currentFocus--;
+                addActive(items);
+            } else if (e.key === "Enter") {
+                if (currentFocus > -1) {
+                    e.preventDefault();
+                    items[currentFocus].click();
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+        });
+    }
+
+    function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("selected");
+        items[currentFocus].scrollIntoView({ block: "nearest" });
+    }
+
+    function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+            items[i].classList.remove("selected");
+        }
+    }
+
+    function renderSuggestions(drop, inputId, data) {
+        if (data.length === 0) { drop.style.display = 'none'; return; }
+        currentFocus = -1;
+        
+        drop.innerHTML = data.map((item, i) => {
+            const main = inputId === 'inputNama' ? item.nama : item.judul;
+            const sub = inputId === 'inputNama' 
+                ? `${item.nis || '-'} • Kamar: ${item.kamar || '-'}` 
+                : `${item.penulis || 'Tanpa Penulis'} ${item.kode ? ' ['+item.kode+']' : ''}`;
+            
+            return `
+                <div class="drop-item" data-idx="${i}">
+                    <div class="main-text">${main}</div>
+                    <div class="sub-text">${sub}</div>
+                </div>`;
+        }).join('');
+
+        drop.querySelectorAll('.drop-item').forEach(el => {
+            el.onclick = () => {
+                const selected = data[el.dataset.idx];
+                if (inputId === 'inputNama') {
+                    document.getElementById('inputNama').value = selected.nama;
+                    document.getElementById('inputKamar').value = selected.kamar || '';
+                    document.getElementById('inputJenjang').value = selected.jenjang || '';
+                    isValidAnggota = true;
+                } else {
+                    document.getElementById('inputBuku').value = selected.judul;
+                    document.getElementById('inputKategori').value = selected.kategori || '';
+                    isValidBuku = true;
+                }
+                drop.style.display = 'none';
+            };
+        });
+        drop.style.display = 'block';
+    }
+
+    document.getElementById('guestForm').onsubmit = async (e) => {
+        e.preventDefault();
+
+        if (!isValidAnggota || !isValidBuku) {
+            showToast("⚠️ Harap pilih Nama & Buku dari daftar yang muncul.");
+            return;
+        }
+
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerText = 'Menyinkronkan...';
+
+        try {
+            const formData = {
+                p_nama: document.getElementById('inputNama').value,
+                p_kamar: document.getElementById('inputKamar').value,
+                p_jenjang: document.getElementById('inputJenjang').value,
+                p_judul: document.getElementById('inputBuku').value,
+                p_kategori: document.getElementById('inputKategori').value,
+                p_aktivitas: document.getElementById('inputAktivitas').value
+            };
+
+            const { data, error } = await supabase.rpc('submit_kunjungan_guestbook', formData);
+
+            if (error) throw error;
+
+            if (data.success) {
+                sessionStorage.setItem('last_guest', JSON.stringify({ nama: formData.p_nama }));
+                
+                showToast("Berhasil disimpan!", false);
+                setTimeout(() => {
+                    window.location.href = 'profile_pencapaian_pengunjung.html';
+                }, 1000);
+            } else {
+                document.getElementById('modalMessage').innerText = data.message;
+                document.getElementById('customModal').style.display = 'flex';
+                btn.disabled = false;
+                btn.innerText = 'Simpan Kunjungan';
+            }
+        } catch (err) {
+            showToast("Gagal: " + err.message);
+            btn.disabled = false;
+            btn.innerText = 'Simpan Kunjungan';
+        }
+    };
+
+    bindSmartSearch('inputNama', 'dropNama', 'search_anggota_guestbook');
+    bindSmartSearch('inputBuku', 'dropBuku', 'search_buku_guestbook');
+</script>
+</body>
+</html>

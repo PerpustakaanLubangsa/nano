@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokasi Rak - Optimized Explorer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #f8fafc; 
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .floating-search-container {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 280px;
+            z-index: 1000;
+        }
+
+        .search-bar {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+        }
+
+        .content-area { 
+            padding-top: 85px; 
+            padding-bottom: 80px; 
+        }
+
+        /* OPTIMASI RENDER */
+        #rakList {
+            contain: content;
+        }
+
+        .rak-card { 
+            transition: transform 0.1s ease, border-color 0.1s ease;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            background: white;
+            will-change: transform;
+            backface-visibility: hidden; /* Mengunci rendering pada GPU */
+        }
+
+        .rak-card:active {
+            transform: scale(0.97);
+        }
+
+        .rak-card.highlight { 
+            border: 2px solid #3b82f6 !important; 
+            background-color: #eff6ff !important; 
+        }
+
+        .action-btns { opacity: 0.3; }
+        .rak-card:hover .action-btns { opacity: 1; }
+
+        .btn-plus-mini { 
+            position: fixed; 
+            bottom: 1rem; 
+            right: 1rem; 
+            width: 28px;
+            height: 28px;
+            z-index: 50; 
+            background: #0f172a;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="floating-search-container">
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass text-slate-400 text-[10px] mr-2"></i>
+            <input type="text" id="ddcInput" autofocus inputmode="numeric" 
+                placeholder="Cari DDC / Nama..." 
+                class="bg-transparent w-full outline-none text-[11px] font-bold text-slate-700">
+            <button onclick="clearSearch()" id="clearBtn" class="hidden text-slate-300">
+                <i class="fa-solid fa-circle-xmark text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <main class="content-area max-w-md mx-auto px-4">
+        <div id="rakList" class="space-y-2"></div>
+    </main>
+
+    <button onclick="toggleAdmin()" class="btn-plus-mini">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/40 z-[2000] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-6 shadow-xl">
+            <form id="rakForm" class="space-y-3 text-[11px]">
+                <input type="hidden" id="editId">
+                <p class="font-bold text-slate-800 uppercase text-[9px] mb-2 tracking-widest text-center">Update Lokasi Rak</p>
+                <input type="text" id="f_kat" placeholder="NAMA KATALOG" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50">
+                <div class="flex gap-2">
+                    <input type="text" id="f_awal" placeholder="DDC Awal" class="w-1/2 p-2.5 border rounded-lg font-bold bg-slate-50">
+                    <input type="text" id="f_akhir" placeholder="DDC Akhir" class="w-1/2 p-2.5 border rounded-lg font-bold bg-slate-50">
+                </div>
+                <input type="text" id="f_kode" placeholder="KODE RAK" class="w-full p-2.5 border rounded-lg font-bold uppercase text-blue-600">
+                
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold uppercase">Simpan</button>
+                    <button type="button" onclick="toggleAdmin()" class="px-4 bg-slate-100 text-slate-400 rounded-lg font-bold uppercase">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let allData = [];
+        let debounceTimer;
+
+        function selectRack(kodeRak) {
+            window.parent.postMessage({ type: 'SELECT_RACK', kodeRak: kodeRak }, "*");
+        }
+
+        async function loadData() {
+            const { data } = await client.from('pedoman_umum_lokasi_rak').select('*').order('kode_awal', { ascending: true });
+            allData = data || [];
+            renderList();
+        }
+
+        function renderList() {
+            const listContainer = document.getElementById('rakList');
+            listContainer.innerHTML = allData.map(d => `
+                <div id="rak-${d.id}" onclick="selectRack('${d.kode_rak}')" class="rak-card p-4 rounded-xl flex items-center justify-between shadow-sm">
+                    <div class="flex-1">
+                        <div class="text-[10px] font-bold text-slate-800 uppercase tracking-tight">${d.kategori}</div>
+                        <div class="text-[8px] font-bold text-slate-400 mt-0.5">${d.kode_awal} - ${d.kode_akhir}</div>
+                        <div class="text-[11px] font-black text-blue-600 mt-0.5 font-mono">${d.kode_rak}</div>
+                    </div>
+                    <div class="action-btns flex gap-2">
+                        <button onclick="event.stopPropagation(); editData('${d.id}')" class="text-slate-300 hover:text-blue-500 p-1"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                        <button onclick="event.stopPropagation(); deleteData('${d.id}')" class="text-slate-300 hover:text-red-500 p-1"><i class="fa-solid fa-trash-can text-[9px]"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'SEARCH_INIT') {
+                const inputSearch = document.getElementById('ddcInput');
+                inputSearch.value = event.data.query;
+                inputSearch.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // INPUT HANDLER DENGAN DEBOUNCE & OPTIMIZED SCROLL
+        document.getElementById('ddcInput').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            const val = e.target.value.trim();
+            const clearBtn = document.getElementById('clearBtn');
+            
+            if (val.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+
+            debounceTimer = setTimeout(() => {
+                // Batch remove highlights
+                const activeHighlights = document.querySelectorAll('.rak-card.highlight');
+                activeHighlights.forEach(card => card.classList.remove('highlight'));
+
+                if (val.length >= 2) {
+                    let inputNum = parseInt(val.substring(0, 3).padEnd(3, '0'));
+                    
+                    let closest = allData.reduce((prev, curr) => {
+                        return (Math.abs(parseInt(curr.kode_awal) - inputNum) < Math.abs(parseInt(prev.kode_awal) - inputNum) ? curr : prev);
+                    });
+
+                    if (closest) {
+                        const targetEl = document.getElementById(`rak-${closest.id}`);
+                        targetEl.classList.add('highlight');
+                        
+                        // ScrollIntoView lebih hemat daya di iframe daripada manual scrollTo
+                        requestAnimationFrame(() => {
+                            targetEl.scrollIntoView({ 
+                                behavior: 'auto', 
+                                block: 'center' 
+                            });
+                        });
+                    }
+                }
+            }, 100); // Delay 100ms untuk performa
+        });
+
+        function clearSearch() {
+            document.getElementById('ddcInput').value = '';
+            document.getElementById('clearBtn').classList.add('hidden');
+            const cards = document.querySelectorAll('.rak-card');
+            for(let card of cards) card.classList.remove('highlight');
+            document.getElementById('ddcInput').focus();
+        }
+
+        function toggleAdmin() {
+            document.getElementById('rakForm').reset();
+            document.getElementById('editId').value = "";
+            document.getElementById('adminModal').classList.toggle('hidden');
+        }
+
+        async function editData(id) {
+            const d = allData.find(x => x.id === id);
+            document.getElementById('editId').value = d.id;
+            document.getElementById('f_awal').value = d.kode_awal;
+            document.getElementById('f_akhir').value = d.kode_akhir;
+            document.getElementById('f_kode').value = d.kode_rak;
+            document.getElementById('f_kat').value = d.kategori;
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        document.getElementById('rakForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const payload = {
+                kode_awal: document.getElementById('f_awal').value.padEnd(3, '0'),
+                kode_akhir: document.getElementById('f_akhir').value.padEnd(3, '0'),
+                kode_rak: document.getElementById('f_kode').value.toUpperCase(),
+                kategori: document.getElementById('f_kat').value
+            };
+            if(id) await client.from('pedoman_umum_lokasi_rak').update(payload).eq('id', id);
+            else await client.from('pedoman_umum_lokasi_rak').insert([payload]);
+            toggleAdmin();
+            loadData();
+        };
+
+        async function deleteData(id) {
+            if(confirm('Hapus?')) {
+                await client.from('pedoman_umum_lokasi_rak').delete().eq('id', id);
+                loadData();
+            }
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>

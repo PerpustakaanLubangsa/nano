@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Pengunjung - Snowy Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<style>
+:root {
+--bg-page: #f8f9fa;
+--bg-card: #ffffff;
+--text-primary: #202124;
+--text-secondary: #5f6368;
+--border-color: #dadce0;
+--accent-color: #1a73e8;
+--danger: #d93025;
+--skeleton: #e0e0e0;
+--toast-bg: #323232;
+--folder-icon: #fabb05;
+--sb-track: #f1f1f1;
+--sb-thumb: #ccc;
+--sb-thumb-hover: #999;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-page: #000000;
+--bg-card: #000000;
+--text-primary: #e8eaed;
+--text-secondary: #9aa0a6;
+--border-color: #262626;
+--accent-color: #8ab4f8;
+--skeleton: #1a1a1a;
+--toast-bg: #1f1f1f;
+--sb-track: #121212;
+--sb-thumb: #333;
+--sb-thumb-hover: #444;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--sb-track); }
+::-webkit-scrollbar-thumb { background: var(--sb-thumb); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover); }
+body { background-color: var(--bg-page); color: var(--text-primary); padding: 20px; transition: background-color 0.3s ease; height: 100vh; overflow-y: auto; }
+.container { max-width: 1200px; margin: 0 auto; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.breadcrumb span { cursor: pointer; transition: color 0.2s; }
+.breadcrumb span:hover { color: var(--accent-color); }
+.breadcrumb i { font-size: 12px; opacity: 0.5; }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 20px; }
+.folder-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.folder-card:hover { transform: translateY(-4px); background: rgba(128,128,128,0.08); border-color: var(--accent-color); }
+.folder-card i { font-size: 48px; color: var(--folder-icon); }
+.folder-name { font-weight: 700; font-size: 15px; }
+.action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-action { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+.btn-action:hover { background: rgba(128,128,128,0.1); border-color: var(--accent-color); }
+.btn-excel { background: #1d6f42 !important; color: white !important; border: none !important; }
+.btn-excel:hover { background: #155231 !important; }
+.table-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; opacity: 0; transform: translateY(10px); animation: fadeInUp 0.4s forwards; }
+@keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+th { background: rgba(128, 128, 128, 0.05); padding: 16px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 1px solid var(--border-color); }
+td { padding: 16px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+.badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(128, 128, 128, 0.1); color: var(--text-secondary); }
+.menu-container { position: relative; display: inline-block; }
+.btn-menu { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; padding: 5px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.btn-menu:hover { background: rgba(128, 128, 128, 0.1); color: var(--text-primary); }
+.dropdown-menu { position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; z-index: 100; overflow: hidden; min-width: 160px; }
+.dropdown-menu.active { display: block; }
+.dropdown-item { padding: 12px 16px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--danger); transition: background 0.2s; }
+.dropdown-item:hover { background: rgba(217, 48, 37, 0.1); }
+.skeleton-box { height: 140px; background: var(--skeleton); border-radius: 16px; position: relative; overflow: hidden; margin-bottom: 16px; }
+.skeleton-box::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+#toast-notification { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--toast-bg); color: #fff; padding: 14px 24px; border-radius: 12px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border-color); }
+#toast-notification.show { transform: translateX(-50%) translateY(0); }
+.msg-box { background: var(--bg-card); border: 1px solid var(--border-color); padding: 60px 40px; text-align: center; border-radius: 24px; margin-top: 50px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app" class="container">
+<div class="breadcrumb" id="breadcrumb">
+<span onclick="navigateTo('root')">Data Pengunjung</span>
+</div>
+<div id="loading-state" class="skeleton-grid">
+<div class="skeleton-box"></div><div class="skeleton-box"></div><div class="skeleton-box"></div>
+</div>
+<div id="access-denied" class="hidden msg-box">
+<i class="fa-solid fa-shield-halved" style="font-size: 54px; color: var(--text-secondary); margin-bottom: 24px; opacity: 0.3;"></i>
+<h3 style="font-weight: 700;">Akses Terbatas</h3>
+</div>
+<div id="adminContent" class="hidden">
+<div id="folderContainer" class="folder-grid"></div>
+<div id="tableSection" class="hidden">
+<div class="action-bar">
+<h3 id="tableTitle" style="font-weight: 700; font-size: 18px;">Data Tabel</h3>
+<div class="action-buttons">
+<button onclick="downloadExcel()" class="btn-action btn-excel"><i class="fa-solid fa-file-excel"></i> Excel</button>
+<button onclick="window.location.href='halaman_total_pengunjung.html'" class="btn-action"><i class="fa-solid fa-calculator"></i> Lihat Total</button>
+<button onclick="window.location.href='halaman_diagaram_dan_grafik_pengunjung.html'" class="btn-action"><i class="fa-solid fa-chart-line"></i> Grafik</button>
+</div>
+</div>
+<div class="table-container">
+<div class="table-wrapper">
+<table id="visitorTable">
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Nama</th>
+<th>Kamar</th>
+<th>Jenjang</th>
+<th>Buku</th>
+<th>Kategori</th>
+<th>Aktivitas</th>
+<th style="width: 40px;"></th>
+</tr>
+</thead>
+<tbody id="visitorList"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="toast-notification"></div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+let currentOpenMenu = null;
+let currentPath = { year: null, month: null };
+let fetchedData = [];
+const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+async function checkAdmin() {
+try {
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) { showDenied(); return; }
+const { data: admin } = await supabase.from('allowed_admins').select('email').eq('email', session.user.email).maybeSingle();
+if (!admin) { showDenied(); return; }
+document.getElementById('loading-state').classList.add('hidden');
+document.getElementById('adminContent').classList.remove('hidden');
+loadYears();
+} catch (err) { showDenied(); }
+}
+function showDenied() {
+document.getElementById('loading-state').classList.add('hidden');
+document.getElementById('access-denied').classList.remove('hidden');
+}
+function showToast(message) {
+const toast = document.getElementById('toast-notification');
+toast.innerText = message;
+toast.classList.add('show');
+setTimeout(() => toast.classList.remove('show'), 3000);
+}
+async function loadYears() {
+const { data, error } = await supabase.from('data_pengunjung').select('tanggal_kunjungan');
+if (error) return;
+const years = [...new Set(data.filter(i => i.tanggal_kunjungan).map(item => new Date(item.tanggal_kunjungan).getFullYear()))].sort((a, b) => b - a);
+renderFolders(years, 'year');
+updateBreadcrumb();
+}
+async function loadMonths(year) {
+currentPath.year = year;
+const { data, error } = await supabase.from('data_pengunjung').select('tanggal_kunjungan');
+if (error) return;
+const months = [...new Set(data.filter(item => item.tanggal_kunjungan && new Date(item.tanggal_kunjungan).getFullYear() == year).map(item => new Date(item.tanggal_kunjungan).getMonth() + 1))].sort((a, b) => b - a);
+renderFolders(months, 'month');
+updateBreadcrumb();
+}
+async function loadTableData(month) {
+currentPath.month = month;
+const year = currentPath.year;
+document.getElementById('tableTitle').innerText = `${monthNames[month-1]} ${year}`;
+const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+const lastDay = new Date(year, month, 0).getDate();
+const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+const { data, error } = await supabase.from('data_pengunjung').select('*').gte('tanggal_kunjungan', startDate).lte('tanggal_kunjungan', endDate).order('tanggal_kunjungan', { ascending: false });
+if (error) { showToast("Gagal memuat data"); return; }
+fetchedData = data;
+document.getElementById('folderContainer').classList.add('hidden');
+document.getElementById('tableSection').classList.remove('hidden');
+renderList(data);
+updateBreadcrumb();
+}
+function renderFolders(items, type) {
+const container = document.getElementById('folderContainer');
+container.classList.remove('hidden');
+document.getElementById('tableSection').classList.add('hidden');
+container.innerHTML = '';
+items.forEach(item => {
+const card = document.createElement('div');
+card.className = 'folder-card';
+const name = type === 'year' ? item : monthNames[item - 1];
+card.onclick = () => type === 'year' ? loadMonths(item) : loadTableData(item);
+card.innerHTML = `<i class="fa-solid fa-folder"></i><span class="folder-name">${name}</span>`;
+container.appendChild(card);
+});
+}
+function renderList(data) {
+const container = document.getElementById('visitorList');
+container.innerHTML = data.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding: 60px; color: var(--text-secondary);">Tidak ada data.</td></tr>' : '';
+data.forEach(item => {
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td>${item.tanggal_kunjungan}</td>
+<td style="font-weight:700;">${item.nama || '-'}</td>
+<td>${item.kamar || '-'}</td>
+<td><span class="badge">${item.jenjang || '-'}</span></td>
+<td style="max-width:220px; overflow:hidden; text-overflow:ellipsis;">${item.judul_buku || '-'}</td>
+<td style="font-style: italic; opacity: 0.8;">${item.kategori || '-'}</td>
+<td>${item.aktivitas || '-'}</td>
+<td>
+<div class="menu-container">
+<button class="btn-menu" onclick="toggleMenu(event, '${item.id}')"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+<div id="menu-${item.id}" class="dropdown-menu">
+<div class="dropdown-item" onclick="deleteEntry('${item.id}')"><i class="fa-solid fa-trash-can"></i> Hapus</div>
+</div>
+</div>
+</td>`;
+container.appendChild(tr);
+});
+}
+window.navigateTo = (target) => {
+if (target === 'root') { currentPath = { year: null, month: null }; loadYears(); }
+else if (target === 'year') { currentPath.month = null; loadMonths(currentPath.year); }
+};
+function updateBreadcrumb() {
+const b = document.getElementById('breadcrumb');
+let html = `<span onclick="navigateTo('root')">Data Pengunjung</span>`;
+if (currentPath.year) html += ` <i class="fa-solid fa-chevron-right"></i> <span onclick="navigateTo('year')">${currentPath.year}</span>`;
+if (currentPath.month) html += ` <i class="fa-solid fa-chevron-right"></i> <span>${monthNames[currentPath.month - 1]}</span>`;
+b.innerHTML = html;
+}
+window.toggleMenu = (event, id) => {
+event.stopPropagation();
+const menu = document.getElementById(`menu-${id}`);
+if (currentOpenMenu && currentOpenMenu !== menu) currentOpenMenu.classList.remove('active');
+menu.classList.toggle('active');
+currentOpenMenu = menu.classList.contains('active') ? menu : null;
+};
+window.deleteEntry = async (id) => {
+if (!confirm("Hapus data ini?")) return;
+try {
+const { error } = await supabase.from('data_pengunjung').delete().eq('id', id);
+if (error) throw error;
+showToast("Data dihapus");
+loadTableData(currentPath.month);
+} catch (err) { showToast("Gagal menghapus"); }
+};
+window.downloadExcel = () => {
+if (fetchedData.length === 0) { showToast("Tidak ada data untuk diunduh"); return; }
+const dataForExcel = fetchedData.map(({ id, created_at, ...rest }) => rest);
+const ws = XLSX.utils.json_to_sheet(dataForExcel);
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, "Data Pengunjung");
+XLSX.writeFile(wb, `Data_Pengunjung_${monthNames[currentPath.month-1]}_${currentPath.year}.xlsx`);
+};
+document.addEventListener('click', () => { if (currentOpenMenu) { currentOpenMenu.classList.remove('active'); currentOpenMenu = null; } });
+checkAdmin();
+</script>
+</body>
+</html>

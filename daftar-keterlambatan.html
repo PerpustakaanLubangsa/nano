@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXPORT EXCEL - KETERLAMBATAN</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; padding: 40px 20px; }
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: #f1f5f9; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 15px; border: 1px solid #e2e8f0; }
+        td { padding: 10px 15px; border: 1px solid #e2e8f0; font-size: 12px; color: #1e293b; }
+        .btn-copy { background: #059669; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 12px; transition: all 0.2s; cursor: pointer; }
+        .btn-copy:hover { background: #047857; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+<div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-xl font-extrabold text-slate-800">Ekspor Data Terlambat</h1>
+            <p class="text-xs text-slate-500 font-medium">Format bersih siap tempel ke Excel</p>
+        </div>
+        <button onclick="copyTableToClipboard()" class="btn-copy">
+            SALIN DATA UNTUK EXCEL
+        </button>
+    </div>
+
+    <div class="table-container">
+        <table id="exportTable">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Anggota</th>
+                    <th>Kamar</th>
+                    <th>Judul Buku</th>
+                    <th>Penulis</th>
+                    <th>Telat (Hari)</th>
+                    <th>Denda (Rp)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="7" class="text-center py-10 text-slate-400">Memuat data sirkulasi...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity pointer-events-none">
+        Berhasil disalin! Buka Excel dan tekan Ctrl+V.
+    </div>
+</div>
+
+<script>
+    const S_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+    const client = supabase.createClient(S_URL, S_KEY);
+
+    async function loadData() {
+        const nowStr = new Date().toISOString().split('T')[0];
+        const now = new Date(); now.setHours(0,0,0,0);
+
+        const { data, error } = await client
+            .from('sirkulasi')
+            .select('nama_anggota, kamar, judul_buku, penulis, tgl_kembali') 
+            .eq('status', 'DIPINJAM')
+            .lt('tgl_kembali', nowStr)
+            .order('tgl_kembali', { ascending: true });
+
+        if (error) {
+            console.error("Error Detail:", error.message);
+            document.getElementById('tableBody').innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+            return;
+        }
+
+        const body = document.getElementById('tableBody');
+        body.innerHTML = '';
+
+        if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-400">Tidak ada data terlambat.</td></tr>';
+            return;
+        }
+
+        data.forEach((item, index) => {
+            const tglK = new Date(item.tgl_kembali);
+            const diffDays = Math.ceil((now - tglK) / (1000 * 60 * 60 * 24));
+            const denda = diffDays * 1000;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align: center;">${index + 1}</td>
+                <td>${item.nama_anggota}</td>
+                <td>${item.kamar || '-'}</td>
+                <td>${item.judul_buku}</td>
+                <td>${item.penulis || '-'}</td> 
+                <td style="text-align: center;">${diffDays}</td>
+                <td style="text-align: right;">${denda.toLocaleString('id-ID')}</td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function copyTableToClipboard() {
+        const table = document.getElementById('exportTable');
+        const range = document.createRange();
+        range.selectNode(table);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        
+        try {
+            document.execCommand('copy');
+            showToast();
+        } catch (err) {
+            alert('Gagal menyalin data');
+        }
+        window.getSelection().removeAllRanges();
+    }
+
+    function showToast() {
+        const toast = document.getElementById('toast');
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 3000);
+    }
+
+    loadData();
+</script>
+
+</body>
+</html>

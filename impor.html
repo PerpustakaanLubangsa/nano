@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impor Database - Pro Excel Dark</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-browser: #121212;
+            --border: #282828;
+            --accent: #3b82f6;
+            --text-main: #e8eaed;
+            --text-muted: #80868b;
+        }
+        body { background-color: var(--bg-browser); color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 13px; }
+        .drop-zone { border: 2px dashed var(--border); transition: all 0.2s ease; }
+        .drop-zone.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.05); }
+        .progress-container { width: 100%; height: 8px; background: #1e1e1e; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .log-container { background: #181818; border: 1px solid var(--border); height: 350px; overflow-y: auto; font-family: 'monospace'; font-size: 11px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased custom-scrollbar">
+
+    <div id="loadingOverlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 hidden">
+        <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p id="loadingText" class="text-xs font-bold text-blue-500 uppercase tracking-widest">Memproses...</p>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 py-12">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Impor Database (Ultra Fast)</h1>
+                <p class="text-zinc-500 mt-2">Perbaikan Pemetaan Kolom Abstrak & Deskripsi Fisik.</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="deleteAllData()" class="border border-red-900/50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition">
+                    Hapus Semua
+                </button>
+                <a href="index.html" class="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition">Kembali</a>
+            </div>
+        </header>
+
+        <div id="dropZone" class="drop-zone rounded-xl p-16 text-center mb-8 cursor-pointer" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFiles(this.files[0])">
+            <div class="flex flex-col items-center">
+                <svg class="w-12 h-12 text-zinc-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <p class="text-zinc-400">Klik atau letakkan file database di sini</p>
+                <p class="text-zinc-600 text-[10px] mt-2 uppercase tracking-widest">Excel (.xlsx) atau CSV</p>
+            </div>
+        </div>
+
+        <div id="statusSection" class="hidden space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <span id="currentFileName" class="text-blue-500 font-bold block text-sm">File.xlsx</span>
+                    <span id="rowStats" class="text-zinc-500 text-[10px] uppercase tracking-tighter">Menunggu...</span>
+                </div>
+                <span id="progressPercent" class="text-white font-black text-xl">0%</span>
+            </div>
+            
+            <div class="progress-container"><div id="progressBar" class="progress-fill"></div></div>
+            <div id="log" class="log-container rounded p-4 custom-scrollbar text-zinc-500 space-y-1"></div>
+            <div class="pt-6">
+                <button id="btnSelesai" onclick="location.href='index.html'" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded font-bold text-xs uppercase tracking-widest transition">
+                    Selesai & Lihat Katalog
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'sb_publishable_4A_4200ZVZVVH6hFgo_jsw_PpV7uGlC';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        async function deleteAllData() {
+            if (!confirm("Hapus semua data?")) return;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            await client.from('biblio').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            alert("Database kosong.");
+        }
+
+        async function handleFiles(file) {
+            if (!file) return;
+            document.getElementById('dropZone').classList.add('hidden');
+            document.getElementById('statusSection').classList.remove('hidden');
+            document.getElementById('currentFileName').innerText = file.name;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                await processImportBulk(rows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Fungsi pencocokan kolom yang lebih ketat agar tidak tertukar
+        function getExactVal(row, exactKeywords) {
+            const keys = Object.keys(row);
+            // 1. Coba cari yang persis sama dulu (Case Insensitive)
+            let foundKey = keys.find(k => exactKeywords.some(kw => k.toLowerCase() === kw.toLowerCase()));
+            
+            // 2. Jika tidak ada yang persis, cari yang mengandung kata kunci (khusus kolom unik)
+            if (!foundKey) {
+                foundKey = keys.find(k => exactKeywords.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
+            }
+
+            return foundKey ? String(row[foundKey]).trim() : '';
+        }
+
+        async function processImportBulk(rows) {
+            const totalRows = rows.length;
+            addLog(`Mulai memproses ${totalRows} baris...`, "text-white");
+
+            updateProgress(10);
+            const { data: existingBibs } = await client.from('biblio').select('id, judul');
+            const biblioMap = new Map();
+            existingBibs?.forEach(b => biblioMap.set(b.judul.toLowerCase(), b.id));
+
+            const newBiblioPayloads = [];
+            const tempTitleSet = new Set();
+
+            rows.forEach(row => {
+                const judul = getExactVal(row, ['Judul']);
+                if (!judul) return;
+
+                const judulLC = judul.toLowerCase();
+                if (!biblioMap.has(judulLC) && !tempTitleSet.has(judulLC)) {
+                    newBiblioPayloads.push({
+                        judul: judul,
+                        penulis: getExactVal(row, ['Penulis']),
+                        isbn_issn: getExactVal(row, ['ISBN', 'ISSN']),
+                        penerbit: getExactVal(row, ['Penerbit']),
+                        tahun_terbit: getExactVal(row, ['Tahun']),
+                        // KUNCI PERBAIKAN: Membedakan 'Abstrak' dan 'Fisik'
+                        abstrak: getExactVal(row, ['Abstrak']), 
+                        deskripsi_fisik: getExactVal(row, ['Deskripsi Fisik', 'Fisik']), 
+                        sampul_url: getExactVal(row, ['URL Sampul', 'Sampul']),
+                        topik: getExactVal(row, ['Topik']).split(',').map(t => t.trim()).filter(t => t !== "")
+                    });
+                    tempTitleSet.add(judulLC);
+                }
+            });
+
+            if (newBiblioPayloads.length > 0) {
+                addLog(`Mengunggah ${newBiblioPayloads.length} judul baru...`, "text-emerald-500");
+                for (let i = 0; i < newBiblioPayloads.length; i += 100) {
+                    const chunk = newBiblioPayloads.slice(i, i + 100);
+                    const { data, error } = await client.from('biblio').insert(chunk).select('id, judul');
+                    if (error) { addLog("Error Biblio: " + error.message, "text-red-500"); break; }
+                    data.forEach(b => biblioMap.set(b.judul.toLowerCase(), b.id));
+                    updateProgress(10 + Math.round((i / newBiblioPayloads.length) * 30));
+                }
+            }
+            updateProgress(40);
+
+            addLog("Menyiapkan data unit/barcode...", "text-zinc-400");
+            const { data: existingEks } = await client.from('ekslempar').select('kode');
+            const existingBarcodes = new Set(existingEks?.map(e => String(e.kode).trim()));
+            
+            const eksPayloads = [];
+            const tempBarcodeSet = new Set();
+
+            rows.forEach(row => {
+                const judul = getExactVal(row, ['Judul']);
+                const kode = getExactVal(row, ['Kode Ekslempar', 'Kode', 'Barcode']);
+                
+                if (!judul || !kode || existingBarcodes.has(kode) || tempBarcodeSet.has(kode)) return;
+
+                const bibId = biblioMap.get(judul.toLowerCase());
+                if (bibId) {
+                    eksPayloads.push({
+                        biblio_id: bibId,
+                        kode: kode,
+                        nomor_panggil: getExactVal(row, ['Nomor Panggil', 'Panggil']),
+                        lokasi_rak: getExactVal(row, ['Lokasi Rak', 'Rak'])
+                    });
+                    tempBarcodeSet.add(kode);
+                }
+            });
+
+            if (eksPayloads.length > 0) {
+                addLog(`Mengunggah ${eksPayloads.length} unit koleksi...`, "text-blue-400");
+                for (let i = 0; i < eksPayloads.length; i += 200) {
+                    const chunk = eksPayloads.slice(i, i + 200);
+                    const { error } = await client.from('ekslempar').insert(chunk);
+                    if (error) addLog("Error Unit: " + error.message, "text-red-500");
+                    updateProgress(40 + Math.round((i / eksPayloads.length) * 60));
+                }
+            }
+
+            updateProgress(100);
+            addLog("IMPOR SELESAI SEMPURNA!", "text-white font-bold mt-4");
+            document.getElementById('rowStats').innerText = `Total ${totalRows} baris diproses.`;
+            document.getElementById('btnSelesai').classList.remove('hidden');
+        }
+
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressPercent').innerText = percent + '%';
+        }
+
+        function addLog(msg, colorClass) {
+            const div = document.createElement('div');
+            div.className = colorClass;
+            div.innerText = msg;
+            const log = document.getElementById('log');
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistik Petugas • Gemini Style</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+--bg-main: #f8f9fa;
+--bg-card: #ffffff;
+--text-main: #1f1f1f;
+--text-muted: #5f6368;
+--accent: #1a73e8;
+--border: #e2e8f0;
+--scroll-bar: #e0e0e0;
+--scroll-thumb: #cccccc;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--bg-card: #121212;
+--text-main: #e3e3e3;
+--text-muted: #9aa0a6;
+--accent: #8ab4f8;
+--border: #2d2d2d;
+--scroll-bar: #1a1a1a;
+--scroll-thumb: #333333;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--scroll-bar); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-main);
+color: var(--text-main);
+min-height: 100vh;
+padding: 24px;
+transition: all 0.3s ease;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+.header-ui {
+display: flex;
+flex-direction: column;
+gap: 16px;
+margin-bottom: 40px;
+}
+.title-group h1 {
+font-size: 28px;
+font-weight: 800;
+letter-spacing: -1px;
+}
+.title-group p {
+font-size: 12px;
+font-weight: 700;
+color: var(--accent);
+text-transform: uppercase;
+letter-spacing: 2px;
+}
+.filter-box {
+display: flex;
+align-items: center;
+gap: 12px;
+background: var(--bg-card);
+padding: 8px 16px;
+border-radius: 16px;
+border: 1px solid var(--border);
+width: fit-content;
+}
+.filter-box input {
+background: transparent;
+border: none;
+color: var(--text-main);
+font-size: 13px;
+font-weight: 600;
+outline: none;
+}
+.petugas-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+gap: 20px;
+}
+.card {
+background: var(--bg-card);
+border-radius: 24px;
+padding: 24px;
+border: 1px solid var(--border);
+transition: transform 0.2s;
+}
+.card-header {
+display: flex;
+align-items: center;
+gap: 16px;
+margin-bottom: 24px;
+}
+.rank-avatar {
+width: 56px;
+height: 56px;
+border-radius: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 24px;
+background: var(--bg-main);
+border: 1px solid var(--border);
+}
+.name-tag h3 {
+font-size: 16px;
+font-weight: 700;
+}
+.name-tag p {
+font-size: 10px;
+font-weight: 800;
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+.stats-row {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 8px;
+margin-bottom: 20px;
+}
+.stat-pill {
+background: var(--bg-main);
+padding: 12px 4px;
+border-radius: 16px;
+text-align: center;
+}
+.stat-pill .val {
+display: block;
+font-size: 16px;
+font-weight: 800;
+}
+.stat-pill .lbl {
+font-size: 8px;
+font-weight: 700;
+color: var(--text-muted);
+text-transform: uppercase;
+}
+.progress-container {
+padding-top: 16px;
+border-top: 1px dashed var(--border);
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.progress-label {
+font-size: 10px;
+font-weight: 700;
+color: var(--text-muted);
+text-transform: uppercase;
+}
+.progress-val {
+font-size: 14px;
+font-weight: 800;
+color: var(--accent);
+}
+.loader-ui {
+text-align: center;
+padding: 60px;
+}
+.spinner {
+width: 32px;
+height: 32px;
+border: 3px solid var(--border);
+border-top-color: var(--accent);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none; }
+@media (max-width: 640px) {
+.header-ui { align-items: center; text-align: center; }
+.petugas-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="header-ui">
+<div class="title-group">
+<p>Analytical Insight</p>
+<h1>Statistik Petugas</h1>
+</div>
+<div class="filter-box">
+<i class="fa-solid fa-calendar-day text-xs text-muted"></i>
+<input type="date" id="startDate">
+<button onclick="window.loadStats()" class="ml-2 text-xs font-extrabold uppercase text-accent">Update</button>
+</div>
+</header>
+<div id="loading" class="loader-ui">
+<div class="spinner"></div>
+<p class="text-[10px] font-bold uppercase tracking-widest mt-4 text-muted">Collecting Data...</p>
+</div>
+<div id="rekapGrid" class="petugas-grid"></div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const today = new Date();
+const firstDayYear = `${today.getFullYear()}-01-01`;
+document.getElementById('startDate').value = firstDayYear;
+const getRankInfo = (score) => {
+if (score >= 90) return { name: "Mythic", color: "text-rose-500", icon: "👑" };
+if (score >= 70) return { name: "Legend", color: "text-orange-500", icon: "💎" };
+if (score >= 50) return { name: "Epic", color: "text-purple-500", icon: "⚔️" };
+if (score >= 20) return { name: "Grandmaster", color: "text-blue-500", icon: "🛡️" };
+return { name: "Warrior", color: "text-slate-500", icon: "👣" };
+};
+async function loadStats() {
+const grid = document.getElementById('rekapGrid');
+const loading = document.getElementById('loading');
+const startStr = document.getElementById('startDate').value;
+grid.innerHTML = "";
+loading.classList.remove('hidden');
+try {
+const [p, j, r] = await Promise.all([
+supabase.from('petugas_master').select('nama'),
+supabase.from('jadwal_detail').select('*'),
+supabase.from('rekap_absensi').select('*').gte('tanggal', startStr)
+]);
+const master = p.data || [];
+const jadwal = j.data || [];
+const rekap = r.data || [];
+const diffTime = Math.abs(new Date() - new Date(startStr));
+const weeks = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7)));
+master.forEach(user => {
+const logs = rekap.filter(l => l.nama === user.nama);
+const hadir = logs.filter(l => l.status === 'Hadir').length;
+const izin = logs.filter(l => l.status === 'Izin').length;
+const alpha = logs.filter(l => l.status === 'Alpha').length;
+const shiftPerWeek = jadwal.filter(v => v.nama === user.nama).length;
+const totalSeharusnya = shiftPerWeek * weeks;
+const score = totalSeharusnya > 0 ? Math.min(100, Math.round((hadir / totalSeharusnya) * 100)) : 0;
+const n_a = Math.max(0, totalSeharusnya - logs.length);
+const rank = getRankInfo(score);
+grid.innerHTML += `
+<div class="card">
+<div class="card-header">
+<div class="rank-avatar">${rank.icon}</div>
+<div class="name-tag">
+<h3 class="text-main">${user.nama}</h3>
+<p class="${rank.color}">${rank.name}</p>
+</div>
+</div>
+<div class="stats-row">
+<div class="stat-pill"><span class="val text-green-500">${hadir}</span><span class="lbl">Hadir</span></div>
+<div class="stat-pill"><span class="val text-amber-500">${izin}</span><span class="lbl">Izin</span></div>
+<div class="stat-pill"><span class="val text-red-500">${alpha}</span><span class="lbl">Alpha</span></div>
+<div class="stat-pill"><span class="val text-muted">${n_a}</span><span class="lbl">N/A</span></div>
+</div>
+<div class="progress-container">
+<span class="progress-label">Performance Score</span>
+<span class="progress-val">${score}%</span>
+</div>
+</div>
+`;
+});
+} catch (e) {
+console.error("Fetch Error:", e);
+} finally {
+loading.classList.add('hidden');
+}
+}
+window.loadStats = loadStats;
+window.onload = loadStats;
+</script>
+</body>
+</html>

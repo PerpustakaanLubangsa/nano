@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Label - Snow Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-deep: #f8fafc;
+            --bg-card: #ffffff;
+            --accent: #3b82f6;
+            --accent-light: #dbeafe;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+        }
+
+        body { 
+            background-color: var(--bg-deep); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-size: 14px;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h1, h2 { font-family: 'Cinzel', serif; }
+
+        .search-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border: 1px solid var(--border);
+        }
+
+        .label-spine {
+            width: 100%;
+            height: 3.5cm;
+            border: 1px solid #000;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .label-header {
+            background-color: #f1f5f9;
+            border-bottom: 0.5pt solid #000;
+            font-size: 8px;
+            text-align: center;
+            font-weight: 800;
+            padding: 3px;
+            text-transform: uppercase;
+        }
+
+        .label-content {
+            padding: 4px;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .label-title-top {
+            font-size: 7px;
+            font-weight: 600;
+            line-height: 1.1;
+            text-transform: uppercase;
+            border-bottom: 0.2pt solid #eee;
+            padding-bottom: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: #000;
+        }
+
+        .call-number-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1px;
+        }
+
+        .call-number-line {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.1;
+            text-transform: uppercase;
+            color: #000;
+        }
+
+        .label-code-bottom {
+            font-size: 8px;
+            font-weight: 400;
+            color: #000;
+            border-top: 0.2pt solid #eee;
+            padding-top: 2px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; background-image: none !important; margin: 0; padding: 0; }
+            #printArea { 
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5mm; 
+                padding: 10mm;
+            }
+            .label-spine { 
+                page-break-inside: avoid; 
+                border: 0.5pt solid #000 !important;
+            }
+        }
+
+        .custom-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .exemplar-badge {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+            user-select: none;
+        }
+
+        .exemplar-badge.selected {
+            background-color: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .loader {
+            width: 20px; height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased p-4 md:p-12">
+
+    <div class="max-w-6xl mx-auto no-print">
+        <header class="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tighter text-blue-600 uppercase">Label Punggung</h1>
+                <p class="text-dim text-[10px] mt-2 tracking-[0.4em] uppercase font-bold">Snow Edition • Lubangsa Library</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="statusLoader" class="loader"></div>
+                <button id="printBtn" onclick="window.print()" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl shadow-lg shadow-blue-100 disabled:opacity-20 transition-all uppercase text-xs tracking-widest">
+                    Cetak (<span id="selectedCount">0</span>) Label
+                </button>
+            </div>
+        </header>
+
+        <div class="search-gradient p-2 rounded-2xl mb-8 flex items-center shadow-sm">
+            <div class="pl-4 text-blue-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input type="text" id="searchInput" placeholder="Cari judul atau eksemplar..." class="w-full p-4 bg-transparent outline-none font-medium text-slate-700">
+        </div>
+
+        <div id="biblioList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]"></div>
+
+        <div class="mt-12 flex flex-col items-center gap-6 pb-20">
+            <div id="paginationContainer" class="flex gap-2"></div>
+            <p id="resultInfo" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></p>
+        </div>
+    </div>
+
+    <div id="printArea" class="hidden"></div>
+
+    <script>
+        const SB_URL = 'https://heosadzwckwmbjhxydtm.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhlb3NhZHp3Y2t3bWJqaHh5ZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMDk5MDMsImV4cCI6MjA4Mjc4NTkwM30.4tUQQNsczDqX6xuzvq8C5JncxvX_RAdwr95xMaWIvhY';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let localData = [];
+        let selectedItems = [];
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let searchQuery = '';
+
+        async function loadData(page = 1) {
+            currentPage = page;
+            document.getElementById('statusLoader').style.display = 'block';
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            let query = client.from('biblio').select('*, ekslempar(*)', { count: 'exact' }).order('updated_at', { ascending: false });
+            if (searchQuery) query = query.ilike('judul', `%${searchQuery}%`);
+
+            const { data, count, error } = await query.range(from, to);
+            document.getElementById('statusLoader').style.display = 'none';
+
+            if (!error) {
+                localData = data;
+                renderUI(count);
+            }
+        }
+
+        function renderUI(totalCount) {
+            const container = document.getElementById('biblioList');
+            if (localData.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-20 opacity-30 uppercase font-bold tracking-widest">Tidak ada data</div>`;
+                return;
+            }
+
+            container.innerHTML = localData.map(b => {
+                const eks = b.ekslempar || [];
+                return `
+                    <div class="custom-card p-6 rounded-2xl shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-800 leading-tight line-clamp-2 h-10 text-sm">${b.judul}</h3>
+                            <div class="flex justify-between items-center mt-3">
+                                <p class="text-[9px] text-blue-500 font-extrabold uppercase tracking-widest">${eks.length} Item</p>
+                                <button onclick="selectAllInBiblio('${b.id}')" class="text-[9px] font-bold text-slate-400 hover:text-blue-600 uppercase">Pilih Semua</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
+                            ${eks.map(e => {
+                                const isSelected = selectedItems.some(item => item.id === e.id);
+                                return `<div onclick="toggleLabel('${e.id}', '${b.id}')" class="exemplar-badge px-3 py-2 rounded-lg text-[10px] font-bold ${isSelected ? 'selected' : 'bg-slate-50 text-slate-600'}">${e.kode}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            renderPagination(totalCount);
+            renderPrintArea();
+        }
+
+        function toggleLabel(eksId, bibId) {
+            const bib = localData.find(x => x.id === bibId);
+            const eks = bib.ekslempar.find(e => e.id === eksId);
+            const index = selectedItems.findIndex(item => item.id === eksId);
+            if (index > -1) selectedItems.splice(index, 1);
+            else selectedItems.push({ id: eks.id, kode: eks.kode, judul: bib.judul, nomer: eks.nomor_panggil || '000' });
+            updateStats();
+            renderUI();
+        }
+
+        function selectAllInBiblio(bibId) {
+            const bib = localData.find(x => x.id === bibId);
+            bib.ekslempar.forEach(eks => {
+                if (!selectedItems.some(item => item.id === eks.id)) {
+                    selectedItems.push({ id: eks.id, kode: eks.kode, judul: bib.judul, nomer: eks.nomor_panggil || '000' });
+                }
+            });
+            updateStats();
+            renderUI();
+        }
+
+        function updateStats() {
+            document.getElementById('selectedCount').innerText = selectedItems.length;
+            document.getElementById('printBtn').disabled = selectedItems.length === 0;
+        }
+
+        function renderPrintArea() {
+            const area = document.getElementById('printArea');
+            area.innerHTML = selectedItems.map(item => `
+                <div class="label-spine">
+                    <div class="label-header">PERPUSTAKAAN LUBANGSA</div>
+                    <div class="label-content">
+                        <div class="label-title-top">${item.judul}</div>
+                        <div class="call-number-group">
+                            ${item.nomer.split(' ').map(n => `<div class="call-number-line">${n}</div>`).join('')}
+                        </div>
+                        <div class="label-code-bottom">${item.kode}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / itemsPerPage);
+            const container = document.getElementById('paginationContainer');
+            document.getElementById('resultInfo').innerText = `Menampilkan ${localData.length} dari ${total} buku`;
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button onclick="loadData(${i})" class="w-10 h-10 rounded-lg border ${i === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200'} font-bold text-xs">${i}</button>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        let debounceTimer;
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { searchQuery = e.target.value; loadData(1); }, 500);
+        });
+
+        window.onload = () => loadData();
+    </script>
+</body>
+</html>

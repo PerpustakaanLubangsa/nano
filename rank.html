@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Peringkat - Snowy Digital Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-page: #f8f9fa;
+--bg-card: #ffffff;
+--text-primary: #202124;
+--text-secondary: #5f6368;
+--border-color: #dadce0;
+--accent: #1a73e8;
+--surface: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-page: #000000;
+--bg-card: #000000;
+--text-primary: #e8eaed;
+--text-secondary: #9aa0a6;
+--border-color: #333333;
+--accent: #8ab4f8;
+--surface: #121212;
+}
+}
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Plus Jakarta Sans', sans-serif;
+scrollbar-width: none;
+-webkit-tap-highlight-color: transparent;
+}
+*::-webkit-scrollbar { display: none; }
+html, body {
+width: 100%;
+overflow-x: hidden;
+background-color: var(--bg-page);
+color: var(--text-primary);
+min-height: 100vh;
+}
+.google-search-bar {
+background: var(--surface);
+border: 1px solid var(--border-color);
+border-radius: 24px;
+transition: all 0.2s;
+width: 100%;
+}
+.google-search-bar:focus-within {
+box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+border-color: transparent;
+}
+.member-item {
+border-bottom: 1px solid var(--border-color);
+transition: background 0.2s;
+cursor: pointer;
+width: 100%;
+display: flex;
+align-items: center;
+}
+.member-item:hover {
+background-color: rgba(138, 180, 248, 0.05);
+}
+.rank-badge {
+width: 44px;
+height: 44px;
+object-fit: contain;
+flex-shrink: 0;
+}
+.skeleton {
+background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-page) 50%, var(--border-color) 75%);
+background-size: 200% 100%;
+animation: loading 1.5s infinite;
+border-radius: 8px;
+}
+@keyframes loading {
+0% { background-position: 200% 0; }
+100% { background-position: -200% 0; }
+}
+.modal-overlay {
+position: fixed; inset: 0;
+background: rgba(0,0,0,0.85);
+display: none;
+align-items: center; justify-content: center;
+z-index: 1000;
+backdrop-filter: blur(12px);
+padding: 20px;
+}
+.modal-content {
+background: var(--surface);
+border-radius: 28px;
+width: 100%; max-width: 360px;
+max-height: 85vh;
+overflow-y: auto;
+border: 1px solid var(--border-color);
+position: relative;
+transform: scale(0.7);
+opacity: 0;
+}
+.modal-overlay.active {
+display: flex;
+animation: fadeInBg 0.4s forwards;
+}
+.modal-overlay.active .modal-content {
+animation: legendOpen 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes fadeInBg {
+from { background: rgba(0,0,0,0); }
+to { background: rgba(0,0,0,0.85); }
+}
+@keyframes legendOpen {
+0% {
+transform: scale(0.5) translateY(100px);
+opacity: 0;
+filter: brightness(2) blur(10px);
+}
+50% {
+filter: brightness(1.5) blur(0px);
+}
+100% {
+transform: scale(1) translateY(0);
+opacity: 1;
+filter: brightness(1) blur(0px);
+box-shadow: 0 0 30px rgba(138, 180, 248, 0.3);
+}
+}
+.info-chip {
+background: var(--bg-page);
+border: 1px solid var(--border-color);
+padding: 10px;
+border-radius: 16px;
+text-align: center;
+}
+.truncate-text {
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.legend-glow {
+animation: glowPulse 2s infinite;
+}
+@keyframes glowPulse {
+0% { filter: drop-shadow(0 0 5px var(--accent)); }
+50% { filter: drop-shadow(0 0 20px var(--accent)); }
+100% { filter: drop-shadow(0 0 5px var(--accent)); }
+}
+</style>
+</head>
+<body class="pb-10">
+<div class="sticky top-0 z-50 px-4 pt-4 pb-2 bg-[var(--bg-page)] shadow-sm">
+<div class="max-w-2xl mx-auto">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-4">
+<button onclick="window.location.href='form.html'" class="text-[var(--text-secondary)]">
+<i class="fa-solid fa-arrow-left text-xl"></i>
+</button>
+<h1 class="text-lg font-bold">Peringkat Pembaca</h1>
+</div>
+<button onclick="openInfo()" class="text-[var(--text-secondary)]"><i class="fa-solid fa-circle-info text-xl"></i></button>
+</div>
+<div class="google-search-bar flex items-center px-4 py-2 mb-2">
+<i class="fa-solid fa-magnifying-glass text-[var(--text-secondary)] mr-3"></i>
+<input type="text" id="searchInput" placeholder="Cari nama..." class="bg-transparent border-none outline-none w-full text-sm py-1">
+</div>
+</div>
+</div>
+<div class="max-w-2xl mx-auto px-4 overflow-hidden">
+<div id="listContainer"></div>
+<div id="loadMoreTrigger" class="h-24 flex items-center justify-center">
+<div id="spinner" class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin text-[var(--accent)] text-2xl"></i></div>
+</div>
+</div>
+<div id="infoModal" class="modal-overlay" onclick="closeInfo(event)">
+<div class="modal-content p-6" onclick="event.stopPropagation()">
+<h2 class="text-base font-extrabold mb-4 uppercase tracking-tight text-center">Ketentuan Rank</h2>
+<div class="space-y-1 bg-[var(--bg-page)] rounded-2xl p-1 border border-[var(--border-color)] mb-6" id="rankRules"></div>
+<button onclick="closeInfo(null)" class="w-full bg-[var(--accent)] text-white py-4 rounded-full font-bold text-sm tracking-widest">SAYA MENGERTI</button>
+</div>
+</div>
+<div id="detailModal" class="modal-overlay" onclick="closeDetail(event)">
+<div class="modal-content p-6" onclick="event.stopPropagation()">
+<div class="text-center flex flex-col items-center">
+<img id="mRankImg" src="" class="w-24 h-24 mb-4 legend-glow">
+<div id="mRankLabel" class="text-[var(--accent)] text-[10px] font-black tracking-[0.2em] uppercase mb-1"></div>
+<h2 id="mNama" class="text-xl font-bold mb-1 uppercase leading-tight truncate-text w-full"></h2>
+<p id="mIdentitas" class="text-[var(--text-secondary)] text-[10px] font-bold uppercase tracking-widest mb-6"></p>
+<div class="grid grid-cols-2 gap-2 w-full mb-6">
+<div class="info-chip"><p class="text-[8px] uppercase font-bold text-[var(--text-secondary)]">Kunjungan</p><p id="mKunjungan" class="text-lg font-extrabold"></p></div>
+<div class="info-chip"><p class="text-[8px] uppercase font-bold text-[var(--text-secondary)]">Aktivitas</p><p id="mAktif" class="text-lg font-extrabold"></p></div>
+</div>
+<div class="w-full text-left">
+<p class="text-[10px] font-bold uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-book-open text-[var(--accent)]"></i> Riwayat Koleksi</p>
+<div id="mHistoriList" class="text-[11px] italic text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-page)] p-4 rounded-2xl border border-[var(--border-color)] max-h-32 overflow-y-auto"></div>
+</div>
+</div>
+</div>
+</div>
+<script type="module">
+import { supabase } from './supa/supa.js';
+const rankData = [
+{ n: 'Immortal', min: 100, f: 'Rumah kedua.' },
+{ n: 'Glory', min: 80, f: 'Literasi luar biasa.' },
+{ n: 'Honor', min: 60, f: 'Pembaca elit.' },
+{ n: 'Mythic', min: 50, f: 'Sangat setia.' },
+{ n: 'Legend', min: 40, f: 'Akrab rak buku.' },
+{ n: 'Epic', min: 30, f: 'Setiap minggu.' },
+{ n: 'Grandmaster', min: 20, f: 'Sudah rutinitas.' },
+{ n: 'Master', min: 10, f: 'Reguler.' },
+{ n: 'Elite', min: 5, f: 'Mulai tertarik.' },
+{ n: 'Warrior', min: 0, f: 'Pendatang baru.' }
+];
+let rawData = [];
+let displayData = [];
+let page = 0;
+const perPage = 15;
+let searchStr = "";
+function getRank(count) {
+const r = rankData.find(x => count >= x.min) || rankData[rankData.length - 1];
+return { name: r.n, img: `image/rank/${r.n}.jpg` };
+}
+async function loadInitialData() {
+const { data, error } = await supabase.from('data_pengunjung').select('*');
+if (error) return;
+const currentYear = new Date().getFullYear();
+const filtered = data.filter(d => new Date(d.tanggal_kunjungan || d.created_at).getFullYear() === currentYear);
+const map = new Map();
+filtered.forEach(d => {
+if (!map.has(d.nama)) {
+map.set(d.nama, { nama: d.nama, kamar: d.kamar, jenjang: d.jenjang, total_kunjungan: 0, total_baca: 0, total_pinjam: 0, history: [] });
+}
+const u = map.get(d.nama);
+u.total_kunjungan++;
+if (d.aktivitas === 'Baca') u.total_baca++;
+if (d.aktivitas === 'Pinjam') u.total_pinjam++;
+if (d.judul_buku) u.history.push(d.judul_buku);
+});
+rawData = Array.from(map.values()).sort((a, b) => b.total_kunjungan - a.total_kunjungan);
+displayData = [...rawData];
+document.getElementById('spinner').style.display = 'none';
+renderPage();
+}
+function renderPage() {
+const container = document.getElementById('listContainer');
+const slice = displayData.filter(d => d.nama.toLowerCase().includes(searchStr.toLowerCase())).slice(0, (page + 1) * perPage);
+container.innerHTML = slice.map((u, i) => {
+const r = getRank(u.total_kunjungan);
+return `
+<div class="p-4 gap-4 member-item" onclick='openDetail(${JSON.stringify(u).replace(/'/g, "&apos;")})'>
+<div class="text-xs font-bold text-[var(--text-secondary)] w-5 flex-shrink-0">${i + 1}</div>
+<img src="${r.img}" class="rank-badge" onerror="this.src='image/rank/Warrior.jpg'">
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-sm uppercase truncate-text">${u.nama}</h3>
+<p class="text-[9px] font-bold text-[var(--text-secondary)] uppercase truncate-text">${u.jenjang || '-'} • ${u.kamar || '-'}</p>
+</div>
+<div class="text-right flex-shrink-0">
+<p class="text-sm font-black text-[var(--accent)]">${u.total_kunjungan}</p>
+<p class="text-[7px] font-black uppercase text-[var(--text-secondary)]">Visit</p>
+</div>
+</div>`;
+}).join('');
+document.getElementById('loadMoreTrigger').style.display = slice.length >= displayData.length ? 'none' : 'flex';
+}
+window.openDetail = (u) => {
+const r = getRank(u.total_kunjungan);
+document.getElementById('mRankImg').src = r.img;
+document.getElementById('mRankLabel').innerText = r.name;
+document.getElementById('mNama').innerText = u.nama;
+document.getElementById('mIdentitas').innerText = `${u.jenjang || '-'} • ${u.kamar || '-'}`;
+document.getElementById('mKunjungan').innerText = u.total_kunjungan;
+document.getElementById('mAktif').innerText = `${u.total_baca}B / ${u.total_pinjam}P`;
+const uniqueBooks = [...new Set(u.history)].reverse();
+document.getElementById('mHistoriList').innerText = uniqueBooks.join(', ') || 'Kosong.';
+document.getElementById('detailModal').classList.add('active');
+};
+window.closeDetail = () => document.getElementById('detailModal').classList.remove('active');
+window.openInfo = () => {
+const rules = document.getElementById('rankRules');
+rules.innerHTML = rankData.map(r => `
+<div class="flex justify-between items-center p-3 border-b border-[var(--border-color)] last:border-none">
+<div class="min-w-0"><p class="text-[10px] font-black uppercase">${r.n}</p><p class="text-[8px] text-[var(--text-secondary)] uppercase truncate-text">${r.f}</p></div>
+<p class="text-[10px] font-black text-[var(--accent)] ml-2">≥${r.min}</p>
+</div>`).join('');
+document.getElementById('infoModal').classList.add('active');
+};
+window.closeInfo = () => document.getElementById('infoModal').classList.remove('active');
+document.getElementById('searchInput').oninput = (e) => {
+searchStr = e.target.value;
+page = 0;
+renderPage();
+};
+const observer = new IntersectionObserver(entries => {
+if (entries[0].isIntersecting && (page + 1) * perPage < displayData.length) { page++; renderPage(); }
+}, { threshold: 0.1 });
+observer.observe(document.getElementById('loadMoreTrigger'));
+window.onload = () => { openInfo(); loadInitialData(); };
+</script>
+</body>
+</html>

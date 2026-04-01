@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibliografi | Perpustakaan Lubangsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-main: #1f1f1f;
+            --text-muted: #5f6368;
+            --accent: #1a73e8;
+            --border: #e2e8f0;
+            --skeleton-bg: #eeeeee;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #000000;
+                --bg-card: #111111;
+                --text-main: #e3e3e3;
+                --text-muted: #9aa0a6;
+                --accent: #8ab4f8;
+                --border: #1e1f20;
+                --skeleton-bg: #222222;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; border: none; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: var(--bg-main);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-content {
+            max-width: 800px;
+            width: 100%;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .search-bar {
+            flex: 1;
+            background: var(--bg-card);
+            border-radius: 100px; 
+            padding: 4px 6px 4px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-bar:focus-within { 
+            border-color: var(--accent) !important; 
+            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1); 
+        }
+
+        .search-bar input {
+            background: transparent;
+            color: var(--text-main);
+            width: 100%;
+            font-size: 14px;
+            outline: none;
+            height: 36px;
+        }
+
+        .btn-search-trigger {
+            background: var(--accent);
+            color: white;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-search-trigger:active { transform: scale(0.9); }
+
+        .suggestion-box {
+            position: absolute;
+            top: 110%; left: 20px; right: 72px;
+            background: var(--bg-card);
+            border: 1px solid var(--border) !important;
+            border-radius: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1001;
+            display: none;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .suggestion-item:hover { background: var(--bg-main); color: var(--accent); }
+
+        .btn-wa-add {
+            width: 44px; height: 44px;
+            background: var(--accent);
+            color: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            width: 100%;
+            padding: 100px 20px 40px 20px;
+        }
+
+        .list-item {
+            display: flex;
+            background: var(--bg-card);
+            margin-bottom: 12px;
+            height: 140px;
+            cursor: pointer;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border) !important;
+        }
+
+        .list-item:hover { 
+            transform: scale(1.01); 
+            border-color: var(--accent) !important; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .sampul-box {
+            width: 95px; height: 140px;
+            flex-shrink: 0;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sampul-box img { width: 100%; height: 100%; object-fit: cover; }
+        .sampul-box i { font-size: 32px; color: var(--text-muted); opacity: 0.3; }
+
+        .item-info { flex: 1; padding: 18px; display: flex; flex-direction: column; justify-content: center; }
+        .item-info h3 { 
+            font-size: 15px; font-weight: 700; line-height: 1.4; 
+            margin-bottom: 6px; color: var(--text-main);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
+        }
+        .item-info p { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.2px; }
+
+        .skeleton-wrapper { display: none; }
+        .skeleton-wrapper.active { display: block; }
+        .skeleton { 
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--skeleton-bg) 50%, var(--bg-card) 75%); 
+            background-size: 200% 100%; 
+            animation: shimmer 1.5s infinite linear; 
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        #sentinel { height: 50px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Cari buku atau pengarang..." autocomplete="off">
+            <div class="btn-search-trigger" id="btnSearch">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+        </div>
+        <div id="suggestionBox" class="suggestion-box"></div>
+        <div id="btnAdd" class="btn-wa-add" title="Tambah Buku Baru">
+            <i class="fa-solid fa-plus"></i>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <div id="dataList"></div>
+    
+    <div id="skeleton" class="skeleton-wrapper">
+        <div class="list-item">
+            <div class="sampul-box skeleton"></div>
+            <div class="item-info">
+                <div class="skeleton" style="height:14px; width:85%; margin-bottom:12px; border-radius:4px;"></div>
+                <div class="skeleton" style="height:10px; width:40%; border-radius:4px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="sentinel"></div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // 1. PROTEKSI HALAMAN
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.replace('login.html');
+    }
+
+    const VER = 'v16_rpc_backend';
+    let page = 0;
+    const perPage = 15;
+    let hasMore = true;
+    let isLoading = false;
+    let queryText = '';
+    let searchTimeout;
+
+    // Cache Management
+    let suggestionCache = JSON.parse(localStorage.getItem(`biblio_suggest_${VER}`)) || [];
+    let dataCache = JSON.parse(localStorage.getItem(`biblio_data_${VER}`)) || [];
+
+    const input = document.getElementById('searchInput');
+    const sBox = document.getElementById('suggestionBox');
+    const btnSearch = document.getElementById('btnSearch');
+    const btnAdd = document.getElementById('btnAdd');
+
+    // --- MODIFIKASI: LOGIKA TOMBOL TAMBAH BARU (SESSION STORAGE) ---
+    btnAdd.onclick = () => {
+        // Pastikan ID lama terhapus agar Form di Editor terbuka kosong
+        sessionStorage.removeItem('editBiblioId');
+        window.location.href = 'entri-biblio.html';
+    };
+
+    // Realtime Sync
+    async function initRealtime() {
+        supabase.channel('biblio-realtime')
+        .on('postgres_changes', { event: '*', table: 'biblio' }, (payload) => {
+            if (['INSERT', 'DELETE', 'UPDATE'].includes(payload.eventType)) {
+                localStorage.removeItem(`biblio_data_${VER}`);
+            }
+        }).subscribe();
+    }
+
+    function saveCaches() {
+        const uniqueSuggest = [...new Set(suggestionCache.filter(t => t))].slice(0, 100);
+        localStorage.setItem(`biblio_suggest_${VER}`, JSON.stringify(uniqueSuggest));
+        localStorage.setItem(`biblio_data_${VER}`, JSON.stringify(dataCache));
+    }
+
+    // --- RENDER DATA KE LIST ---
+    function appendItem(b, prepend = false) {
+        const list = document.getElementById('dataList');
+        if (document.getElementById(`item-${b.id}`)) return;
+
+        const div = document.createElement('div');
+        div.id = `item-${b.id}`;
+        div.className = 'list-item';
+        
+        // --- MODIFIKASI: LOGIKA KLIK ITEM (SESSION STORAGE) ---
+        div.onclick = () => {
+            // 1. Hapus ID lama jika ada untuk mencegah tabrakan data
+            sessionStorage.removeItem('editBiblioId');
+            // 2. Simpan ID buku yang dipilih
+            sessionStorage.setItem('editBiblioId', b.id);
+            // 3. Pindah ke halaman editor tanpa parameter ID di URL
+            window.location.href = 'entri-biblio.html';
+        };
+
+        const imgHtml = b.sampul_url 
+            ? `<img src="${b.sampul_url}" crossorigin="anonymous" loading="lazy">` 
+            : `<i class="fa-solid fa-book"></i>`;
+
+        div.innerHTML = `
+            <div class="sampul-box">${imgHtml}</div>
+            <div class="item-info">
+                <h3>${b.judul}</h3>
+                <p>${b.penulis || 'Tanpa Pengarang'}</p>
+            </div>
+        `;
+
+        if (prepend) list.prepend(div); else list.appendChild(div);
+    }
+
+    async function loadData(reset = false) {
+        if (isLoading || (!hasMore && !reset)) return;
+        isLoading = true;
+        
+        if (reset) { 
+            page = 0; hasMore = true; 
+            document.getElementById('dataList').innerHTML = '';
+        }
+
+        if (!queryText && page === 0 && dataCache.length > 0 && !reset) {
+            dataCache.forEach(b => appendItem(b));
+        }
+
+        document.getElementById('skeleton').classList.add('active');
+
+        try {
+            const { data, error } = await supabase.rpc('get_bibliografi', {
+                p_search: queryText,
+                p_limit: perPage,
+                p_offset: page * perPage
+            });
+
+            if (error) throw error;
+            if (!data || data.length < perPage) hasMore = false;
+            
+            data?.forEach(b => {
+                appendItem(b);
+                if (!queryText && page === 0) {
+                    if (!dataCache.find(d => d.id === b.id)) dataCache.push(b);
+                }
+            });
+
+            if (!queryText && page === 0) saveCaches();
+            page++;
+        } catch (e) {
+            console.error("RPC Error:", e);
+        } finally { 
+            isLoading = false; 
+            document.getElementById('skeleton').classList.remove('active'); 
+        }
+    }
+
+    // --- SEARCH & SUGGESTIONS ---
+    input.addEventListener('input', () => {
+        const val = input.value.trim();
+        if (!val) { sBox.style.display = 'none'; return; }
+
+        const localMatches = suggestionCache.filter(t => t.toLowerCase().includes(val.toLowerCase())).slice(0, 10);
+        if (localMatches.length > 0) showSuggestions(localMatches);
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            const { data } = await supabase.rpc('search_biblio_titles', { search_text: val });
+            if (data) {
+                const titles = data.map(d => d.judul);
+                const combined = [...new Set([...localMatches, ...titles])].slice(0, 15);
+                showSuggestions(combined);
+                
+                titles.forEach(t => {
+                    if(!suggestionCache.includes(t)) suggestionCache.push(t);
+                });
+                saveCaches();
+            }
+        }, 400);
+    });
+
+    function showSuggestions(list) {
+        sBox.innerHTML = '';
+        if (list.length === 0) { sBox.style.display = 'none'; return; }
+        sBox.style.display = 'block';
+        list.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            div.textContent = m;
+            div.onclick = () => { 
+                input.value = m; 
+                queryText = m; 
+                sBox.style.display = 'none'; 
+                loadData(true); 
+            };
+            sBox.appendChild(div);
+        });
+    }
+
+    const performSearch = () => { 
+        queryText = input.value.trim(); 
+        sBox.style.display = 'none'; 
+        loadData(true); 
+    };
+
+    btnSearch.onclick = performSearch;
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.header-content')) sBox.style.display = 'none'; });
+
+    // --- INFINITE SCROLL ---
+    const observer = new IntersectionObserver(entries => { 
+        if (entries[0].isIntersecting && hasMore && !isLoading) loadData(); 
+    }, { threshold: 0.1 });
+    observer.observe(document.getElementById('sentinel'));
+
+    window.onload = () => { 
+        loadData(); 
+        initRealtime(); 
+    };
+</script>
+</body>
+</html>

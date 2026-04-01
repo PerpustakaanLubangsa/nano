@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Scanner | Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #000000;
+            --bg-card: #0a0a0a;
+            --text-main: #e3e3e3;
+            --text-muted: #9aa0a6;
+            --border-color: #1a1a1a;
+            --google-blue: #0a84ff;
+        }
+
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Toast UI */
+        #toastContainer { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; pointer-events: none; }
+        .toast-elegant { 
+            animation: slideUp 0.3s ease-out forwards; 
+            pointer-events: auto; 
+            background: #1e1f20;
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Table Styling */
+        .excel-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .excel-table th { 
+            background: #161618; 
+            color: var(--text-muted); 
+            text-align: left; 
+            padding: 14px; 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0;
+        }
+        .excel-table td { 
+            padding: 14px; 
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .excel-table tr:hover td { background: #111111; }
+
+        .impact-row { border-left: 3px solid var(--google-blue) !important; animation: highlight 0.5s ease; }
+        @keyframes highlight { from { background: #1a2632; } to { background: transparent; } }
+
+        /* Input Styling */
+        input { 
+            background: #161618 !important; 
+            color: white !important; 
+            border: 1px solid var(--border-color) !important; 
+        }
+        input:focus { border-color: var(--google-blue) !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4">
+
+<div id="toastContainer"></div>
+
+<div class="max-w-4xl mx-auto flex flex-col h-full">
+    
+    <div class="relative mb-4 mt-2">
+        <div class="absolute left-5 top-1/2 -translate-y-1/2">
+            <i class="fa-solid fa-barcode text-blue-500"></i>
+        </div>
+        <input type="text" id="scanInput" autocomplete="off" 
+            class="w-full pl-12 pr-4 py-5 rounded-2xl outline-none font-mono text-xl transition-all" 
+            placeholder="Scan barcode buku untuk audit...">
+        <div class="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
+            <div id="statusIndicator" class="w-2 h-2 rounded-full bg-zinc-700 animate-pulse"></div>
+            <kbd class="bg-zinc-800 px-2 py-1 rounded text-[10px] text-zinc-500 font-mono">ENTER</kbd>
+        </div>
+    </div>
+
+    <div class="flex-grow bg-[#0a0a0a] rounded-2xl border border-[#1a1a1a] overflow-hidden flex flex-col shadow-2xl">
+        <div class="overflow-y-auto h-full">
+            <table class="excel-table">
+                <thead>
+                    <tr>
+                        <th width="80">Rak</th>
+                        <th>Judul Buku</th>
+                        <th width="200">Penulis</th>
+                        <th width="150">Barcode</th>
+                    </tr>
+                </thead>
+                <tbody id="auditTable">
+                    <tr id="emptyMsg">
+                        <td colspan="4" class="p-20 text-center text-zinc-700 italic font-bold uppercase tracking-widest text-xs">
+                            Siap melakukan pemindaian...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const inputField = document.getElementById('scanInput');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const adminName = sessionStorage.getItem('adminUser');
+    let scannedLogs = [];
+    let typingTimer;
+
+    /**
+     * Menampilkan notifikasi ala Google Dark UI
+     */
+    function showToast(msg, color = 'blue') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-elegant flex items-center gap-3`;
+        
+        const icons = {
+            blue: 'fa-circle-info text-blue-500',
+            red: 'fa-circle-exclamation text-red-500',
+            yellow: 'fa-triangle-exclamation text-yellow-500'
+        };
+        
+        toast.innerHTML = `
+            <i class="fa-solid ${icons[color] || icons.blue}"></i>
+            <span class="text-xs font-bold uppercase tracking-wide">${msg}</span>
+        `;
+        container.prepend(toast);
+        setTimeout(() => { 
+            toast.style.opacity = '0'; 
+            setTimeout(() => toast.remove(), 400); 
+        }, 3000);
+    }
+
+    /**
+     * Merender ulang isi tabel berdasarkan array scannedLogs
+     */
+    function renderTable(isNew = false) {
+        const tbody = document.getElementById('auditTable');
+        if (scannedLogs.length === 0) return;
+
+        tbody.innerHTML = scannedLogs.map((log, index) => `
+            <tr class="${(isNew && index === 0) ? 'impact-row' : ''}">
+                <td class="font-mono text-blue-500 font-bold">${log.lokasi_rak || '-'}</td>
+                <td class="font-bold uppercase text-[11px] tracking-tight leading-tight">${log.judul_buku}</td>
+                <td class="text-zinc-500 text-[11px] truncate max-w-[200px]">${log.penulis || '-'}</td>
+                <td class="font-mono text-zinc-400 text-xs">${log.kode_barcode}</td>
+            </tr>
+        `).join('');
+    }
+
+    /**
+     * Memproses Barcode menggunakan RPC Supabase
+     */
+    async function processBarcode() {
+        const barcode = inputField.value.trim().toUpperCase();
+        if (!barcode || barcode.length < 3) return;
+        
+        // Reset input segera setelah dibaca
+        inputField.value = '';
+        
+        // Memanggil fungsi RPC di Database
+        const { data, error } = await supabase.rpc('proses_audit_scan', {
+            barcode_input: barcode,
+            p_device_id: window.navigator.userAgent.substring(0, 50) // Ambil info device singkat
+        });
+
+        if (error) {
+            showToast("Kesalahan sistem: " + error.message, "red");
+            return;
+        }
+
+        if (data.success) {
+            // Jika berhasil, tambahkan data terbaru ke daftar
+            scannedLogs.unshift(data.data);
+            
+            // Batasi tampilan hanya 25 data terbaru untuk performa
+            if (scannedLogs.length > 25) scannedLogs.pop();
+            
+            renderTable(true);
+            showToast("Berhasil: " + data.data.judul_buku, "blue");
+        } else {
+            // Jika gagal (Barcode tidak ada atau sudah di-scan sebelumnya)
+            const color = data.message.includes('sudah') ? 'yellow' : 'red';
+            showToast(data.message, color);
+        }
+    }
+
+    // Event Listeners
+    inputField.addEventListener('keyup', (e) => {
+        clearTimeout(typingTimer);
+        if (e.key === 'Enter') {
+            processBarcode();
+        } else {
+            // Fitur auto-scan: proses otomatis jika user berhenti mengetik selama 400ms
+            typingTimer = setTimeout(processBarcode, 400);
+        }
+    });
+
+    // Selalu pastikan input fokus jika user mengklik di mana saja di layar
+    document.addEventListener('click', () => inputField.focus());
+
+    // Inisialisasi saat halaman dimuat
+    window.onload = async () => {
+        inputField.focus();
+        
+        // Ambil riwayat audit terbaru secara global
+        const { data: history, error } = await supabase
+            .from('log_audit')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(15);
+            
+        if (!error && history && history.length > 0) {
+            scannedLogs = history;
+            renderTable();
+        }
+        
+        // Tandai status sistem aktif (hijau)
+        statusIndicator.classList.replace('bg-zinc-700', 'bg-green-500');
+    };
+</script>
+
+</body>
+</html>

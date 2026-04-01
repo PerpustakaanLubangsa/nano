@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Bulanan | Perpustakaan Lubangsa</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-primary: #1f1f1f;
+            --text-secondary: #444746;
+            --accent: #1a73e8;
+            --border: #e3e3e3;
+            --radius: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-page: #000000;
+                --bg-card: #131314;
+                --text-primary: #e3e3e3;
+                --text-secondary: #c4c7c5;
+                --accent: #8ab4f8;
+                --border: #2c2c2e;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        html, body { height: 100%; overflow: hidden; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 30px;
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .year-label { font-size: 12px; color: var(--accent); font-weight: 600; background: var(--accent)1a; padding: 4px 10px; border-radius: 20px; }
+
+        .chart-container { flex: 1; min-height: 0; position: relative; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .stat-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .stat-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+        .stat-value { font-size: 28px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px; }
+
+        .skeleton {
+            position: absolute; inset: 0; background-color: var(--bg-card);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius); transition: opacity 0.3s;
+        }
+        .loader-spin { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        footer { padding: 16px 0; font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <section class="card">
+        <div id="loader" class="skeleton"><div class="loader-spin"></div></div>
+        <div class="card-header">
+            <span class="card-title">Performa Kunjungan Tahunan</span>
+            <span class="year-label" id="currentYear">2026</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </section>
+
+    <div class="stats-grid">
+        <div class="stat-box">
+            <p class="stat-label">Hadir Bulan Ini</p>
+            <p id="valMonth" class="stat-value">0</p>
+        </div>
+        <div class="stat-box">
+            <p class="stat-label">Total Pinjam</p>
+            <p id="valPinjam" class="stat-value">0</p>
+        </div>
+        <div class="stat-box">
+            <p class="stat-label">Koleksi</p>
+            <p id="valKoleksi" class="stat-value">0</p>
+        </div>
+    </div>
+
+    <footer>
+        <span>&copy; 2026 Perpustakaan Lubangsa</span>
+        <span>Sistem berbasis RPC Intelligence V3</span>
+    </footer>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // Proteksi sesi sederhana
+    if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.replace('login.html');
+
+    const style = getComputedStyle(document.documentElement);
+    const accentColor = style.getPropertyValue('--accent').trim();
+    const textSecondary = style.getPropertyValue('--text-secondary').trim();
+
+    async function initializeData() {
+        try {
+            const currentYear = new Date().getFullYear();
+            document.getElementById('currentYear').innerText = currentYear;
+
+            // Memanggil RPC: Logika tabel dan kolom sepenuhnya terabstraksi di Database View
+            const [resMonthly, resSummary] = await Promise.all([
+                supabase.rpc('get_monthly_library_stats', { target_year: currentYear }),
+                supabase.rpc('get_library_summary_stats')
+            ]);
+
+            // 1. Olah Data Bulanan untuk Chart
+            const monthlyData = new Array(12).fill(0);
+            if (resMonthly.data) {
+                resMonthly.data.forEach(item => {
+                    monthlyData[item.bulan - 1] = item.total_kunjungan;
+                });
+            }
+
+            // 2. Update UI Statistik dari hasil View JSON
+            const summary = resSummary.data || { hadir_bulan_ini: 0, total_pinjam: 0, total_koleksi: 0 };
+            
+            // Format angka menggunakan standar Indonesia
+            document.getElementById('valMonth').innerText = summary.hadir_bulan_ini.toLocaleString('id-ID');
+            document.getElementById('valPinjam').innerText = summary.total_pinjam.toLocaleString('id-ID');
+            document.getElementById('valKoleksi').innerText = summary.total_koleksi.toLocaleString('id-ID');
+
+            // 3. Render Visualisasi
+            renderChart(monthlyData);
+            
+            // Hilangkan skeleton loader
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 300);
+            }
+
+        } catch (e) { 
+            console.error("System Error:", e); 
+        }
+    }
+
+    function renderChart(data) {
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, accentColor + '44');
+        gradient.addColorStop(1, accentColor + '00');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    data: data,
+                    borderColor: accentColor,
+                    borderWidth: 4,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: accentColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: (context) => ` ${context.parsed.y} Kunjungan`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: textSecondary, font: { weight: 600 } } },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(128,128,128,0.05)' }, 
+                        ticks: { color: textSecondary, maxTicksLimit: 6 } 
+                    }
+                }
+            }
+        });
+    }
+
+    initializeData();
+</script>
+</body>
+</html>

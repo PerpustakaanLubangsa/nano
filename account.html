@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Akun Dev | Perpustakaan Lubangsa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0f10;
+            --card-bg: #1c1c1e;
+            --text-primary: #f5f5f7;
+            --text-secondary: #8e918f;
+            --border-color: #333335;
+            --accent-color: #0a84ff;
+            --danger-color: #ff453a;
+            --success-color: #32d74b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 40px 20px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+        }
+
+        h1 { font-size: 24px; font-weight: 700; }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-add { background-color: var(--accent-color); color: white; }
+        .btn-add:hover { background-color: #0071e3; transform: translateY(-2px); }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { 
+            background: rgba(255,255,255,0.03); 
+            padding: 16px; 
+            font-size: 11px; 
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        td { padding: 16px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-admin { background: rgba(255, 69, 58, 0.15); color: var(--danger-color); }
+        .badge-pustakawan { background: rgba(50, 215, 75, 0.15); color: var(--success-color); }
+
+        .action-btns { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-icon { 
+            background: #2c2c2e; 
+            border: none; 
+            color: var(--text-primary); 
+            cursor: pointer; 
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-icon:hover { background: var(--accent-color); color: white; }
+        .btn-del:hover { background: var(--danger-color); color: white; }
+
+        #form-container {
+            display: none;
+            background: rgba(0,0,0,0.85);
+            position: fixed; inset: 0;
+            align-items: center; justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+        .modal {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+        }
+        .modal h2 { margin-bottom: 20px; font-size: 20px; }
+        .label-text { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; display: block; margin-left: 4px; }
+        
+        input, select {
+            width: 100%; padding: 14px; margin-bottom: 16px;
+            background: #2c2c2e; border: 1px solid var(--border-color);
+            border-radius: 12px; color: white; outline: none;
+            font-family: inherit;
+        }
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        .btn-submit { width: 100%; background: var(--accent-color); color: white; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; margin-top: 10px; }
+        .btn-cancel { width: 100%; background: transparent; color: var(--text-secondary); margin-top: 12px; border: none; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Manajemen Akun</h1>
+        <button class="btn btn-add" onclick="toggleModal()"><i class="fa-solid fa-plus"></i> Tambah Akun</button>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Password</th>
+                    <th style="text-align: right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="accountList"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="form-container">
+    <div class="modal">
+        <h2 id="modalTitle">Tambah Akun</h2>
+        
+        <span class="label-text">Username</span>
+        <input type="text" id="username" placeholder="cth: admin_pusat">
+        
+        <span class="label-text">Password</span>
+        <input type="text" id="password" placeholder="Masukkan password">
+        
+        <span class="label-text">Jenis Akses (Role)</span>
+        <select id="role">
+            <option value="pustakawan">Pustakawan</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        <button class="btn-submit" id="btnSave">Simpan Akun</button>
+        <button class="btn-cancel" onclick="toggleModal()">Batalkan</button>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const accountList = document.getElementById('accountList');
+    const formContainer = document.getElementById('form-container');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const roleInput = document.getElementById('role');
+    const btnSave = document.getElementById('btnSave');
+
+    let isEditing = false;
+    let oldUsername = "";
+
+    async function fetchAccounts() {
+        const { data, error } = await supabase.from('allowed_admins').select('*').order('created_at', { ascending: false });
+        if (error) return console.error(error);
+
+        accountList.innerHTML = "";
+        data.forEach(acc => {
+            const roleClass = acc.role === 'admin' ? 'badge-admin' : 'badge-pustakawan';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><b>${acc.username}</b></td>
+                <td><span class="badge ${roleClass}">${acc.role}</span></td>
+                <td style="font-family: monospace; opacity: 0.6;">${acc.password}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-icon" onclick="editAccount('${acc.username}', '${acc.password}', '${acc.role}')">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-icon btn-del" onclick="deleteAccount('${acc.username}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            accountList.appendChild(row);
+        });
+    }
+
+    btnSave.addEventListener('click', async () => {
+        const user = usernameInput.value.trim();
+        const pass = passwordInput.value.trim();
+        const role = roleInput.value;
+
+        if(!user || !pass) return alert("Username dan Password wajib diisi!");
+
+        btnSave.innerText = "Memproses...";
+        btnSave.disabled = true;
+
+        let res;
+        if (isEditing) {
+            res = await supabase.rpc('update_admin', { 
+                old_user: oldUsername, 
+                new_user: user, 
+                new_pass: pass, 
+                role_type: role 
+            });
+        } else {
+            res = await supabase.rpc('insert_admin', { 
+                new_user: user, 
+                new_pass: pass, 
+                role_type: role 
+            });
+        }
+
+        if (res.error) {
+            alert("Error: " + res.error.message);
+        } else {
+            toggleModal();
+            fetchAccounts();
+        }
+        
+        btnSave.innerText = "Simpan Akun";
+        btnSave.disabled = false;
+    });
+
+    window.deleteAccount = async (username) => {
+        if (confirm(`Hapus akun ${username}?`)) {
+            const { error } = await supabase.rpc('delete_admin', { target_user: username });
+            if (error) alert(error.message);
+            fetchAccounts();
+        }
+    }
+
+    window.editAccount = (user, pass, role) => {
+        isEditing = true;
+        oldUsername = user;
+        document.getElementById('modalTitle').innerText = "Edit Akun Admin";
+        usernameInput.value = user;
+        passwordInput.value = pass;
+        roleInput.value = role;
+        formContainer.style.display = 'flex';
+    }
+
+    window.toggleModal = () => {
+        isEditing = false;
+        document.getElementById('modalTitle').innerText = "Tambah Akun Baru";
+        usernameInput.value = "";
+        passwordInput.value = "";
+        roleInput.value = "pustakawan";
+        formContainer.style.display = (formContainer.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    fetchAccounts();
+</script>
+
+</body>
+</html>
