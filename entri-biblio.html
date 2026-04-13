@@ -34,12 +34,8 @@
         .form-control { width: 100%; background: var(--input-bg); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: var(--text-main); outline: none; transition: all 0.3s; }
         .form-control:focus { border-color: var(--accent); background: var(--bg-main); }
         
-        /* Tag System Styles */
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; background: var(--input-bg); padding: 8px; border-radius: 12px; border: 1px solid transparent; min-height: 48px; align-items: center; }
-        .tag-container:focus-within { border-color: var(--accent); background: var(--bg-main); }
         .tag-item { background: var(--accent); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-        .tag-item i { cursor: pointer; font-size: 10px; opacity: 0.6; }
-        .tag-item i:hover { opacity: 1; }
         .tag-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 14px; min-width: 120px; padding: 4px; }
 
         .eks-tag { background: var(--input-bg); border: 1px solid var(--border); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
@@ -49,29 +45,42 @@
         .btn-save-main { background: var(--accent); color: #000; padding: 12px 32px; border-radius: 30px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; }
         .loader-full { position: fixed; inset: 0; background: var(--bg-main); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .loader-full.active { display: flex; }
+
+        #toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast { background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: toastIn 0.3s ease forwards; }
+        @keyframes toastIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Styling tambahan untuk status validasi */
+        .status-msg { font-size: 10px; font-weight: 700; margin-top: 4px; display: none; }
+        .status-msg.error { display: block; color: #ff453a; }
+        .status-msg.success { display: block; color: #32d74b; }
+        .input-error { border-color: #ff453a !important; }
     </style>
 </head>
 <body>
 
+<div id="toast-container"></div>
 <div id="loader" class="loader-full"><i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl"></i></div>
 
 <div id="eksModal" class="modal">
     <div class="modal-content-std">
+        <h3 class="font-bold mb-4">Detail Eksemplar</h3>
         <div class="form-group">
             <label>Barcode / Kode Eksemplar</label>
-            <input type="text" id="m_kode" class="form-control">
+            <input type="text" id="m_kode" class="form-control" autocomplete="off" placeholder="Scan atau ketik barcode...">
+            <div id="m_kode_msg" class="status-msg"></div>
         </div>
         <div class="form-group">
             <label>Nomor Panggil</label>
-            <input type="text" id="m_panggil" class="form-control">
+            <input type="text" id="m_panggil" class="form-control" autocomplete="off">
         </div>
         <div class="form-group">
             <label>Lokasi Rak</label>
-            <input type="text" id="m_rak" class="form-control">
+            <input type="text" id="m_rak" class="form-control" autocomplete="off">
         </div>
         <div class="flex justify-end gap-4 mt-10">
             <button type="button" onclick="closeModal()" class="text-muted font-bold text-sm">Batal</button>
-            <button type="button" onclick="saveEks()" class="bg-black dark:bg-white dark:text-black text-white px-6 py-2.5 rounded-xl font-bold text-sm">Simpan</button>
+            <button type="button" id="btnSaveEks" onclick="saveEks()" class="bg-black dark:bg-white dark:text-black text-white px-6 py-2.5 rounded-xl font-bold text-sm">Simpan</button>
         </div>
     </div>
 </div>
@@ -130,13 +139,85 @@
     let eksemplars = [];
     let topics = [];
     let editingEksIndex = null;
+    let barcodeValid = true;
+    let typingTimer;
+
+    function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 
     window.goBack = () => {
         sessionStorage.removeItem('editBiblioId');
         window.location.href = 'bibliografi.html';
     };
 
-    // --- TOPIK / TAG SYSTEM ---
+    // --- REALTIME CHECK BARCODE ---
+    const mKodeInput = document.getElementById('m_kode');
+    const mKodeMsg = document.getElementById('m_kode_msg');
+    const btnSaveEks = document.getElementById('btnSaveEks');
+
+    mKodeInput.addEventListener('keyup', () => {
+        clearTimeout(typingTimer);
+        mKodeMsg.className = 'status-msg'; // Reset class
+        mKodeMsg.innerText = 'Mengecek ketersediaan...';
+        mKodeInput.classList.remove('input-error');
+        
+        typingTimer = setTimeout(checkBarcodeRealtime, 600);
+    });
+
+    async function checkBarcodeRealtime() {
+        const kode = mKodeInput.value.trim();
+        if (!kode) {
+            mKodeMsg.innerText = '';
+            return;
+        }
+
+        // 1. Cek duplikasi di list lokal (yang belum di-save ke DB)
+        const isDupLocal = eksemplars.some((e, i) => e.kode === kode && i !== editingEksIndex);
+        if (isDupLocal) {
+            setBarcodeStatus(false, "Barcode sudah ada di daftar input saat ini");
+            return;
+        }
+
+        // 2. Cek ke Database
+        try {
+            const { data, error } = await supabase
+                .from('eksemplar')
+                .select('biblio_id')
+                .eq('kode', kode)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data && data.biblio_id !== editId) {
+                setBarcodeStatus(false, "Barcode sudah terdaftar di buku lain");
+            } else {
+                setBarcodeStatus(true, "Barcode tersedia");
+            }
+        } catch (err) {
+            console.error(err);
+            mKodeMsg.innerText = "Gagal koneksi database";
+        }
+    }
+
+    function setBarcodeStatus(valid, msg) {
+        barcodeValid = valid;
+        mKodeMsg.innerText = msg;
+        mKodeMsg.className = valid ? 'status-msg success' : 'status-msg error';
+        if (!valid) mKodeInput.classList.add('input-error');
+        btnSaveEks.disabled = !valid;
+        btnSaveEks.style.opacity = valid ? '1' : '0.5';
+    }
+
+    // --- TAG SYSTEM ---
     const topikInput = document.getElementById('f_topik_input');
     const topikWrapper = document.getElementById('topikWrapper');
 
@@ -153,25 +234,25 @@
     });
 
     function renderTopics() {
-        const existingTags = topikWrapper.querySelectorAll('.tag-item');
-        existingTags.forEach(tag => tag.remove());
-        
+        topikWrapper.querySelectorAll('.tag-item').forEach(tag => tag.remove());
         topics.forEach((topic, index) => {
             const tag = document.createElement('div');
             tag.className = 'tag-item';
-            tag.innerHTML = `${topic} <i class="fa-solid fa-xmark" onclick="removeTopic(${index})"></i>`;
+            tag.innerHTML = `${topic} <i class="fa-solid fa-xmark"></i>`;
+            tag.querySelector('i').onclick = () => { topics.splice(index, 1); renderTopics(); };
             topikWrapper.insertBefore(tag, topikInput);
         });
     }
 
-    window.removeTopic = (index) => {
-        topics.splice(index, 1);
-        renderTopics();
-    };
-
     // --- EKSEMPLAR LOGIC ---
     window.openModal = (index = null) => {
         editingEksIndex = index;
+        mKodeMsg.innerText = '';
+        mKodeInput.classList.remove('input-error');
+        barcodeValid = true;
+        btnSaveEks.disabled = false;
+        btnSaveEks.style.opacity = '1';
+
         if (index !== null) {
             const e = eksemplars[index];
             document.getElementById('m_kode').value = e.kode || '';
@@ -186,16 +267,20 @@
     window.closeModal = () => document.getElementById('eksModal').classList.remove('active');
 
     window.saveEks = () => {
+        if (!barcodeValid) return showToast("Barcode tidak valid");
         const kode = document.getElementById('m_kode').value.trim();
-        if(!kode) return alert("Barcode wajib diisi");
+        if(!kode) return showToast("Barcode wajib diisi");
+
         const data = { 
             kode, 
             nomor_panggil: document.getElementById('m_panggil').value, 
             lokasi_rak: document.getElementById('m_rak').value,
             status: 'Tersedia'
         };
+
         if (editingEksIndex !== null) eksemplars[editingEksIndex] = data;
         else eksemplars.push(data);
+        
         closeModal();
         renderEksemplar();
     };
@@ -209,17 +294,22 @@
                     <div class="text-xs font-bold leading-none">${e.kode}</div>
                     <div class="text-[10px] text-muted mt-1">${e.nomor_panggil || '-'}</div>
                 </div>
+                <i class="fa-solid fa-trash text-[10px] text-red-400 p-2" onclick="event.stopPropagation(); deleteEks(${i})"></i>
             </div>
         `).join('');
     }
 
-    // --- LOAD DATA ---
+    window.deleteEks = (index) => {
+        eksemplars.splice(index, 1);
+        renderEksemplar();
+    };
+
+    // --- MAIN CRUD ---
     if (editId) loadDetail();
 
     async function loadDetail() {
         document.getElementById('loader').classList.add('active');
-        const { data: bib, error } = await supabase.from('biblio').select('*').eq('id', editId).single();
-
+        const { data: bib } = await supabase.from('biblio').select('*').eq('id', editId).single();
         if (bib) {
             document.getElementById('btnDelete').classList.remove('hidden');
             document.getElementById('f_judul').value = bib.judul || '';
@@ -231,12 +321,8 @@
             document.getElementById('f_fisik').value = bib.deskripsi_fisik || '';
             document.getElementById('f_sampul').value = bib.sampul_url || '';
             document.getElementById('f_abstrak').value = bib.abstrak || '';
-            
-            // Handle Topics (JSONB Array)
             topics = Array.isArray(bib.topik) ? bib.topik : [];
             renderTopics();
-            
-            // Load Eksemplar
             const { data: eks } = await supabase.from('eksemplar').select('*').eq('biblio_id', editId);
             eksemplars = eks || [];
             renderEksemplar();
@@ -244,7 +330,6 @@
         document.getElementById('loader').classList.remove('active');
     }
 
-    // --- SIMPAN DATA ---
     document.getElementById('biblioForm').onsubmit = async (e) => {
         e.preventDefault();
         document.getElementById('loader').classList.add('active');
@@ -259,7 +344,7 @@
             deskripsi_fisik: document.getElementById('f_fisik').value,
             sampul_url: document.getElementById('f_sampul').value,
             abstrak: document.getElementById('f_abstrak').value,
-            topik: topics, // Mengirim array langsung ke jsonb
+            topik: topics,
             updated_at: new Date()
         };
 
@@ -272,28 +357,33 @@
         }
 
         if (!result.error) {
-            // Update Eksemplar
             await supabase.from('eksemplar').delete().eq('biblio_id', editId);
             if (eksemplars.length > 0) {
-                const eksPayload = eksemplars.map(ek => {
-                    const { id, created_at, ...cleanEks } = ek; // Bersihkan metadata lama jika ada
-                    return { ...cleanEks, biblio_id: editId };
+                const eksReady = eksemplars.map(ek => {
+                    const { id, created_at, ...clean } = ek;
+                    return { ...clean, biblio_id: editId };
                 });
-                await supabase.from('eksemplar').insert(eksPayload);
+                await supabase.from('eksemplar').insert(eksReady);
             }
-            alert("Berhasil disimpan!");
-            goBack();
+            showToast("Data Berhasil Disimpan");
+            setTimeout(goBack, 1500);
         } else {
-            alert("Error: " + result.error.message);
+            showToast("Error: " + result.error.message);
         }
         document.getElementById('loader').classList.remove('active');
     };
 
     window.deleteData = async () => {
         if (!confirm("Hapus seluruh koleksi ini?")) return;
+        document.getElementById('loader').classList.add('active');
         const { error } = await supabase.from('biblio').delete().eq('id', editId);
-        if (!error) goBack();
-        else alert(error.message);
+        if (!error) {
+            showToast("Koleksi dihapus");
+            setTimeout(goBack, 1000);
+        } else {
+            showToast(error.message);
+            document.getElementById('loader').classList.remove('active');
+        }
     };
 </script>
 </body>
