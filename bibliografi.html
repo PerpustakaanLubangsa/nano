@@ -257,16 +257,13 @@
     // --- REALTIME SYNC ---
     async function initRealtime() {
         supabase.channel('biblio-realtime')
-        .on('postgres_changes', { event: '*', table: 'biblio' }, (payload) => {
-            // Jika ada perubahan (insert/update/delete), langsung reset UI dan muat ulang dari DB
+        .on('postgres_changes', { event: '*', table: 'biblio' }, () => {
             loadData(true);
         }).subscribe();
     }
 
     function appendItem(b, prepend = false) {
         const list = document.getElementById('dataList');
-        
-        // Hindari duplikasi elemen di UI
         if (document.getElementById(`item-${b.id}`)) return;
 
         const div = document.createElement('div');
@@ -307,11 +304,20 @@
         document.getElementById('skeleton').classList.add('active');
 
         try {
-            const { data, error } = await supabase.rpc('get_bibliografi', {
-                p_search: queryText,
-                p_limit: perPage,
-                p_offset: page * perPage
-            });
+            const start = page * perPage;
+            const end = start + perPage - 1;
+
+            let query = supabase
+                .from('biblio')
+                .select('id, judul, penulis, sampul_url')
+                .order('created_at', { ascending: false })
+                .range(start, end);
+
+            if (queryText) {
+                query = query.or(`judul.ilike.%${queryText}%,penulis.ilike.%${queryText}%`);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
 
@@ -330,7 +336,7 @@
         }
     }
 
-    // --- SEARCH & SUGGESTIONS (NO CACHE) ---
+    // --- SEARCH & SUGGESTIONS ---
     input.addEventListener('input', () => {
         const val = input.value.trim();
         if (!val) { 
@@ -344,9 +350,15 @@
 
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
-            const { data } = await supabase.rpc('search_biblio_titles', { search_text: val });
+            // Mengambil judul yang mirip untuk sugesti
+            const { data } = await supabase
+                .from('biblio')
+                .select('judul')
+                .ilike('judul', `%${val}%`)
+                .limit(5);
+
             if (data && data.length > 0) {
-                const titles = data.map(d => d.judul);
+                const titles = [...new Set(data.map(d => d.judul))]; // Unik
                 showSuggestions(titles);
             } else {
                 sBox.style.display = 'none';
@@ -381,12 +393,10 @@
     btnSearch.onclick = performSearch;
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
     
-    // Klik di luar untuk tutup suggest
     document.addEventListener('click', (e) => { 
         if (!e.target.closest('.header-content')) sBox.style.display = 'none'; 
     });
 
-    // Infinite Scroll
     const observer = new IntersectionObserver(entries => { 
         if (entries[0].isIntersecting && hasMore && !isLoading) loadData(); 
     }, { threshold: 0.1 });
