@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Data Rak • Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #fcfdfe; --text-main: #1a1c1e; --text-muted: #5e6266;
+            --accent: #0061ff; --border: #e9eef2; --input-bg: #f3f6f9;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #0a0a0a; --text-main: #e2e2e6; --text-muted: #8e9189;
+                --accent: #a8c7fa; --border: #222427; --input-bg: #16181a;
+            }
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; padding: 24px; }
+        
+        .form-control { background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; color: var(--text-main); outline: none; width: 100%; transition: 0.3s; }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.1); }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        th { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 12px; text-align: left; font-weight: 800; }
+        td { background: var(--input-bg); padding: 14px; font-size: 13px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        td:first-child { border-left: 1px solid var(--border); border-radius: 16px 0 0 16px; }
+        td:last-child { border-right: 1px solid var(--border); border-radius: 0 16px 16px 0; }
+
+        .btn-primary { background: var(--accent); color: #000; padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; transition: 0.3s; display: inline-flex; align-items: center; }
+        .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+        
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; }
+        .btn-outline:hover { background: var(--input-bg); border-color: var(--accent); }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-main); padding: 32px; border-radius: 24px; width: 100%; max-width: 450px; border: 1px solid var(--border); }
+
+        #toast { position: fixed; bottom: 24px; right: 24px; background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; display: none; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<input type="file" id="csvFileInput" accept=".csv" class="hidden">
+
+<div id="rakModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle" class="text-xl font-extrabold mb-6">Tambah Rak Baru</h2>
+        <form id="rakForm">
+            <input type="hidden" id="rakId">
+            <div class="mb-4">
+                <label class="text-[10px] font-black uppercase text-muted block mb-2">Nomor Urut</label>
+                <input type="number" id="f_urut" class="form-control" placeholder="Contoh: 1">
+            </div>
+            <div class="mb-4">
+                <label class="text-[10px] font-black uppercase text-muted block mb-2">Nama Rak</label>
+                <input type="text" id="f_nama" class="form-control" placeholder="Contoh: Rak Sejarah A" required>
+            </div>
+            <div class="mb-6">
+                <label class="text-[10px] font-black uppercase text-muted block mb-2">Kode Klasifikasi</label>
+                <input type="text" id="f_klasifikasi" class="form-control" placeholder="Contoh: 900 - 999">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="text-xs font-bold text-muted px-4">Batal</button>
+                <button type="submit" class="btn-primary">Simpan Data</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-10">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Manajemen Master Rak</h1>
+            <p class="text-sm text-muted">Kelola daftar rak dan pengurutan tampilan</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('csvFileInput').click()" class="btn-outline">
+                <i class="fa-solid fa-file-csv mr-2"></i>Import CSV
+            </button>
+            <button onclick="openModal()" class="btn-primary">
+                <i class="fa-solid fa-plus mr-2"></i>Tambah Rak
+            </button>
+        </div>
+    </div>
+
+    <div class="mb-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl flex items-center gap-4">
+        <div class="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+        <p class="text-[11px] font-medium leading-relaxed">
+            <strong class="block uppercase tracking-wider mb-0.5">Format Kolom CSV:</strong>
+            nomor_urut, nama_rak, kode_klasifikasi
+        </p>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table>
+            <thead>
+                <tr>
+                    <th width="80">No. Urut</th>
+                    <th>Nama Rak</th>
+                    <th>Kode Klasifikasi</th>
+                    <th width="120">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="rakTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // --- PROTEKSI AKSES ---
+    function checkAccess() {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        if (isLoggedIn !== 'true') {
+            window.top.location.replace('login.html');
+        }
+    }
+
+    let editId = null;
+
+    // --- 1. LOAD DATA ---
+    async function loadData() {
+        const { data, error } = await supabase
+            .from('rak')
+            .select('*')
+            .order('nomor_urut', { ascending: true });
+
+        if (data) renderTable(data);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('rakTableBody');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-muted">Belum ada data rak</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td class="font-bold text-blue-500">${item.nomor_urut || '-'}</td>
+                <td class="font-extrabold">${item.nama_rak}</td>
+                <td class="text-muted font-medium">${item.kode_klasifikasi || '-'}</td>
+                <td>
+                    <div class="flex gap-3">
+                        <button onclick="editData('${item.id}')" class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteData('${item.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // --- 2. MODAL LOGIC ---
+    window.openModal = () => {
+        editId = null;
+        document.getElementById('rakForm').reset();
+        document.getElementById('modalTitle').innerText = "Tambah Rak Baru";
+        document.getElementById('rakModal').classList.add('active');
+    };
+
+    window.closeModal = () => {
+        document.getElementById('rakModal').classList.remove('active');
+    };
+
+    // --- 3. CSV IMPORT LOGIC ---
+    document.getElementById('csvFileInput').onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const text = event.target.result;
+            const rows = text.split('\n').map(row => row.split(','));
+            
+            // Hilangkan header jika ada (asumsi baris pertama header jika mengandung text 'nama')
+            if (rows[0][1].toLowerCase().includes('nama')) rows.shift();
+
+            const dataToInsert = rows
+                .filter(row => row.length >= 2 && row[1].trim() !== "") // Minimal ada nama_rak
+                .map(row => ({
+                    nomor_urut: row[0] ? parseInt(row[0].trim()) : null,
+                    nama_rak: row[1].trim(),
+                    kode_klasifikasi: row[2] ? row[2].trim() : null
+                }));
+
+            if (dataToInsert.length > 0) {
+                const { error } = await supabase.from('rak').insert(dataToInsert);
+                if (!error) {
+                    showToast(`Berhasil mengimpor ${dataToInsert.length} data`);
+                    loadData();
+                } else {
+                    showToast("Gagal mengimpor CSV");
+                    console.error(error);
+                }
+            }
+            e.target.value = ''; // Reset input
+        };
+        reader.readAsText(file);
+    };
+
+    // --- 4. CRUD ---
+    document.getElementById('rakForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            nomor_urut: document.getElementById('f_urut').value,
+            nama_rak: document.getElementById('f_nama').value,
+            kode_klasifikasi: document.getElementById('f_klasifikasi').value
+        };
+
+        let result;
+        if (editId) {
+            result = await supabase.from('rak').update(payload).eq('id', editId);
+        } else {
+            result = await supabase.from('rak').insert([payload]);
+        }
+
+        if (!result.error) {
+            showToast("Data rak berhasil disimpan");
+            closeModal();
+            loadData();
+        } else {
+            showToast("Gagal menyimpan data");
+        }
+    };
+
+    window.editData = async (id) => {
+        const { data } = await supabase.from('rak').select('*').eq('id', id).single();
+        if (data) {
+            editId = id;
+            document.getElementById('f_urut').value = data.nomor_urut;
+            document.getElementById('f_nama').value = data.nama_rak;
+            document.getElementById('f_klasifikasi').value = data.kode_klasifikasi;
+            document.getElementById('modalTitle').innerText = "Edit Data Rak";
+            document.getElementById('rakModal').classList.add('active');
+        }
+    };
+
+    window.deleteData = async (id) => {
+        if (confirm("Hapus rak ini?")) {
+            const { error } = await supabase.from('rak').delete().eq('id', id);
+            if (!error) {
+                showToast("Rak berhasil dihapus");
+                loadData();
+            }
+        }
+    };
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    checkAccess();
+    loadData();
+</script>
+
+</body>
+</html>

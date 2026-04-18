@@ -21,7 +21,6 @@
             }
         }
 
-        /* --- Custom Scrollbar --- */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #8884; border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
@@ -41,6 +40,7 @@
         .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
         .form-control { width: 100%; background: var(--input-bg); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: var(--text-main); outline: none; transition: 0.3s; }
         .form-control:focus { border-color: var(--accent); background: var(--bg-main); box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.1); }
+        .form-control[readonly] { cursor: default; opacity: 0.8; }
         
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; background: var(--input-bg); padding: 8px; border-radius: 12px; border: 1px solid transparent; min-height: 48px; align-items: center; }
         .tag-item { background: var(--accent); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
@@ -49,34 +49,58 @@
         .eks-tag { background: var(--input-bg); border: 1px solid var(--border); padding: 12px 16px; border-radius: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; }
         .eks-tag:hover { border-color: var(--accent); }
 
-        /* --- Modal System --- */
         .modal { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .modal.active { display: flex; animation: fadeIn 0.3s ease; }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease; }
+        #eksModal { z-index: 1000; }
+        #selectorModal { z-index: 2000; }
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        .modal-card { background: var(--bg-main); width: 100%; max-width: 400px; border-radius: 28px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.1); transform: scale(0.95); transition: 0.3s; }
+        .modal-card { background: var(--bg-main); width: 100%; max-width: 400px; border-radius: 28px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.1); transform: scale(0.9); transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal.active .modal-card { transform: scale(1); }
 
         .btn-save-main { background: var(--accent); color: #000; padding: 14px 32px; border-radius: 30px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; transition: 0.3s; }
         .btn-save-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 97, 255, 0.2); }
 
+        .option-list { max-height: 280px; overflow-y: auto; margin-top: 10px; scroll-behavior: smooth; }
+        .option-item { padding: 14px 18px; border-radius: 14px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; margin-bottom: 6px; background: var(--input-bg); }
+        .option-item:hover { border-color: var(--accent); background: var(--bg-main); }
+        .option-item.highlight { border-color: var(--accent); background: rgba(0, 97, 255, 0.05); }
+
         .loader-full { position: fixed; inset: 0; background: var(--bg-main); z-index: 9999; display: none; align-items: center; justify-content: center; }
         .loader-full.active { display: flex; }
 
         #toast-container { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-        .toast { background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: toastIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+        .toast { background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: toastIn 0.3s forwards; }
         @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .status-msg { font-size: 10px; font-weight: 700; margin-top: 4px; display: none; }
         .status-msg.error { display: block; color: #ff453a; }
         .status-msg.success { display: block; color: #32d74b; }
-        .input-error { border-color: #ff453a !important; }
     </style>
 </head>
 <body>
 
 <div id="toast-container"></div>
 <div id="loader" class="loader-full"><i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl"></i></div>
+
+<div id="selectorModal" class="modal">
+    <div class="modal-card">
+        <h3 id="selTitle" class="font-extrabold text-lg mb-2 tracking-tight">Pilih Data</h3>
+        <p id="selDesc" class="text-[11px] text-muted font-bold mb-4 uppercase tracking-wider">Gunakan kolom cari untuk mempercepat</p>
+        
+        <div class="relative mb-4">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs"></i>
+            <input type="text" id="selSearch" class="form-control !pl-10 !py-3 !text-xs" placeholder="Cari nama atau klasifikasi...">
+        </div>
+
+        <div id="selList" class="option-list"></div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal('selectorModal')" class="text-xs font-bold text-muted px-4 py-2">Tutup</button>
+        </div>
+    </div>
+</div>
 
 <div id="eksModal" class="modal">
     <div class="modal-card">
@@ -92,7 +116,10 @@
         </div>
         <div class="form-group">
             <label>Lokasi Rak</label>
-            <input type="text" id="m_rak" class="form-control">
+            <div class="flex gap-2">
+                <input type="text" id="m_rak" class="form-control" readonly placeholder="Pilih rak...">
+                <button type="button" onclick="openSelector('rak')" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-[10px] uppercase">Pilih</button>
+            </div>
         </div>
         <div class="flex justify-end gap-3 mt-8">
             <button type="button" onclick="closeModal('eksModal')" class="px-5 py-2 text-xs font-bold text-muted">Batal</button>
@@ -133,9 +160,10 @@
             
             <div class="form-group">
                 <label>Kategori Utama</label>
-                <input type="text" id="f_kategori" class="form-control" list="kategoriList" placeholder="Pilih atau ketik baru...">
-                <datalist id="kategoriList">
-                    </datalist>
+                <div class="flex gap-2">
+                    <input type="text" id="f_kategori" class="form-control" readonly placeholder="Pilih kategori...">
+                    <button type="button" onclick="openSelector('kategori')" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-[10px] uppercase">Pilih</button>
+                </div>
             </div>
             
             <div class="form-group"><label>Deskripsi Fisik</label><input type="text" id="f_fisik" class="form-control"></div>
@@ -179,7 +207,10 @@
     let barcodeValid = true;
     let typingTimer;
 
-    // --- TOAST & MODAL HELPERS ---
+    // Cache untuk data master agar tidak fetch berulang
+    const masterData = { kategori: null, rak: null };
+
+    // --- TOAST & MODAL ---
     function showToast(msg) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -197,45 +228,115 @@
         document.getElementById(id).classList.add('active');
     };
 
-    window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+    window.closeModal = (id) => {
+        document.getElementById(id).classList.remove('active');
+        if(id === 'selectorModal') document.getElementById('selSearch').value = '';
+    };
 
     window.goBack = () => {
         sessionStorage.removeItem('editBiblioId');
         window.location.href = 'bibliografi.html';
     };
 
-    // --- KATEGORI SUGGESTION ---
-    async function loadCategorySuggestions() {
-        try {
-            const { data } = await supabase.from('biblio').select('kategori');
-            if (data) {
-                const uniqueCats = [...new Set(data.map(i => i.kategori).filter(Boolean))];
-                const list = document.getElementById('kategoriList');
-                list.innerHTML = uniqueCats.map(c => `<option value="${c}">`).join('');
-            }
-        } catch (e) { console.error("Gagal muat kategori", e); }
+    // --- SELECTOR SYSTEM WITH SEARCH & AUTO SCROLL ---
+    window.openSelector = async (type) => {
+        const list = document.getElementById('selList');
+        const title = document.getElementById('selTitle');
+        const searchInput = document.getElementById('selSearch');
+        
+        list.innerHTML = `<div class="p-6 text-center text-xs font-bold text-muted animate-pulse">Memproses...</div>`;
+        document.getElementById('selectorModal').classList.add('active');
+        searchInput.focus();
+
+        // Lazy Load Data dari Supabase / Cache
+        if (!masterData[type]) {
+            const query = type === 'kategori' ? 
+                supabase.from('kategori').select('nama_kategori').order('nama_kategori') :
+                supabase.from('rak').select('nama_rak, kode_klasifikasi').order('nama_rak');
+            
+            const { data } = await query;
+            masterData[type] = data || [];
+        }
+
+        renderSelectorList(type, masterData[type]);
+
+        // Logic Search & Scroll
+        searchInput.oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            const items = list.querySelectorAll('.option-item');
+            let found = false;
+
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                const isMatch = text.includes(val);
+                
+                // Toggle display untuk filter cepat
+                item.style.display = isMatch ? 'block' : 'none';
+                
+                // Highlight dan Scroll ke yang pertama kali cocok secara spesifik
+                if (val && isMatch && !found) {
+                    item.classList.add('highlight');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    found = true;
+                } else {
+                    item.classList.remove('highlight');
+                }
+            });
+        };
+    };
+
+    function renderSelectorList(type, data) {
+        const list = document.getElementById('selList');
+        const targetInputId = type === 'kategori' ? 'f_kategori' : 'm_rak';
+
+        if (data.length === 0) {
+            list.innerHTML = `<div class="p-10 text-center text-xs text-muted font-bold">Data tidak ditemukan</div>`;
+            return;
+        }
+
+        // Fragment untuk optimasi render (ringan di CPU)
+        const fragment = document.createDocumentFragment();
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            const primary = type === 'kategori' ? item.nama_kategori : item.nama_rak;
+            const secondary = type === 'kategori' ? 'Kategori Koleksi' : (item.kode_klasifikasi || 'Tanpa Klasifikasi');
+            
+            div.innerHTML = `
+                <div class="text-[10px] font-black text-blue-500 uppercase mb-0.5">${secondary}</div>
+                <div class="text-sm font-black">${primary}</div>
+            `;
+            div.onclick = () => selectValue(targetInputId, primary);
+            fragment.appendChild(div);
+        });
+        
+        list.innerHTML = '';
+        list.appendChild(fragment);
     }
 
-    // --- BARCODE REALTIME CHECK ---
+    window.selectValue = (targetId, value) => {
+        document.getElementById(targetId).value = value;
+        closeModal('selectorModal');
+    };
+
+    // --- BARCODE CHECKER (DEBOUNCED) ---
     const mKodeInput = document.getElementById('m_kode');
     const mKodeMsg = document.getElementById('m_kode_msg');
     const btnSaveEks = document.getElementById('btnSaveEks');
 
     mKodeInput.addEventListener('input', () => {
         clearTimeout(typingTimer);
-        mKodeMsg.innerText = 'Checking...';
-        typingTimer = setTimeout(checkBarcode, 600);
+        mKodeMsg.innerText = 'Mengecek...';
+        typingTimer = setTimeout(checkBarcode, 500);
     });
 
     async function checkBarcode() {
         const kode = mKodeInput.value.trim();
-        if (!kode) return mKodeMsg.innerText = '';
+        if (!kode) { mKodeMsg.innerText = ''; return; }
 
-        // Cek lokal
         const isDupLocal = eksemplars.some((e, i) => e.kode === kode && i !== editingEksIndex);
         if (isDupLocal) return setBarcodeStatus(false, "Sudah ada di daftar");
 
-        // Cek DB
         const { data } = await supabase.from('eksemplar').select('biblio_id').eq('kode', kode).maybeSingle();
         if (data && data.biblio_id !== editId) setBarcodeStatus(false, "Sudah dipakai koleksi lain");
         else setBarcodeStatus(true, "Barcode tersedia");
@@ -245,22 +346,22 @@
         barcodeValid = valid;
         mKodeMsg.innerText = msg;
         mKodeMsg.className = `status-msg ${valid ? 'success' : 'error'}`;
-        mKodeInput.classList.toggle('input-error', !valid);
         btnSaveEks.disabled = !valid;
-        btnSaveEks.style.opacity = valid ? '1' : '0.5';
+        btnSaveEks.style.opacity = valid ? '1' : '0.4';
     }
 
-    // --- EKSEMPLAR LOGIC ---
+    // --- EKSEMPLAR UNIT LOGIC ---
     function setupEksModal(index) {
         editingEksIndex = index;
         setBarcodeStatus(true, '');
+        const fields = ['m_kode', 'm_panggil', 'm_rak'];
         if (index !== null) {
             const e = eksemplars[index];
             document.getElementById('m_kode').value = e.kode;
             document.getElementById('m_panggil').value = e.nomor_panggil || '';
             document.getElementById('m_rak').value = e.lokasi_rak || '';
         } else {
-            document.querySelectorAll('#eksModal input').forEach(i => i.value = '');
+            fields.forEach(f => document.getElementById(f).value = '');
         }
     }
 
@@ -294,7 +395,7 @@
             <div class="eks-tag" onclick="openModal('eksModal', ${i})">
                 <div class="flex-1">
                     <div class="text-[11px] font-black uppercase text-blue-500">${e.kode}</div>
-                    <div class="text-[10px] text-muted font-bold mt-0.5">${e.nomor_panggil || 'Tanpa No. Panggil'}</div>
+                    <div class="text-[10px] text-muted font-bold mt-0.5">${e.nomor_panggil || 'No Call'} | ${e.lokasi_rak || 'No Rak'}</div>
                 </div>
                 <button type="button" onclick="event.stopPropagation(); deleteEks(${i})" class="text-red-400 hover:text-red-600 transition-colors">
                     <i class="fa-solid fa-circle-xmark"></i>
@@ -305,8 +406,6 @@
 
     // --- TOPIC SYSTEM ---
     const topikInput = document.getElementById('f_topik_input');
-    const topikWrapper = document.getElementById('topikWrapper');
-
     topikInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -320,36 +419,34 @@
     });
 
     function renderTopics() {
-        topikWrapper.querySelectorAll('.tag-item').forEach(tag => tag.remove());
+        const wrapper = document.getElementById('topikWrapper');
+        wrapper.querySelectorAll('.tag-item').forEach(tag => tag.remove());
         topics.forEach((topic, index) => {
             const tag = document.createElement('div');
             tag.className = 'tag-item';
             tag.innerHTML = `${topic} <i class="fa-solid fa-xmark cursor-pointer"></i>`;
             tag.querySelector('i').onclick = () => { topics.splice(index, 1); renderTopics(); };
-            topikWrapper.insertBefore(tag, topikInput);
+            wrapper.insertBefore(tag, topikInput);
         });
     }
 
     // --- MAIN CRUD ---
     if (editId) loadDetail();
-    loadCategorySuggestions();
 
     async function loadDetail() {
         document.getElementById('loader').classList.add('active');
         const { data: bib } = await supabase.from('biblio').select('*').eq('id', editId).single();
         if (bib) {
             document.getElementById('btnDelete').classList.remove('hidden');
-            document.getElementById('f_judul').value = bib.judul || '';
-            document.getElementById('f_penulis').value = bib.penulis || '';
-            document.getElementById('f_penerbit').value = bib.penerbit || '';
-            document.getElementById('f_tahun').value = bib.tahun_terbit || '';
-            document.getElementById('f_isbn').value = bib.isbn_issn || '';
-            document.getElementById('f_kategori').value = bib.kategori || '';
-            document.getElementById('f_fisik').value = bib.deskripsi_fisik || '';
-            document.getElementById('f_sampul').value = bib.sampul_url || '';
-            document.getElementById('f_abstrak').value = bib.abstrak || '';
+            const map = {
+                f_judul: 'judul', f_penulis: 'penulis', f_penerbit: 'penerbit',
+                f_tahun: 'tahun_terbit', f_isbn: 'isbn_issn', f_kategori: 'kategori',
+                f_fisik: 'deskripsi_fisik', f_sampul: 'sampul_url', f_abstrak: 'abstrak'
+            };
+            Object.keys(map).forEach(key => document.getElementById(key).value = bib[map[key]] || '');
             topics = Array.isArray(bib.topik) ? bib.topik : [];
             renderTopics();
+            
             const { data: eks } = await supabase.from('eksemplar').select('*').eq('biblio_id', editId);
             eksemplars = eks || [];
             renderEksemplar();
@@ -384,6 +481,7 @@
         }
 
         if (!result.error) {
+            // Re-sync eksemplar
             await supabase.from('eksemplar').delete().eq('biblio_id', editId);
             if (eksemplars.length > 0) {
                 const eksReady = eksemplars.map(ek => {
@@ -392,8 +490,8 @@
                 });
                 await supabase.from('eksemplar').insert(eksReady);
             }
-            showToast("Berhasil Disimpan");
-            setTimeout(goBack, 1000);
+            showToast("Tersimpan!");
+            setTimeout(goBack, 800);
         } else {
             showToast("Gagal menyimpan");
             document.getElementById('loader').classList.remove('active');
@@ -401,16 +499,15 @@
     };
 
     window.askDelete = () => openModal('confirmModal');
-
     document.getElementById('btnConfirmDelete').onclick = async () => {
         closeModal('confirmModal');
         document.getElementById('loader').classList.add('active');
         const { error } = await supabase.from('biblio').delete().eq('id', editId);
         if (!error) {
-            showToast("Koleksi dihapus");
-            setTimeout(goBack, 1000);
+            showToast("Dihapus");
+            setTimeout(goBack, 800);
         } else {
-            showToast("Gagal menghapus");
+            showToast("Gagal");
             document.getElementById('loader').classList.remove('active');
         }
     };
