@@ -16,7 +16,8 @@
             --border-color: #dee2e6;
             --google-gray: #f1f3f4;
             --skeleton-base: #e0e0e0;
-            --radius-sharp: 4px;
+            --radius-pill: 100px; /* Modern rounded */
+            --radius-card: 16px;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -38,9 +39,9 @@
             padding: 0 24px 20px;
         }
 
-        /* --- FILTER BAR (NON-FLOATING) --- */
+        /* --- FILTER BAR MODERN --- */
         .filter-wrapper {
-            padding: 20px 0;
+            padding: 24px 0;
             margin-bottom: 20px;
         }
 
@@ -48,49 +49,78 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             max-width: 1300px;
             margin: 0 auto;
             flex-wrap: wrap;
         }
 
-        .filter-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 300px; }
+        .filter-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 300px; }
         .filter-right { flex: 1; display: flex; justify-content: flex-end; min-width: 300px; }
 
-        select, .search-wrapper {
+        /* Modern Pill Styled Select */
+        select { 
             background: var(--bg-card);
             border: 1px solid var(--border-color) !important;
-            border-radius: var(--radius-sharp);
-            height: 42px;
+            border-radius: var(--radius-pill);
+            height: 46px;
+            padding: 0 20px;
             font-family: inherit;
             color: var(--text-main);
             font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            min-width: 180px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2370757a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
         }
 
-        select { padding: 0 10px; cursor: pointer; min-width: 150px; }
-
+        /* Text Based Refresh Button */
         .btn-refresh {
-            background: var(--accent);
-            color: white;
-            width: 42px;
-            height: 42px;
-            border-radius: var(--radius-sharp);
+            background: var(--google-gray);
+            color: var(--text-main);
+            padding: 0 20px;
+            height: 46px;
+            border-radius: var(--radius-pill);
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
             transition: 0.2s;
+            border: 1px solid var(--border-color) !important;
         }
-        .btn-refresh:hover { opacity: 0.8; }
+        .btn-refresh:hover { background: var(--border-color); }
 
+        /* Modern Pill Search Wrapper */
         .search-wrapper {
-            display: flex; align-items: center; padding: 0 4px 0 15px;
-            width: 100%; max-width: 400px;
+            display: flex; align-items: center; 
+            padding: 0 6px 0 20px;
+            width: 100%; max-width: 450px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-pill);
+            height: 48px;
+            transition: box-shadow 0.2s;
         }
-        .search-input { background: transparent; width: 100%; color: var(--text-main); font-size: 14px; }
+        .search-wrapper:focus-within {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: transparent !important;
+        }
+
+        .search-input { background: transparent; width: 100%; color: var(--text-main); font-size: 15px; }
+        
         .search-btn {
-            background: var(--accent); color: white; width: 34px; height: 34px;
-            border-radius: calc(var(--radius-sharp) - 2px); cursor: pointer;
+            background: var(--accent); color: white; 
+            width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
         }
+        .search-btn:hover { transform: scale(1.05); }
 
         /* --- GRID CATALOG --- */
         .grid { 
@@ -109,12 +139,12 @@
         .book-img-container { position: relative; width: 100%; aspect-ratio: 3/4.5; margin-bottom: 12px; }
         .book-img { 
             width: 100%; height: 100%; object-fit: cover; 
-            border-radius: var(--radius-sharp); background: var(--google-gray); 
+            border-radius: var(--radius-card); background: var(--google-gray); 
             opacity: 0; transition: opacity 0.5s;
             border: 1px solid var(--border-color) !important;
         }
 
-        .book-info { display: flex; flex-direction: column; gap: 4px; }
+        .book-info { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
         .book-title { 
             font-size: 12px; font-weight: 700; text-transform: uppercase; 
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
@@ -126,14 +156,14 @@
         .tag-kategori { color: var(--accent); }
         .tag-rak { color: #15803d; }
         .tag-status { 
-            margin-top: 4px; padding: 2px 6px; 
+            margin-top: 4px; padding: 4px 8px; 
             background: var(--google-gray); width: fit-content; 
-            border-radius: 4px; font-size: 9px; font-weight: 700;
+            border-radius: 6px; font-size: 9px; font-weight: 800;
         }
 
         #sentinel { height: 50px; width: 100%; }
         .hidden { display: none !important; }
-        .skeleton-card { width:100%; aspect-ratio:3/4.5; border-radius:var(--radius-sharp); background:var(--skeleton-base); animation:pulse 1.5s infinite; }
+        .skeleton-card { width:100%; aspect-ratio:3/4.5; border-radius:var(--radius-card); background:var(--skeleton-base); animation:pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
@@ -145,11 +175,9 @@
             <select id="catSelect" onchange="window.resetAndFetch()">
                 <option value="">Semua Kategori</option>
             </select>
-            <select id="rakSelect" onchange="window.resetAndFetch()">
-                <option value="">Semua Rak</option>
-            </select>
-            <div class="btn-refresh" onclick="window.location.reload()" title="Refresh">
+            <div class="btn-refresh" onclick="window.location.reload()">
                 <i class="fa-solid fa-rotate"></i>
+                <span>Refresh</span>
             </div>
         </div>
         <div class="filter-right">
@@ -181,23 +209,14 @@
     let currentPage = 0, perPage = 18, isFetching = false, hasMore = true;
     const SVG_DATA = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23f1f3f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%239aa0a6'%3ENo Cover%3C/text%3E%3C/svg%3E";
 
-    // --- LOAD FILTERS ---
     async function loadFilters() {
-        // Ambil kategori & rak unik langsung dari biblio & eksemplar agar sinkron dengan data yang ada
         const { data: cats } = await supabase.from('biblio').select('kategori').not('kategori', 'is', null);
-        const { data: raks } = await supabase.from('eksemplar').select('lokasi_rak').not('lokasi_rak', 'is', null);
-
         if (cats) {
             const uniqueCats = [...new Set(cats.map(item => item.kategori))].sort();
             uniqueCats.forEach(c => document.getElementById('catSelect').add(new Option(c, c)));
         }
-        if (raks) {
-            const uniqueRaks = [...new Set(raks.map(item => item.lokasi_rak))].sort();
-            uniqueRaks.forEach(r => document.getElementById('rakSelect').add(new Option(r, r)));
-        }
     }
 
-    // --- FETCH DATA ---
     async function fetchBooks() {
         if (isFetching || !hasMore) return;
         isFetching = true;
@@ -205,7 +224,6 @@
 
         const queryText = document.getElementById('searchInput').value.trim();
         const selectedCat = document.getElementById('catSelect').value;
-        const selectedRak = document.getElementById('rakSelect').value;
 
         try {
             let query = supabase
@@ -220,9 +238,6 @@
             if (queryText) query = query.or(`judul.ilike.%${queryText}%,penulis.ilike.%${queryText}%`);
             if (selectedCat) query = query.eq('kategori', selectedCat);
             
-            // Filter rak via join eksemplar
-            if (selectedRak) query = query.eq('eksemplar.lokasi_rak', selectedRak);
-
             const { data, error } = await query;
             if (error) throw error;
 
@@ -247,7 +262,6 @@
             card.target = "_parent";
             card.className = 'book-card';
             
-            // Mengambil data dari eksemplar pertama
             const ex = item.eksemplar && item.eksemplar.length > 0 ? item.eksemplar[0] : null;
             const lokasiRak = ex ? ex.lokasi_rak : '-';
             const statusBuku = ex ? ex.status : 'Tersedia';
@@ -292,11 +306,9 @@
 
     document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); };
 
-    // Start
     loadFilters();
     fetchBooks();
 
-    // Infinite Scroll
     const scrollObs = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isFetching && hasMore) fetchBooks();
     }, { rootMargin: '400px' });
@@ -304,7 +316,6 @@
 </script>
 
 <script>
-    // Auto resize untuk iframe
     function sendHeight() {
         const height = document.documentElement.scrollHeight;
         window.parent.postMessage({ type: 'resize', height: height }, '*');
