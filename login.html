@@ -13,11 +13,9 @@
             --text-primary: #f5f5f7;
             --text-secondary: #9aa0a6;
             --border-color: #2a2d33;
-            /* Aksen Biru Muda */
             --primary: #7ec2ff; 
             --on-primary: #003366;
             --error: #f2b8b5;
-            /* Radius Tajam tapi Melengkung Sedikit */
             --radius-sharp: 6px;
             --radius-field: 8px;
         }
@@ -34,7 +32,6 @@
             overflow: hidden;
         }
 
-        /* Navigasi Header */
         header { 
             padding: 30px 40px; 
             width: 100%; 
@@ -73,7 +70,6 @@
             filter: drop-shadow(0 0 12px rgba(126, 194, 255, 0.3)); 
         }
 
-        /* Animasi Card */
         @keyframes revealUp {
             0% { transform: translateY(20px); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
@@ -160,10 +156,7 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(126, 194, 255, 0.2);
         }
-        .btn-login:active { transform: translateY(0); }
-        .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Success Animation Area */
         .success-screen {
             position: fixed; inset: 0; background: var(--bg-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000;
@@ -208,7 +201,6 @@
             from { opacity: 0; } to { opacity: 1; }
         }
 
-        /* Toast & Misc */
         #toast-container { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; }
         .toast {
             padding: 12px 24px;
@@ -312,10 +304,13 @@
                 btnLogin.innerText = "Masuk Sekarang";
             } else {
                 const adminData = data[0];
+                
+                // --- PERBAIKAN DI SINI ---
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('adminUser', adminData.res_username);
+                sessionStorage.setItem('adminRole', adminData.res_role); // Simpan role ke session!
+                // -------------------------
                 
-                // Menyenangkan: Tampilkan layar sukses dengan animasi logo
                 document.body.innerHTML = `
                     <div class="success-screen">
                         <div class="success-logo-wrapper">
