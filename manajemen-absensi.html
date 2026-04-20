@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jadwal Perpustakaan | Gemini Edition</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
 --bg: #ffffff;
@@ -209,7 +208,9 @@ cursor: pointer;
 </div>
 </div>
 </aside>
+
 <main id="boardVertical"></main>
+
 <div id="modalMulti" class="modal">
 <div class="modal-content">
 <h3 id="modalTitle">Pilih Petugas</h3>
@@ -218,6 +219,7 @@ cursor: pointer;
 <button onclick="closeModal()" class="btn-cancel">Batal</button>
 </div>
 </div>
+
 <div id="modalConfirm" class="modal">
 <div class="modal-content">
 <h3 id="confirmTitle">Konfirmasi</h3>
@@ -226,157 +228,183 @@ cursor: pointer;
 <button onclick="closeConfirm()" class="btn-cancel">Batal</button>
 </div>
 </div>
+
 <script type="module">
+// Memanggil export 'supabase' dari file supa.js kamu
 import { supabase as client } from './supa/supa.js';
+
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 let masterNama = [];
 let masterShift = [];
 let activeContext = { hari: '', shift: '' };
+
 window.toggleDrawer = () => {
-document.getElementById('drawer').classList.toggle('active');
-document.getElementById('overlay').classList.toggle('active');
+    document.getElementById('drawer').classList.toggle('active');
+    document.getElementById('overlay').classList.toggle('active');
 };
+
 async function init() {
-await Promise.all([loadMasterNama(), loadMasterShift()]);
-renderBoard();
-await loadJadwalExisting();
+    await Promise.all([loadMasterNama(), loadMasterShift()]);
+    renderBoard();
+    await loadJadwalExisting();
 }
+
 async function loadMasterNama() {
-let { data } = await client.from('petugas_master').select('id, nama').order('nama');
-masterNama = data || [];
-document.getElementById('tableNama').innerHTML = masterNama.map(n => `
-<tr>
-<td><div style="font-weight:500">${n.nama}</div></td>
-<td style="text-align:right"><button onclick="window.confirmHapusPetugas(${n.id}, '${n.nama}')" style="background:none; border:none; color:var(--text); opacity:0.3; font-size:18px; cursor:pointer;">&times;</button></td>
-</tr>`).join('');
+    let { data, error } = await client.from('petugas_master').select('id, nama').order('nama');
+    if (error) console.error("Error loading names:", error.message);
+    masterNama = data || [];
+    document.getElementById('tableNama').innerHTML = masterNama.map(n => `
+        <tr>
+            <td><div style="font-weight:500">${n.nama}</div></td>
+            <td style="text-align:right">
+                <button onclick="window.confirmHapusPetugas(${n.id}, '${n.nama}')" style="background:none; border:none; color:var(--text); opacity:0.3; font-size:18px; cursor:pointer;">&times;</button>
+            </td>
+        </tr>`).join('');
 }
+
 async function loadMasterShift() {
-let { data } = await client.from('jam_master').select('id, label, waktu').order('id');
-masterShift = data || [];
-document.getElementById('tableShift').innerHTML = masterShift.map(s => `
-<tr>
-<td><div style="font-weight:500">${s.label}</div><div style="font-size:11px; opacity:0.4">${s.waktu}</div></td>
-<td style="text-align:right"><button onclick="window.confirmHapusShift(${s.id}, '${s.label}')" style="background:none; border:none; color:var(--text); opacity:0.3; font-size:18px; cursor:pointer;">&times;</button></td>
-</tr>`).join('');
+    let { data, error } = await client.from('jam_master').select('id, label, waktu').order('id');
+    if (error) console.error("Error loading shifts:", error.message);
+    masterShift = data || [];
+    document.getElementById('tableShift').innerHTML = masterShift.map(s => `
+        <tr>
+            <td><div style="font-weight:500">${s.label}</div><div style="font-size:11px; opacity:0.4">${s.waktu}</div></td>
+            <td style="text-align:right">
+                <button onclick="window.confirmHapusShift(${s.id}, '${s.label}')" style="background:none; border:none; color:var(--text); opacity:0.3; font-size:18px; cursor:pointer;">&times;</button>
+            </td>
+        </tr>`).join('');
 }
+
 function renderBoard() {
-const board = document.getElementById('boardVertical');
-board.innerHTML = HARI.map(hari => `
-<section class="day-section">
-<div class="day-header">
-<h2>${hari}</h2>
-<div class="day-divider"></div>
-</div>
-<div class="shift-container">
-${masterShift.map(s => `
-<div class="shift-group">
-<div class="shift-info">
-<div>
-<div class="shift-label">${s.label}</div>
-<div class="shift-time">${s.waktu}</div>
-</div>
-<button class="btn-add-trigger" onclick="window.openPilihPetugas('${hari}', '${s.waktu}')">+ Pilih Petugas</button>
-</div>
-<div id="list-${hari}-${s.waktu.replace(/\s+/g, '')}" class="tag-container"></div>
-</div>`).join('')}
-</div>
-</section>`).join('');
+    const board = document.getElementById('boardVertical');
+    board.innerHTML = HARI.map(hari => `
+        <section class="day-section">
+            <div class="day-header">
+                <h2>${hari}</h2>
+                <div class="day-divider"></div>
+            </div>
+            <div class="shift-container">
+                ${masterShift.map(s => `
+                <div class="shift-group">
+                    <div class="shift-info">
+                        <div>
+                            <div class="shift-label">${s.label}</div>
+                            <div class="shift-time">${s.waktu}</div>
+                        </div>
+                        <button class="btn-add-trigger" onclick="window.openPilihPetugas('${hari}', '${s.waktu}')">+ Pilih Petugas</button>
+                    </div>
+                    <div id="list-${hari}-${s.waktu.replace(/\s+/g, '')}" class="tag-container"></div>
+                </div>`).join('')}
+            </div>
+        </section>`).join('');
 }
+
 window.openPilihPetugas = (hari, shift) => {
-activeContext = { hari, shift };
-document.getElementById('modalTitle').innerText = `${hari} (${shift})`;
-const list = document.getElementById('pustakawanChecklist');
-list.innerHTML = masterNama.map(n => `
-<label class="pustakawan-item">
-<input type="checkbox" value="${n.nama}">
-<span>${n.nama}</span>
-</label>`).join('');
-document.getElementById('modalMulti').style.display = 'flex';
+    activeContext = { hari, shift };
+    document.getElementById('modalTitle').innerText = `${hari} (${shift})`;
+    const list = document.getElementById('pustakawanChecklist');
+    list.innerHTML = masterNama.map(n => `
+        <label class="pustakawan-item">
+            <input type="checkbox" value="${n.nama}">
+            <span>${n.nama}</span>
+        </label>`).join('');
+    document.getElementById('modalMulti').style.display = 'flex';
 };
+
 window.closeModal = () => { document.getElementById('modalMulti').style.display = 'none'; };
+
 document.getElementById('btnSaveMulti').onclick = async () => {
-const checkboxes = document.querySelectorAll('#pustakawanChecklist input:checked');
-const names = Array.from(checkboxes).map(cb => cb.value);
-if(names.length > 0) {
-const payloads = names.map(nama => ({ 
-hari: activeContext.hari, 
-shift: activeContext.shift, 
-nama: nama 
-}));
-const { error } = await client.from('jadwal_detail').insert(payloads);
-if(error) alert("Error simpan: " + error.message);
-}
-window.closeModal();
-await loadJadwalExisting();
+    const checkboxes = document.querySelectorAll('#pustakawanChecklist input:checked');
+    const names = Array.from(checkboxes).map(cb => cb.value);
+    
+    if(names.length > 0) {
+        const payloads = names.map(nama => ({ 
+            hari: activeContext.hari, 
+            shift: activeContext.shift, 
+            nama: nama 
+        }));
+        const { error } = await client.from('jadwal_detail').insert(payloads);
+        if(error) alert("Error simpan: " + error.message);
+    }
+    window.closeModal();
+    await loadJadwalExisting();
 };
+
 async function loadJadwalExisting() {
-let { data } = await client.from('jadwal_detail').select('id, nama, hari, shift');
-HARI.forEach(hari => {
-masterShift.forEach(s => {
-const id = `list-${hari}-${s.waktu.replace(/\s+/g, '')}`;
-const container = document.getElementById(id);
-if(container) {
-const filtered = (data || []).filter(j => j.hari === hari && j.shift === s.waktu);
-container.innerHTML = filtered.map(j => `
-<div class="name-tag">
-<span>${j.nama}</span>
-<button onclick="window.hapusJadwalEntry(${j.id})" class="btn-del-tag">&times;</button>
-</div>`).join('');
+    let { data } = await client.from('jadwal_detail').select('id, nama, hari, shift');
+    HARI.forEach(hari => {
+        masterShift.forEach(s => {
+            const id = `list-${hari}-${s.waktu.replace(/\s+/g, '')}`;
+            const container = document.getElementById(id);
+            if(container) {
+                const filtered = (data || []).filter(j => j.hari === hari && j.shift === s.waktu);
+                container.innerHTML = filtered.map(j => `
+                    <div class="name-tag">
+                        <span>${j.nama}</span>
+                        <button onclick="window.hapusJadwalEntry(${j.id})" class="btn-del-tag">&times;</button>
+                    </div>`).join('');
+            }
+        });
+    });
 }
-});
-});
-}
+
 window.hapusJadwalEntry = async (id) => {
-await client.from('jadwal_detail').delete().eq('id', id);
-await loadJadwalExisting();
+    await client.from('jadwal_detail').delete().eq('id', id);
+    await loadJadwalExisting();
 };
+
 window.tambahMasterPetugas = async () => {
-const nama = document.getElementById('namaPetugas').value;
-if(!nama) return;
-const { error } = await client.from('petugas_master').insert([{ nama }]);
-if(error) {
-alert("Error tambah petugas: " + error.message);
-} else {
-document.getElementById('namaPetugas').value = '';
-await loadMasterNama();
-}
+    const nama = document.getElementById('namaPetugas').value;
+    if(!nama) return;
+    const { error } = await client.from('petugas_master').insert([{ nama }]);
+    if(error) {
+        alert("Error tambah petugas: " + error.message);
+    } else {
+        document.getElementById('namaPetugas').value = '';
+        await loadMasterNama();
+    }
 };
+
 window.tambahMasterShift = async () => {
-const label = document.getElementById('labelShift').value;
-const waktu = document.getElementById('waktuShift').value;
-if(!label || !waktu) return;
-const { error } = await client.from('jam_master').insert([{ label, waktu }]);
-if(error) {
-alert("Error tambah shift: " + error.message);
-} else {
-document.getElementById('labelShift').value = '';
-document.getElementById('waktuShift').value = '';
-await loadMasterShift();
-renderBoard();
-await loadJadwalExisting();
-}
+    const label = document.getElementById('labelShift').value;
+    const waktu = document.getElementById('waktuShift').value;
+    if(!label || !waktu) return;
+    const { error } = await client.from('jam_master').insert([{ label, waktu }]);
+    if(error) {
+        alert("Error tambah shift: " + error.message);
+    } else {
+        document.getElementById('labelShift').value = '';
+        document.getElementById('waktuShift').value = '';
+        await loadMasterShift();
+        renderBoard();
+        await loadJadwalExisting();
+    }
 };
+
 window.confirmHapusPetugas = (id, nama) => {
-document.getElementById('confirmMessage').innerText = `Hapus petugas ${nama} dari database?`;
-document.getElementById('modalConfirm').style.display = 'flex';
-document.getElementById('btnConfirmAction').onclick = async () => {
-await client.from('petugas_master').delete().eq('id', id);
-await loadMasterNama();
-closeConfirm();
+    document.getElementById('confirmMessage').innerText = `Hapus petugas ${nama} dari database?`;
+    document.getElementById('modalConfirm').style.display = 'flex';
+    document.getElementById('btnConfirmAction').onclick = async () => {
+        await client.from('petugas_master').delete().eq('id', id);
+        await loadMasterNama();
+        closeConfirm();
+    };
 };
-};
+
 window.confirmHapusShift = (id, label) => {
-document.getElementById('confirmMessage').innerText = `Hapus shift ${label}? Tindakan ini permanen.`;
-document.getElementById('modalConfirm').style.display = 'flex';
-document.getElementById('btnConfirmAction').onclick = async () => {
-await client.from('jam_master').delete().eq('id', id);
-await loadMasterShift();
-renderBoard();
-await loadJadwalExisting();
-closeConfirm();
+    document.getElementById('confirmMessage').innerText = `Hapus shift ${label}? Tindakan ini permanen.`;
+    document.getElementById('modalConfirm').style.display = 'flex';
+    document.getElementById('btnConfirmAction').onclick = async () => {
+        await client.from('jam_master').delete().eq('id', id);
+        await loadMasterShift();
+        renderBoard();
+        await loadJadwalExisting();
+        closeConfirm();
+    };
 };
-};
+
 window.closeConfirm = () => { document.getElementById('modalConfirm').style.display = 'none'; };
+
 init();
 </script>
 </body>

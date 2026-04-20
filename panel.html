@@ -21,8 +21,6 @@
             --bg-sidebar: #161618;
             --item-hover: #2c2c2e;
             --active-box: #0a84ff;
-            --highlight-bg: #1e2632;
-            --highlight-text: #8ab4f8;
         }
 
         * { 
@@ -90,7 +88,6 @@
 
         .sidebar-item:hover { background-color: var(--item-hover); color: white; }
         .sidebar-item.active { background-color: var(--active-box) !important; font-weight: 700; color: white; }
-        .sidebar-item.frequent { background-color: var(--highlight-bg); color: var(--highlight-text); }
 
         .submenu {
             max-height: 0;
@@ -124,50 +121,53 @@
             letter-spacing: 1px; 
         }
 
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        /* Sidebar Profile Section (Bottom) */
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.05) !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .sidebar-footer:hover { background: var(--item-hover); }
         
-        .top-nav { 
-            height: 72px; display: flex; align-items: center; 
-            justify-content: space-between; padding: 0 24px; 
-            background-color: var(--md-sys-color-surface); 
-        }
-
-        .nav-right { 
-            display: flex; align-items: center; gap: 14px; cursor: pointer; 
-            padding: 8px 16px; border-radius: 16px; transition: all 0.2s ease; 
-        }
-        .nav-right:hover { background: #1c1c1e; }
-
-        .user-info-text { 
-            display: flex; flex-direction: column; 
-            align-items: flex-end; text-align: right; 
-            line-height: 1.3;
-        }
-        
-        .user-name { 
-            font-size: 15px; 
-            font-weight: 800; 
-            color: #ffffff; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-        
-        .user-role { 
-            font-size: 10px; 
-            font-weight: 700; 
-            color: var(--md-sys-color-primary); 
-            text-transform: uppercase; 
-            letter-spacing: 0.8px;
-            opacity: 0.9;
-        }
-
-        .profile-img { 
-            width: 42px; height: 42px; 
-            border-radius: 12px; 
+        .profile-img-mini { 
+            width: 32px; height: 32px; 
+            border-radius: 8px; 
             object-fit: cover; 
             background: #333;
-            border: 1.5px solid rgba(255,255,255,0.1) !important;
         }
+
+        .user-meta {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .user-name-mini {
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+        }
+
+        .user-role-mini {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--md-sys-color-primary);
+            text-transform: uppercase;
+        }
+
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        
+        #contentArea { flex: 1; background: var(--md-sys-color-surface); overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; transition: opacity 0.3s; }
 
         .modal-overlay { 
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
@@ -189,8 +189,6 @@
         .btn-tonal { background: var(--md-sys-color-error); color: white; }
         .btn-text { background: transparent; color: #8e918f; }
 
-        #contentArea { flex: 1; background: var(--md-sys-color-surface); overflow: hidden; }
-        iframe { width: 100%; height: 100%; border: none; transition: opacity 0.3s; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -211,13 +209,14 @@
         <img src="image/logo/logo.png" alt="Logo" class="lib-logo">
         <span class="lib-brand-text">PERPUSTAKAAN LUBANGSA</span>
     </div>
+    
     <nav>
         <div onclick="loadPage('beranda.html', this)" class="sidebar-item active">
             <span>Beranda</span>
         </div>
 
         <p class="nav-label">Operasional</p>
-        <div onclick="loadPage('absensi.html', this)" class="sidebar-item frequent">
+        <div onclick="loadPage('absensi.html', this)" class="sidebar-item">
             <span>Buka Absensi</span>
         </div>
         
@@ -236,12 +235,13 @@
         <div id="menuManajemenAbsen" onclick="loadPage('manajemen-absensi.html', this)" class="sidebar-item hidden">
             <span>Manajemen Absen</span>
         </div>
+
         <div onclick="loadPage('rekap.html', this)" class="sidebar-item">
             <span>Rekapitulasi</span>
         </div>
 
         <p class="nav-label">Koleksi & Anggota</p>
-        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item frequent">
+        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item">
             <span>Bibliografi</span>
         </div>
         <div onclick="loadPage('manajemen_rak.html', this)" class="sidebar-item">
@@ -250,7 +250,7 @@
         <div onclick="loadPage('manajemen_kategori.html', this)" class="sidebar-item">
             <span>Manajemen Kategori</span>
         </div>
-        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item frequent">
+        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item">
             <span>Sirkulasi</span>
         </div>
         <div onclick="loadPage('barcode.html', this)" class="sidebar-item">
@@ -277,22 +277,17 @@
             <span>Tentang</span>
         </div>
     </nav>
+
+    <div class="sidebar-footer" onclick="openLogoutModal()">
+        <img id="userAvatar" src="" class="profile-img-mini">
+        <div class="user-meta">
+            <span id="footerUserName" class="user-name-mini">MEMUAT...</span>
+            <span id="footerUserRole" class="user-role-mini">Role</span>
+        </div>
+    </div>
 </aside>
 
 <main>
-    <header class="top-nav">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <span style="font-weight: 800; letter-spacing: 1px; font-size: 11px; color: #555;">PANEL KONTROL</span>
-        </div>
-        <div class="nav-right" onclick="openLogoutModal()">
-            <div class="user-info-text">
-                <span id="headerUserName" class="user-name">MEMUAT...</span>
-                <span id="headerUserRole" class="user-role">Role</span>
-            </div>
-            <img id="userAvatar" src="" class="profile-img">
-        </div>
-    </header>
-
     <div id="contentArea">
         <iframe id="contentFrame" src="beranda.html"></iframe>
     </div>
@@ -336,8 +331,8 @@
         const displayRole = role === 'admin' ? 'Administrator' : 'Pustakawan';
         const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0a84ff&color=ffffff&bold=true&rounded=false`;
 
-        document.getElementById('headerUserName').textContent = name;
-        document.getElementById('headerUserRole').textContent = displayRole;
+        document.getElementById('footerUserName').textContent = name;
+        document.getElementById('footerUserRole').textContent = displayRole;
         document.getElementById('userAvatar').src = avatar;
         
         document.getElementById('modalAvatar').src = avatar;
