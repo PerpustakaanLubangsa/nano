@@ -18,6 +18,11 @@
             --skeleton-base: #e0e0e0;
             --radius-pill: 100px; /* Modern rounded */
             --radius-card: 16px;
+            
+            /* Scrollbar Variables */
+            --sb-track: transparent;
+            --sb-thumb: #c1c1c1;
+            --sb-thumb-hover: #a8a8a8;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -28,7 +33,38 @@
                 --text-muted: #9aa0a6;
                 --border-color: #444746;
                 --google-gray: #2b2b2b;
+                --sb-thumb: #444746;
+                --sb-thumb-hover: #5f6368;
             }
+        }
+
+        /* --- CUSTOM SCROLLBAR --- */
+        /* Untuk Chrome, Safari, dan Edge */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--sb-track);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--sb-thumb);
+            border-radius: 10px;
+            border: 2px solid transparent; /* Memberikan efek padding */
+            background-clip: content-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--sb-thumb-hover);
+            background-clip: content-box;
+        }
+
+        /* Untuk Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--sb-thumb) var(--sb-track);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; outline: none; border: none !important; }
