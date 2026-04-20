@@ -23,169 +23,50 @@
             --active-box: #0a84ff;
         }
 
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            border: none !important; outline: none !important; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; border: none !important; outline: none !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); overflow: hidden; display: flex; height: 100vh; width: 100vw; }
+
+        /* Sidebar & Items */
+        #sidebar { width: 280px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; z-index: 100; flex-shrink: 0; position: relative; }
+        .sidebar-header { min-height: 80px; display: flex; align-items: center; padding: 20px; gap: 12px; }
+        .lib-logo { height: 38px; width: 38px; object-fit: contain; }
+        .lib-brand-text { font-size: 16px; font-weight: 800; color: white; line-height: 1.2; }
         
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--md-sys-color-surface); 
-            color: var(--md-sys-color-on-surface); 
-            overflow: hidden; 
-            display: flex; 
-            height: 100vh; 
-            width: 100vw; 
-        }
-
-        #sidebar { 
-            width: 280px; 
-            background-color: var(--bg-sidebar); 
-            display: flex; 
-            flex-direction: column; 
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 100; 
-            flex-shrink: 0; 
-            position: relative; 
-        }
-
-        .sidebar-header { 
-            min-height: 80px; 
-            display: flex; 
-            align-items: center; 
-            padding: 20px; 
-            flex-shrink: 0;
-            gap: 12px;
-        }
-
-        .lib-logo { 
-            height: 38px; width: 38px; 
-            object-fit: contain; flex-shrink: 0;
-        }
-
-        .lib-brand-text {
-            font-size: 16px; font-weight: 800; color: white;
-            line-height: 1.2; white-space: normal;
-        }
-
         nav { flex: 1; overflow-y: auto; scrollbar-width: none; padding-top: 8px; }
-        nav::-webkit-scrollbar { display: none; }
-
-        .sidebar-item { 
-            margin: 4px 12px; 
-            padding: 14px 20px; 
-            border-radius: 12px; 
-            color: #8e918f; 
-            font-size: 14px; 
-            font-weight: 500; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            display: flex; 
-            align-items: center;
-            justify-content: space-between;
-            text-decoration: none; 
-        }
-
+        .sidebar-item { margin: 4px 12px; padding: 14px 20px; border-radius: 12px; color: #8e918f; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between; position: relative; }
         .sidebar-item:hover { background-color: var(--item-hover); color: white; }
         .sidebar-item.active { background-color: var(--active-box) !important; font-weight: 700; color: white; }
 
-        .submenu {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background: rgba(255,255,255,0.02);
-            margin: 0 12px;
-            border-radius: 0 0 12px 12px;
-        }
+        /* Dot Notification */
+        .dot-notif { width: 8px; height: 8px; background: var(--md-sys-color-primary); border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; box-shadow: 0 0 10px var(--md-sys-color-primary); animation: pulse-dot 1.5s infinite; }
+        @keyframes pulse-dot { 0% { opacity: 1; transform: translateY(-50%) scale(1); } 50% { opacity: 0.4; transform: translateY(-50%) scale(1.5); } 100% { opacity: 1; transform: translateY(-50%) scale(1); } }
+
+        /* Submenu */
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(255,255,255,0.02); margin: 0 12px; border-radius: 0 0 12px 12px; }
         .submenu.open { max-height: 200px; margin-bottom: 8px; }
-        .sub-item {
-            padding: 12px 20px 12px 45px;
-            font-size: 13px;
-            color: #8e918f;
-            cursor: pointer;
-            transition: 0.2s;
-            border-radius: 8px;
-            margin: 2px 0;
-            display: block;
-        }
+        .sub-item { padding: 12px 20px 12px 45px; font-size: 13px; color: #8e918f; cursor: pointer; transition: 0.2s; border-radius: 8px; margin: 2px 0; display: block; }
         .sub-item:hover { color: white; background: var(--item-hover); }
         .sub-item.active { color: var(--md-sys-color-primary); font-weight: 700; }
 
-        .chevron { transition: transform 0.3s; font-size: 10px; }
-        .rotate { transform: rotate(180deg); }
+        .nav-label { padding: 20px 24px 8px; font-size: 11px; font-weight: 700; color: #444746; text-transform: uppercase; letter-spacing: 1px; }
 
-        .nav-label { 
-            padding: 20px 24px 8px; 
-            font-size: 11px; font-weight: 700; 
-            color: #444746; text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-
-        /* Sidebar Profile Section (Bottom) */
-        .sidebar-footer {
-            padding: 12px 16px;
-            border-top: 1px solid rgba(255,255,255,0.05) !important;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }
+        /* Footer Profile */
+        .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.05) !important; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; }
         .sidebar-footer:hover { background: var(--item-hover); }
-        
-        .profile-img-mini { 
-            width: 32px; height: 32px; 
-            border-radius: 8px; 
-            object-fit: cover; 
-            background: #333;
-        }
-
-        .user-meta {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .user-name-mini {
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-transform: uppercase;
-        }
-
-        .user-role-mini {
-            font-size: 9px;
-            font-weight: 600;
-            color: var(--md-sys-color-primary);
-            text-transform: uppercase;
-        }
+        .profile-img-mini { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; background: #333; }
+        .user-name-mini { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; }
+        .user-role-mini { font-size: 9px; font-weight: 600; color: var(--md-sys-color-primary); text-transform: uppercase; }
 
         main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        
         #contentArea { flex: 1; background: var(--md-sys-color-surface); overflow: hidden; }
         iframe { width: 100%; height: 100%; border: none; transition: opacity 0.3s; }
 
-        .modal-overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
-            display: none; align-items: center; justify-content: center; 
-            z-index: 2000; backdrop-filter: blur(8px);
-        }
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(8px); }
         .modal-overlay.show { display: flex; }
-        .modal-content { 
-            background: var(--md-sys-color-surface-container-high); 
-            width: 90%; max-width: 320px; border-radius: 28px; 
-            padding: 30px; text-align: center;
-        }
-        .modal-avatar { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; }
-        
-        .m3-btn { 
-            width: 100%; height: 50px; border-radius: 16px; 
-            font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 10px;
-        }
+        .modal-content { background: var(--md-sys-color-surface-container-high); width: 90%; max-width: 320px; border-radius: 28px; padding: 30px; text-align: center; }
+        .m3-btn { width: 100%; height: 50px; border-radius: 16px; font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: var(--md-sys-color-primary); color: white; }
         .btn-tonal { background: var(--md-sys-color-error); color: white; }
         .btn-text { background: transparent; color: #8e918f; }
 
@@ -194,13 +75,25 @@
 </head>
 <body>
 
-<div id="logoutModal" class="modal-overlay" onclick="closeModal()">
+<div id="logoutModal" class="modal-overlay" onclick="closeModal('logoutModal')">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <img id="modalAvatar" src="" class="modal-avatar">
-        <h2 id="modalName" style="font-size: 18px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">User</h2>
-        <p id="modalRole" style="font-size: 11px; font-weight: 700; color: var(--md-sys-color-primary); text-transform: uppercase; margin-bottom: 24px;">Role</p>
+        <img id="modalAvatar" src="" class="w-20 h-20 rounded-2xl mx-auto mb-4">
+        <h2 id="modalName" class="text-lg font-black uppercase mb-1">User</h2>
+        <p id="modalRole" class="text-[10px] font-bold text-blue-500 uppercase mb-6">Role</p>
         <button onclick="confirmLogout()" class="m3-btn btn-tonal">KELUAR SEKARANG</button>
-        <button onclick="closeModal()" class="m3-btn btn-text">BATALKAN</button>
+        <button onclick="closeModal('logoutModal')" class="m3-btn btn-text">BATALKAN</button>
+    </div>
+</div>
+
+<div id="absensiModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-user-clock"></i>
+        </div>
+        <h2 class="text-lg font-black uppercase mb-1">Belum Absen!</h2>
+        <p class="text-xs font-medium text-gray-400 mb-6">Ada petugas yang belum melakukan absensi pada shift ini.</p>
+        <button onclick="goToAbsensi()" class="m3-btn btn-primary">AYO ABSEN SEKARANG</button>
+        <button onclick="closeModal('absensiModal')" class="m3-btn btn-text">NANTI SAJA</button>
     </div>
 </div>
 
@@ -211,19 +104,20 @@
     </div>
     
     <nav>
-        <div onclick="loadPage('beranda.html', this)" class="sidebar-item active">
+        <div id="nav-beranda" onclick="loadPage('beranda.html', this)" class="sidebar-item active">
             <span>Beranda</span>
         </div>
 
         <p class="nav-label">Operasional</p>
-        <div onclick="loadPage('absensi.html', this)" class="sidebar-item">
+        <div id="nav-absensi" onclick="loadPage('absensi.html', this)" class="sidebar-item">
             <span>Buka Absensi</span>
+            <div id="absensiDot" class="dot-notif"></div>
         </div>
         
         <div class="dropdown-container">
             <div class="sidebar-item" onclick="toggleDropdown('auditSubmenu', this)">
                 <span>Audit Buku</span>
-                <i class="fa-solid fa-chevron-down chevron"></i>
+                <i class="fa-solid fa-chevron-down chevron text-[10px]"></i>
             </div>
             <div id="auditSubmenu" class="submenu">
                 <div class="sub-item" onclick="loadPage('audit-scanner.html', this)">Scanner</div>
@@ -241,41 +135,19 @@
         </div>
 
         <p class="nav-label">Koleksi & Anggota</p>
-        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item">
-            <span>Bibliografi</span>
-        </div>
-        <div onclick="loadPage('manajemen_rak.html', this)" class="sidebar-item">
-            <span>Manajemen Rak</span>
-        </div>
-        <div onclick="loadPage('manajemen_kategori.html', this)" class="sidebar-item">
-            <span>Manajemen Kategori</span>
-        </div>
-        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item">
-            <span>Sirkulasi</span>
-        </div>
-        <div onclick="loadPage('barcode.html', this)" class="sidebar-item">
-            <span>Cetak Barcode</span>
-        </div>
-        <div onclick="loadPage('label.html', this)" class="sidebar-item">
-            <span>Cetak Label</span>
-        </div>
-        <div onclick="loadPage('daftar-peminjam.html', this)" class="sidebar-item">
-            <span>Daftar Peminjam</span>
-        </div>
-        <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item">
-            <span>Keanggotaan</span>
-        </div>
+        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item"><span>Bibliografi</span></div>
+        <div onclick="loadPage('manajemen_rak.html', this)" class="sidebar-item"><span>Manajemen Rak</span></div>
+        <div onclick="loadPage('manajemen_kategori.html', this)" class="sidebar-item"><span>Manajemen Kategori</span></div>
+        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item"><span>Sirkulasi</span></div>
+        <div onclick="loadPage('barcode.html', this)" class="sidebar-item"><span>Cetak Barcode</span></div>
+        <div onclick="loadPage('label.html', this)" class="sidebar-item"><span>Cetak Label</span></div>
+        <div onclick="loadPage('daftar-peminjam.html', this)" class="sidebar-item"><span>Daftar Peminjam</span></div>
+        <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item"><span>Keanggotaan</span></div>
 
         <p class="nav-label">Sistem</p>
-        <div id="menuAkun" onclick="loadPage('account.html', this)" class="sidebar-item hidden">
-            <span>Kelola Akun</span>
-        </div>
-        <div id="menuFeedback" onclick="loadPage('admin_feedback.html', this)" class="sidebar-item hidden">
-            <span>Feedback</span>
-        </div>
-        <div onclick="loadPage('about.html', this)" class="sidebar-item">
-            <span>Tentang</span>
-        </div>
+        <div id="menuAkun" onclick="loadPage('account.html', this)" class="sidebar-item hidden"><span>Kelola Akun</span></div>
+        <div id="menuFeedback" onclick="loadPage('admin_feedback.html', this)" class="sidebar-item hidden"><span>Feedback</span></div>
+        <div onclick="loadPage('about.html', this)" class="sidebar-item"><span>Tentang</span></div>
     </nav>
 
     <div class="sidebar-footer" onclick="openLogoutModal()">
@@ -296,6 +168,29 @@
 <script type="module">
     import { supabase } from './supa/supa.js';
 
+    // --- FIX NAVIGASI ---
+    window.loadPage = (page, el) => {
+        const f = document.getElementById('contentFrame');
+        
+        // Ambil nama file saja untuk perbandingan agar lebih akurat
+        const currentPath = f.src.split('/').pop();
+        if (currentPath === page) return;
+
+        f.style.opacity = '0';
+        
+        // Eksekusi perpindahan page
+        setTimeout(() => {
+            f.src = page;
+            f.onload = () => f.style.opacity = '1';
+        }, 150);
+
+        // Update UI Active State
+        document.querySelectorAll('.sidebar-item, .sub-item').forEach(i => i.classList.remove('active'));
+        if (el) el.classList.add('active');
+        
+        if (window.event) window.event.stopPropagation();
+    };
+
     window.toggleDropdown = (id, el) => {
         const submenu = document.getElementById(id);
         const chevron = el.querySelector('.chevron');
@@ -303,20 +198,73 @@
         chevron.classList.toggle('rotate');
     };
 
-    window.loadPage = (page, el) => {
-        const f = document.getElementById('contentFrame');
-        if (f.src.includes(page)) return;
-        f.style.opacity = '0';
-        setTimeout(() => {
-            f.src = page;
-            f.onload = () => f.style.opacity = '1';
-        }, 200);
+    // --- LOGIC ABSENSI CHECKER ---
+    let isAbsensiLengkap = true;
 
-        document.querySelectorAll('.sidebar-item, .sub-item').forEach(i => i.classList.remove('active'));
-        if (el) el.classList.add('active');
-        if (window.event) window.event.stopPropagation();
+    async function checkAbsensiStatus() {
+        try {
+            const HARI_MAP = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const now = new Date();
+            const hariIni = HARI_MAP[now.getDay()];
+            const jamMenit = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+            const tgl = new Date().toISOString().split('T')[0];
+
+            // 1. Cari shift sekarang
+            const { data: shifts } = await supabase.from('jam_master').select('*');
+            const currentShift = shifts?.find(s => {
+                const [m, sl] = s.waktu.split(' - ');
+                return jamMenit >= m && jamMenit <= sl;
+            });
+
+            if (!currentShift) {
+                updateAbsenUI(true);
+                return;
+            }
+
+            // 2. Bandingkan jumlah petugas vs jumlah rekap
+            const [p, r] = await Promise.all([
+                supabase.from('jadwal_detail').select('nama').eq('hari', hariIni).eq('shift', currentShift.waktu),
+                supabase.from('rekap_absensi').select('nama').eq('tanggal', tgl).eq('shift', currentShift.label)
+            ]);
+
+            const totalPetugas = p.data?.length || 0;
+            const totalAbsen = r.data?.length || 0;
+
+            isAbsensiLengkap = (totalPetugas > 0 && totalAbsen >= totalPetugas) || totalPetugas === 0;
+            updateAbsenUI(isAbsensiLengkap);
+
+        } catch (err) {
+            console.error("Absensi Checker Error:", err);
+        }
+    }
+
+    function updateAbsenUI(isLengkap) {
+        const dot = document.getElementById('absensiDot');
+        dot.style.display = isLengkap ? 'none' : 'block';
+    }
+
+    // Modal Reminder Function
+    function triggerReminder() {
+        if (!isAbsensiLengkap) {
+            // Jangan munculkan modal jika user sedang berada di halaman absensi
+            const f = document.getElementById('contentFrame');
+            if (!f.src.includes('absensi.html')) {
+                document.getElementById('absensiModal').classList.add('show');
+            }
+        }
+    }
+
+    window.goToAbsensi = () => {
+        closeModal('absensiModal');
+        const target = document.getElementById('nav-absensi');
+        loadPage('absensi.html', target);
     };
 
+    // Jalankan pengecekan setiap 20 detik
+    setInterval(checkAbsensiStatus, 10000); // Update status data tiap 10 detik
+    setInterval(triggerReminder, 20000);    // Munculkan modal tiap 20 detik jika belum absen
+
+    // --- PROTEKSI & AUTH ---
     function checkProtection() {
         const isLoggedIn = sessionStorage.getItem('isLoggedIn');
         const user = sessionStorage.getItem('adminUser');
@@ -327,27 +275,28 @@
             return;
         }
 
-        const name = user;
         const displayRole = role === 'admin' ? 'Administrator' : 'Pustakawan';
-        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0a84ff&color=ffffff&bold=true&rounded=false`;
+        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user)}&background=0a84ff&color=ffffff&bold=true`;
 
-        document.getElementById('footerUserName').textContent = name;
+        document.getElementById('footerUserName').textContent = user;
         document.getElementById('footerUserRole').textContent = displayRole;
         document.getElementById('userAvatar').src = avatar;
-        
         document.getElementById('modalAvatar').src = avatar;
-        document.getElementById('modalName').textContent = name;
+        document.getElementById('modalName').textContent = user;
         document.getElementById('modalRole').textContent = displayRole;
 
         if (role === 'admin') {
-            document.getElementById('menuManajemenAbsen').classList.remove('hidden');
-            document.getElementById('menuFeedback').classList.remove('hidden');
-            document.getElementById('menuAkun').classList.remove('hidden');
+            ['menuManajemenAbsen', 'menuFeedback', 'menuAkun'].forEach(id => {
+                document.getElementById(id).classList.remove('hidden');
+            });
         }
+        
+        // Jalankan cek absensi pertama kali saat login berhasil
+        checkAbsensiStatus();
     }
 
     window.openLogoutModal = () => document.getElementById('logoutModal').classList.add('show');
-    window.closeModal = () => document.getElementById('logoutModal').classList.remove('show');
+    window.closeModal = (id) => document.getElementById(id).classList.remove('show');
     window.confirmLogout = () => {
         sessionStorage.clear();
         window.location.replace('login.html');
