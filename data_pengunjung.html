@@ -3,153 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Peminjam</title>
+    <title>Arsip Pengunjung • Perpustakaan</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-main: #fcfdfe; --text-main: #1a1c1e; --text-muted: #5e6266;
-            --accent: #0061ff; --border: #e9eef2;
+            --bg-main: #f8f9fa; --bg-card: #ffffff; --text-main: #1f1f1f;
+            --text-muted: #5f6368; --accent: #1a73e8; --border: #e2e8f0;
         }
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-main: #000000; --text-main: #e2e2e6; --text-muted: #8e9189;
-                --accent: #a8c7fa; --border: #222427;
+                --bg-main: #000000; --bg-card: #121212; --text-main: #e3e3e3;
+                --text-muted: #9aa0a6; --accent: #8ab4f8; --border: #2d2d2d;
             }
         }
-        * { font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-main); color: var(--text-main); min-height: 100vh; }
         
-        .tab-btn { padding: 16px 24px; font-size: 14px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s; color: var(--text-muted); flex: 1; text-align: center; }
-        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .folder-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+        }
+        .folder-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,0,0,0.1); }
         
-        .card-sirkulasi { background: var(--bg-main); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .breadcrumb-item:not(:last-child)::after { content: '/'; margin: 0 10px; color: var(--text-muted); opacity: 0.5; }
         
-        .badge-late { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; }
-        
-        .loader { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--accent); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Style untuk Iframe */
-        .content-frame { width: 100%; height: calc(100vh - 80px); border: none; }
-        .hidden { display: none; }
+        .icon-folder { font-size: 44px; color: #fabb05; filter: drop-shadow(0 4px 6px rgba(250, 187, 5, 0.2)); }
+        .icon-month { font-size: 44px; color: var(--accent); filter: drop-shadow(0 4px 6px rgba(26, 115, 232, 0.2)); }
     </style>
 </head>
-<body class="p-0">
+<body class="p-6 md:p-12">
 
-    <div class="max-w-4xl mx-auto">
-        <div class="flex border-b border-[var(--border)] sticky top-0 bg-[var(--bg-main)] z-10">
-            <div onclick="switchTab('semua')" id="tab-semua" class="tab-btn active">Semua Pinjaman</div>
-            <div onclick="switchTab('terlambat')" id="tab-terlambat" class="tab-btn">Terlambat</div>
-        </div>
-
-        <div id="content-semua" class="p-4">
-            <div id="list-container"></div>
-            <div id="sentinel" class="flex justify-center p-4">
-                <div id="bottom-loader" class="loader hidden"></div>
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10">
+            <div class="flex items-center gap-2 mb-4 text-xs font-black uppercase tracking-[3px] text-blue-500">
+                <i class="fa-solid fa-box-archive"></i> Arsip Digital
             </div>
-        </div>
+            <h1 class="text-4xl font-800 tracking-tight mb-8">Data Pengunjung</h1>
+            
+            <nav class="flex items-center bg-[var(--bg-card)] p-4 px-6 rounded-2xl border border-[var(--border)] shadow-sm text-sm">
+                <div onclick="renderYears()" class="breadcrumb-item cursor-pointer hover:text-blue-500 transition font-bold">Root</div>
+                <div id="breadcrumb-year" class="breadcrumb-item hidden font-medium text-muted"></div>
+            </nav>
+        </header>
 
-        <div id="content-terlambat" class="hidden">
-            <iframe src="daftar-keterlambatan.html" class="content-frame"></iframe>
+        <div id="folder-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
+
+        <div id="loader" class="hidden flex flex-col items-center py-24">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            <p class="text-[10px] font-black mt-6 opacity-40 uppercase tracking-[2px]">Mengkatalogkan Data...</p>
         </div>
     </div>
 
 <script type="module">
     import { supabase } from './supa/supa.js';
 
-    let page = 0;
-    const limit = 10;
-    let hasMore = true;
-    let isLoading = false;
+    const grid = document.getElementById('folder-grid');
+    const loader = document.getElementById('loader');
+    const bcy = document.getElementById('breadcrumb-year');
 
-    const listContainer = document.getElementById('list-container');
-    const bottomLoader = document.getElementById('bottom-loader');
+    let archiveData = {}; 
 
-    // Fungsi Switch Tab
-    window.switchTab = (tab) => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
+    async function init() {
+        showLoader(true);
+        try {
+            // Mengambil HANYA kolom tanggal_kunjungan
+            const { data, error } = await supabase
+                .from('data_pengunjung')
+                .select('tanggal_kunjungan')
+                .not('tanggal_kunjungan', 'is', null) // Pastikan data tidak null
+                .order('tanggal_kunjungan', { ascending: false });
 
-        if (tab === 'semua') {
-            document.getElementById('content-semua').classList.remove('hidden');
-            document.getElementById('content-terlambat').classList.add('hidden');
-        } else {
-            document.getElementById('content-semua').classList.add('hidden');
-            document.getElementById('content-terlambat').classList.remove('hidden');
+            if (error) throw error;
+
+            data.forEach(item => {
+                // Gunakan String Split untuk menghindari bug zona waktu pada objek Date
+                const parts = item.tanggal_kunjungan.split('-'); 
+                const year = parts[0]; 
+                const month = parts[1]; 
+
+                if (!archiveData[year]) archiveData[year] = new Set();
+                archiveData[year].add(month);
+            });
+
+            // Konversi Set ke Array terurut
+            Object.keys(archiveData).forEach(y => {
+                archiveData[y] = Array.from(archiveData[y]).sort((a, b) => b - a);
+            });
+
+            renderYears();
+        } catch (err) {
+            console.error(err);
+            grid.innerHTML = `<p class="col-span-full text-center py-10 opacity-50 font-medium">Gagal memuat arsip data.</p>`;
+        } finally {
+            showLoader(false);
         }
-    };
-
-    async function fetchData() {
-        if (isLoading || !hasMore) return;
-        isLoading = true;
-        bottomLoader.classList.remove('hidden');
-
-        const from = page * limit;
-        const to = from + limit - 1;
-
-        const { data, error } = await supabase
-            .from('sirkulasi')
-            .select('*')
-            .eq('status', 'DIPINJAM')
-            .order('tgl_pinjam', { ascending: false })
-            .range(from, to);
-
-        if (error) {
-            console.error(error);
-        } else {
-            if (data.length < limit) hasMore = false;
-            renderData(data);
-            page++;
-        }
-
-        isLoading = false;
-        bottomLoader.classList.add('hidden');
     }
 
-    function renderData(items) {
-        if (items.length === 0 && page === 0) {
-            listContainer.innerHTML = `<div class="p-10 text-center text-muted text-sm italic">Tidak ada peminjaman aktif.</div>`;
+    window.renderYears = () => {
+        bcy.classList.add('hidden');
+        grid.innerHTML = '';
+        const years = Object.keys(archiveData).sort((a, b) => b - a);
+
+        if (years.length === 0) {
+            grid.innerHTML = `<p class="col-span-full text-center py-10 opacity-30 italic">Belum ada data pengunjung terdaftar.</p>`;
             return;
         }
 
-        items.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card-sirkulasi';
-            card.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <div>
-                        <h3 class="font-bold text-sm leading-tight">${item.judul_buku || 'Judul Tidak Diketahui'}</h3>
-                        <p class="text-[11px] text-muted uppercase font-bold mt-1 tracking-wider">${item.kode_eksemplar}</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border)]">
-                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold uppercase">
-                        ${item.nama_anggota ? item.nama_anggota.charAt(0) : '?'}
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold">${item.nama_anggota}</div>
-                        <div class="text-[10px] text-muted">${item.nis}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-[10px] text-muted uppercase font-bold">Tgl Pinjam</div>
-                        <div class="text-xs font-bold">${item.tgl_pinjam}</div>
-                    </div>
+        years.forEach(year => {
+            const div = document.createElement('div');
+            div.className = 'folder-card p-8 flex flex-col items-center gap-5';
+            div.onclick = () => renderMonths(year);
+            div.innerHTML = `
+                <i class="fa-solid fa-folder icon-folder"></i>
+                <span class="font-800 text-base tracking-tight">${year}</span>
+            `;
+            grid.appendChild(div);
+        });
+    };
+
+    window.renderMonths = (year) => {
+        bcy.innerText = year;
+        bcy.classList.remove('hidden');
+        grid.innerHTML = '';
+
+        const months = archiveData[year];
+        const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+        months.forEach(m => {
+            const monthIdx = parseInt(m) - 1;
+            const div = document.createElement('div');
+            div.className = 'folder-card p-8 flex flex-col items-center gap-5';
+            div.onclick = () => {
+                window.location.href = `detail_data_pengunjung.html?year=${year}&month=${m}`;
+            };
+            div.innerHTML = `
+                <i class="fa-solid fa-folder-open icon-month"></i>
+                <div class="text-center">
+                    <span class="block font-800 text-base tracking-tight">${monthNames[monthIdx]}</span>
+                    <span class="text-[10px] opacity-40 font-black uppercase tracking-widest">${year}</span>
                 </div>
             `;
-            listContainer.appendChild(card);
+            grid.appendChild(div);
         });
+    };
+
+    function showLoader(show) {
+        loader.classList.toggle('hidden', !show);
+        grid.classList.toggle('hidden', show);
     }
 
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isLoading && hasMore) {
-            fetchData();
-        }
-    }, { threshold: 0.1 });
-
-    observer.observe(document.getElementById('sentinel'));
-    fetchData();
+    init();
 </script>
 </body>
 </html>
