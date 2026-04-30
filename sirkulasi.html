@@ -9,7 +9,6 @@
     <style>
     :root {
         --bg-page: #000000;
-        /* Menggunakan warna solid (tanpa transparansi) untuk performa maksimal */
         --bg-surface: #1e1f20; 
         --text-main: #e3e3e3;
         --text-sub: #9aa0a6;
@@ -21,151 +20,65 @@
         --tag-bg: #1a273a;
     }
 
-    * { 
-        margin: 0; 
-        padding: 0; 
-        box-sizing: border-box; 
-        -webkit-tap-highlight-color: transparent; 
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
         font-family: 'Plus Jakarta Sans', sans-serif;
         background-color: var(--bg-page);
-        /* Background GIF tetap ada di paling belakang */
         background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
                           url('https://i.pinimg.com/originals/c6/a1/c9/c6a1c9f91f82c3fe5af6c5d83cc0bf7e.gif');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        background-repeat: no-repeat;
-        
-        color: var(--text-main);
-        display: flex;
-        justify-content: center;
-        height: 100vh;
-        overflow: hidden;
+        background-size: cover; background-position: center; background-attachment: fixed;
+        color: var(--text-main); display: flex; justify-content: center; height: 100vh; overflow: hidden;
     }
 
-    .app-container { 
-        width: 100%; 
-        max-width: 500px; 
-        display: flex; 
-        flex-direction: column; 
-        position: relative;
-        /* Menghilangkan backdrop-filter untuk performa */
-    }
-    
-    .scroll-area {
-        flex: 1;
-        overflow-y: auto;
-        padding: 24px 20px 180px 20px;
-        scrollbar-width: none;
-    }
+    .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; position: relative; }
+    .scroll-area { flex: 1; overflow-y: auto; padding: 24px 20px 180px 20px; scrollbar-width: none; }
     .scroll-area::-webkit-scrollbar { display: none; }
 
     .selected-member-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--brand);
-        color: #000;
-        padding: 8px 16px;
-        border-radius: 100px;
-        font-size: 12px;
-        font-weight: 800;
-        margin-bottom: 12px;
-        margin-left: 16px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        animation: slideUp 0.3s ease-out;
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--brand); color: #000; padding: 8px 16px; border-radius: 100px;
+        font-size: 12px; font-weight: 800; margin-bottom: 12px; margin-left: 16px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out;
     }
 
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-        max-width: 500px;
-        padding: 20px 0;
-        /* Gradasi hitam solid tanpa efek blur */
-        background: linear-gradient(transparent, #000 70%);
-        z-index: 100;
+        position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 500px; padding: 20px 0;
+        background: linear-gradient(transparent, #000 70%); z-index: 100;
     }
 
     .input-wrapper {
-        margin: 0 16px;
-        display: flex;
-        align-items: center;
-        background: var(--input-bg); /* Warna solid */
-        border-radius: 24px;
-        padding: 0 20px;
-        height: 56px;
-        border: 1px solid var(--border);
-        transition: border-color 0.2s;
+        margin: 0 16px; display: flex; align-items: center;
+        background: var(--input-bg); border-radius: 24px; padding: 0 20px; height: 56px;
+        border: 1px solid var(--border); transition: border-color 0.2s;
         box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     }
-    .input-wrapper:focus-within { 
-        border-color: var(--brand); 
-    }
-
-    .input-gemini {
-        flex: 1;
-        background: transparent;
-        border: none;
-        font-family: inherit;
-        font-size: 15px;
-        color: var(--text-main);
-        outline: none;
-    }
+    .input-wrapper:focus-within { border-color: var(--brand); }
+    .input-gemini { flex: 1; background: transparent; border: none; font-family: inherit; font-size: 15px; color: var(--text-main); outline: none; }
 
     .results-list {
-        position: absolute;
-        bottom: 100%;
-        left: 16px;
-        right: 16px;
-        display: flex;
-        flex-direction: column-reverse;
-        gap: 8px;
-        margin-bottom: 12px;
-        max-height: 60vh;
-        overflow-y: auto;
-        scrollbar-width: none;
+        position: absolute; bottom: 100%; left: 16px; right: 16px;
+        display: flex; flex-direction: column-reverse; gap: 8px;
+        margin-bottom: 12px; max-height: 60vh; overflow-y: auto; scrollbar-width: none;
     }
     .results-list::-webkit-scrollbar { display: none; }
 
     .result-item {
-        padding: 16px;
-        cursor: pointer;
-        background: var(--bg-surface); /* Warna solid pekat */
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        /* Dihapus: backdrop-filter dan transisi berat */
+        padding: 16px; cursor: pointer; background: var(--bg-surface);
+        border: 1px solid var(--border); border-radius: 20px;
+        display: flex; flex-direction: column; gap: 6px;
     }
-    .result-item.selected { 
-        border-color: var(--brand); 
-        background: var(--item-hover);
-    }
+    .result-item.selected { border-color: var(--brand); background: var(--item-hover); }
 
     .res-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
     .res-title { font-size: 14px; font-weight: 700; color: var(--text-main); }
     .res-sub { font-size: 11px; font-weight: 600; color: var(--brand); }
-    
-    .tag {
-        padding: 4px 10px;
-        background: var(--tag-bg);
-        color: var(--brand);
-        font-size: 10px;
-        font-weight: 800;
-        border-radius: 8px;
-        text-transform: uppercase;
-    }
-
+    .tag { padding: 4px 10px; background: var(--tag-bg); color: var(--brand); font-size: 10px; font-weight: 800; border-radius: 8px; text-transform: uppercase; }
     .hidden { display: none !important; }
+    #error-display { color: #f28b82; font-size: 10px; text-align: center; margin-bottom: 5px; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -178,6 +91,7 @@
     </div>
 
     <div class="bottom-nav">
+        <div id="error-display"></div>
         <div id="mainResults" class="results-list"></div>
         
         <div id="memberTag" class="selected-member-tag hidden">
@@ -194,85 +108,157 @@
 <script type="module">
     import { supabase as client } from './supa/supa.js';
 
-    let state = { 
-        member: null, 
-        mode: 'MEMBER', 
-        selectedIdx: -1, 
-        lastQuery: '' 
-    };
-
+    let state = { member: null, mode: 'MEMBER', selectedIdx: -1, lastQuery: '' };
     const mainInput = document.getElementById('mainInput');
     const mainResults = document.getElementById('mainResults');
+    const errorDisplay = document.getElementById('error-display');
 
     mainInput.addEventListener('input', async () => {
         const q = mainInput.value.trim();
         if (q === state.lastQuery) return;
         state.lastQuery = q;
         state.selectedIdx = -1;
+        errorDisplay.innerText = '';
 
         if (q.length < 2) {
             mainResults.innerHTML = '';
             return;
         }
 
-        const { data, error } = await client.rpc('sirkulasi_search_handler', {
-            p_mode: state.mode,
-            p_query: q
+        let searchResult = [];
+
+        try {
+if (state.mode === 'MEMBER') {
+    // 1. Cari sirkulasi aktif berdasarkan judul buku atau kode eksemplar
+    const { data: activeLoans } = await client
+        .from('sirkulasi')
+        .select('id, member_id, judul_buku, kode_eksemplar')
+        .eq('status', 'DIPINJAM')
+        .or(`judul_buku.ilike.%${q}%,kode_eksemplar.ilike.%${q}%`);
+
+    const loanedMemberIds = activeLoans?.map(l => l.member_id) || [];
+
+    // 2. Cari anggota (berdasarkan Nama/NIS) ATAU yang ID-nya ada di daftar peminjam tadi
+    let memberQuery = client
+        .from('anggota')
+        .select('id, nama, nis, jenjang, organisasi, kamar');
+    
+    if (loanedMemberIds.length > 0) {
+        memberQuery = memberQuery.or(`nama.ilike.%${q}%,nis.ilike.%${q}%,id.in.(${loanedMemberIds.join(',')})`);
+    } else {
+        memberQuery = memberQuery.or(`nama.ilike.%${q}%,nis.ilike.%${q}%`);
+    }
+
+    const { data: members, error } = await memberQuery.limit(5);
+
+    if (error) throw error;
+
+    if (members && members.length > 0) {
+        // Ambil ID semua member yang muncul di hasil pencarian untuk cek status pinjamannya
+        const currentMemberIds = members.map(m => m.id);
+        const { data: allLoans } = await client
+            .from('sirkulasi')
+            .select('id, member_id, judul_buku, kode_eksemplar')
+            .eq('status', 'DIPINJAM')
+            .in('member_id', currentMemberIds);
+
+        searchResult = members.map(m => {
+            const loan = allLoans?.find(l => l.member_id === m.id);
+            return {
+                id: m.id,
+                title: m.nama,
+                subtitle: m.nis,
+                tag1: m.jenjang,
+                tag2: m.kamar || m.organisasi || '-',
+                active_loan_id: loan?.id,
+                active_loan_title: loan?.judul_buku,
+                active_loan_code: loan?.kode_eksemplar
+            };
         });
+    }
+} else {
+                // LOGIKA PENCARIAN BUKU (Tetap sama)
+                const { data: biblioData } = await client
+                    .from('biblio')
+                    .select('id')
+                    .ilike('judul', `%${q}%`)
+                    .limit(10);
+                
+                const biblioIds = biblioData?.map(b => b.id) || [];
 
-        if (error) {
-            console.error("Search Error:", error.message);
-            return;
-        }
+                let query = client
+                    .from('eksemplar')
+                    .select(`
+                        id, 
+                        kode, 
+                        status, 
+                        biblio!eksemplar_biblio_id_fkey (judul, penulis)
+                    `);
 
-        renderResults(data);
+                if (biblioIds.length > 0) {
+                    query = query.or(`kode.ilike.%${q}%, biblio_id.in.(${biblioIds.join(',')})`);
+                } else {
+                    query = query.ilike('kode', `%${q}%`);
+                }
 
-        if (data && data.length === 1) {
-            state.selectedIdx = 0;
-            updateSelection();
+                const { data, error } = await query.limit(5);
+                if (error) throw error;
+
+                if (data) {
+                    searchResult = data.map(b => ({
+                        id: b.id,
+                        title: b.biblio?.judul || 'Tanpa Judul',
+                        subtitle: b.kode,
+                        tag1: b.biblio?.penulis || '-',
+                        tag2: b.status,
+                        status_label: b.status
+                    }));
+                }
+            }
+            renderResults(searchResult);
+        } catch (err) {
+            console.error(err);
+            errorDisplay.innerText = "Error: " + err.message;
         }
     });
 
     function renderResults(data) {
         mainResults.innerHTML = '';
-        if(!data) return;
+        if(!data || data.length === 0) {
+            if(mainInput.value.length >= 2) {
+                mainResults.innerHTML = '<div style="text-align:center; padding:20px; font-size:12px; opacity:0.5;">Data tidak ditemukan</div>';
+            }
+            return;
+        }
 
-        data.forEach((item, idx) => {
+        data.forEach((item) => {
             const div = document.createElement('div');
             div.className = 'result-item';
-            div.dataset.index = idx;
-
-            const hasLoan = state.mode === 'MEMBER' && item.active_loan_code;
-            const q = mainInput.value.toLowerCase();
             
-            // Deteksi jika muncul karena pencarian buku yang dibawa
-            const isMatchByBook = hasLoan && (
-                item.active_loan_title?.toLowerCase().includes(q) || 
-                item.active_loan_code?.toLowerCase().includes(q)
-            );
-
+            // Highlight jika anggota sedang meminjam buku (Mode Pengembalian)
+            const isOnLoan = state.mode === 'MEMBER' && item.active_loan_id;
+            
             div.innerHTML = `
                 <div class="res-row">
-                    <span class="res-title" style="color:${hasLoan ? 'var(--danger)' : 'inherit'}">${item.title}</span>
+                    <span class="res-title" style="color:${isOnLoan ? 'var(--danger)' : 'inherit'}">${item.title}</span>
                     <span class="res-sub">${item.subtitle}</span>
                 </div>
-                ${item.active_loan_title ? `
-                    <div style="font-size:11px; color:${isMatchByBook ? 'var(--brand)' : 'var(--danger)'}; font-weight:700; margin-top:2px;">
-                        ${isMatchByBook ? '🔍 Cocok Buku: ' : 'Sedang Pinjam: '} ${item.active_loan_title}
+                ${isOnLoan ? `
+                    <div style="font-size:11px; color:var(--danger); font-weight:700; margin-top:4px; display:flex; align-items:center; gap:4px;">
+                        <span>⚠️ Sedang Pinjam:</span>
+                        <span style="text-decoration:underline;">${item.active_loan_title} (${item.active_loan_code})</span>
                     </div>
-                    <div style="font-size:10px; color:var(--text-sub);">Kode: ${item.active_loan_code}</div>
                 ` : ''}
-                <div style="display:flex; gap:6px; margin-top:4px; overflow:hidden;">
+                <div style="display:flex; gap:6px; margin-top:6px;">
                     <span class="tag">${item.tag1 || '-'}</span>
                     <span class="tag">${item.tag2 || '-'}</span>
-                    ${item.status_label ? `<span class="tag" style="color:var(--brand)">${item.status_label}</span>` : ''}
                 </div>
             `;
 
             div.onclick = () => {
                 if (state.mode === 'MEMBER') {
-                    if (item.active_loan_code) {
-                        // KIRIM sirkulasi_id agar halaman detail memunculkan tombol kembalikan/perpanjang
+                    if (item.active_loan_id) {
+                        // Masuk ke Mode RETURN
                         sessionStorage.setItem('pending_loan', JSON.stringify({ 
                             member: { id: item.id, subtitle: item.subtitle, title: item.title }, 
                             book: { subtitle: item.active_loan_code, title: item.active_loan_title }, 
@@ -284,8 +270,8 @@
                         selectMember(item);
                     }
                 } else {
-                    if (item.status_label?.toLowerCase() !== 'tersedia') {
-                        alert('Maaf, buku sedang dipinjam atau tidak tersedia.');
+                    if (item.status_label?.toUpperCase() !== 'TERSEDIA') {
+                        alert('Buku sedang tidak tersedia (Status: ' + item.status_label + ')');
                         return;
                     }
                     selectBuku(item);
@@ -295,12 +281,13 @@
         });
     }
 
+    // Fungsi selectMember dan selectBuku tetap sama seperti sebelumnya...
     function selectMember(m) {
         state.member = m;
         state.mode = 'BOOK';
         state.lastQuery = '';
         mainInput.value = '';
-        mainInput.placeholder = 'Cari Judul atau Scan Kode Buku...';
+        mainInput.placeholder = 'Cari Judul atau Kode Buku...';
         mainResults.innerHTML = '';
         document.getElementById('memberTag').classList.remove('hidden');
         document.getElementById('tagName').innerText = m.title;
@@ -316,41 +303,11 @@
         window.location.href = 'detail_sirkulasi.html';
     }
 
-    mainInput.addEventListener('keydown', (e) => {
-        const items = mainResults.querySelectorAll('.result-item');
-        if (e.key === 'Enter') {
-            if (state.selectedIdx > -1 && items[state.selectedIdx]) {
-                items[state.selectedIdx].click();
-            } else if (items.length === 1) {
-                items[0].click();
-            }
-            return;
-        }
-        if (!items.length) return;
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            state.selectedIdx = Math.min(state.selectedIdx + 1, items.length - 1);
-            updateSelection();
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            state.selectedIdx = Math.max(state.selectedIdx - 1, 0);
-            updateSelection();
-        }
-    });
-
-    function updateSelection() {
-        const items = mainResults.querySelectorAll('.result-item');
-        items.forEach((item, idx) => {
-            item.classList.toggle('selected', idx === state.selectedIdx);
-            if (idx === state.selectedIdx) item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        });
-    }
-
     window.resetUI = () => {
         sessionStorage.removeItem('pending_loan');
         location.reload();
     };
-
+    
     mainInput.focus();
 </script>
 </body>

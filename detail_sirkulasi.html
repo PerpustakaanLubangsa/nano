@@ -9,70 +9,96 @@
     <style>
         :root {
             --bg-page: #000000;
-            --bg-surface: #121212;
+            --bg-surface: rgba(30, 31, 32, 0.85);
             --text-main: #e3e3e3;
             --text-sub: #9aa0a6;
             --brand: #8ab4f8;
-            --border: #303134;
-            --input-bg: #1e1f20;
+            --border: #3c4043;
+            --input-bg: #202124;
             --danger: #f28b82;
             --tag-bg: rgba(138, 180, 248, 0.15);
-            --success: #00c853;
+            --success: #81c995;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-page);
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                              url('https://i.pinimg.com/originals/c6/a1/c9/c6a1c9f91f82c3fe5af6c5d83cc0bf7e.gif');
+            background-size: cover; background-position: center; background-attachment: fixed;
             color: var(--text-main);
             display: flex; align-items: center; justify-content: center;
             height: 100vh; width: 100vw; overflow: hidden;
         }
-        .app-container { width: 100%; max-width: 420px; padding: 12px; }
+
+        .app-container { width: 100%; max-width: 420px; padding: 16px; z-index: 10; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         .card {
             background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 24px;
-            display: flex; flex-direction: column; gap: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 32px;
+            padding: 30px;
+            display: flex; flex-direction: column; gap: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6);
         }
-        .section-title { font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
-        .main-val { font-size: 18px; font-weight: 700; color: var(--text-main); line-height: 1.3; }
-        .sub-val { font-size: 13px; font-weight: 600; color: var(--brand); }
-        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-        .tag { padding: 4px 10px; background: var(--tag-bg); color: var(--brand); font-size: 10px; font-weight: 700; border-radius: 8px; }
-        .status-badge { padding: 6px 14px; border-radius: 100px; font-size: 10px; font-weight: 800; color: #000; }
-        .action-area { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+
+        .section-title { font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1.5px; }
+        .main-val { font-size: 20px; font-weight: 700; color: var(--text-main); line-height: 1.2; margin-top: 4px; }
+        .sub-val { font-size: 13px; font-weight: 600; color: var(--brand); margin-top: 2px; }
+        
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag { padding: 5px 12px; background: var(--tag-bg); color: var(--brand); font-size: 10px; font-weight: 700; border-radius: 10px; border: 1px solid rgba(138, 180, 248, 0.2); }
+        
+        .status-badge { padding: 6px 14px; border-radius: 100px; font-size: 10px; font-weight: 800; color: #000; text-transform: uppercase; }
+        
+        .action-area { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        
         .btn {
-            width: 100%; padding: 14px; border-radius: 100px;
-            font-family: inherit; font-size: 14px; font-weight: 700;
+            width: 100%; padding: 16px; border-radius: 100px;
+            font-family: inherit; font-size: 14px; font-weight: 800;
             cursor: pointer; border: none; transition: all 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .btn:active { transform: scale(0.96); }
         .btn-primary { background: var(--brand); color: #000; }
-        .btn-secondary { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); }
-        .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--border); }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-danger { background: var(--danger); color: #000; }
+
         .hidden { display: none !important; }
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
-            z-index: 1000; padding: 20px;
+            background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px; backdrop-filter: blur(8px);
         }
-        .modal-content { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 24px; padding: 28px; width: 100%; max-width: 340px; text-align: center; }
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #000; padding: 12px 24px; border-radius: 100px; font-size: 13px; font-weight: 700; z-index: 2000; }
+        .modal-content { background: #1e1f20; border: 1px solid var(--border); border-radius: 32px; padding: 35px; width: 100%; max-width: 340px; text-align: center; }
+        .denda-box { 
+            background: rgba(242, 139, 130, 0.15); 
+            border: 1px solid var(--danger); 
+            padding: 16px; border-radius: 20px; margin-top: 5px;
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        .pulse { animation: pulseAnim 1.5s infinite; background: var(--input-bg); border-radius: 8px; }
+        @keyframes pulseAnim { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <div id="loader" class="card">
-        <div style="height: 20px; background: var(--input-bg); border-radius: 6px; width: 40%;"></div>
-        <div style="height: 60px; background: var(--input-bg); border-radius: 6px; width: 100%;"></div>
+        <div class="pulse" style="height: 20px; width: 40%;"></div>
+        <div class="pulse" style="height: 60px; width: 100%;"></div>
+        <div class="pulse" style="height: 100px; width: 100%;"></div>
     </div>
 
     <div id="content" class="card hidden">
-        <div id="successMsg" class="hidden" style="text-align: center; background: var(--tag-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--brand); margin-bottom: 8px;">
-            <p id="msgText" style="font-size: 11px; font-weight: 800; color: var(--brand);">DETAIL TRANSAKSI</p>
+        <div id="statusHeader" class="hidden" style="text-align: center; background: rgba(138, 180, 248, 0.1); padding: 12px; border-radius: 16px; border: 1px solid var(--brand); margin-bottom: 5px;">
+            <p id="statusHeaderText" style="font-size: 11px; font-weight: 800; color: var(--brand); letter-spacing: 1px;">PINJAMAN AKTIF</p>
         </div>
 
         <div class="data-group">
@@ -93,12 +119,19 @@
 
         <hr style="border: none; border-top: 1px solid var(--border);">
 
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="data-group">
-                <span class="section-title">Informasi</span>
-                <p id="detTempo" style="font-size: 15px; font-weight: 700; color: var(--brand);">Memuat...</p>
+        <div id="infoSirkulasi">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="data-group">
+                    <span class="section-title" id="labelTempo">Estimasi Kembali</span>
+                    <p id="detTempo" style="font-size: 16px; font-weight: 700; color: var(--brand); margin-top: 4px;">-</p>
+                </div>
+                <div id="detStatus" class="status-badge">-</div>
             </div>
-            <div id="detStatus" class="status-badge">-</div>
+            
+            <div id="dendaArea" class="denda-box hidden">
+                <span class="section-title" style="color: var(--danger);">⚠ TERLAMBAT</span>
+                <p id="teksDenda" style="color: var(--danger); font-size: 15px; font-weight: 800; margin-top:6px;">Rp 0</p>
+            </div>
         </div>
 
         <div id="preAction" class="action-area">
@@ -107,7 +140,7 @@
         </div>
 
         <div id="postAction" class="action-area hidden">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <button id="btnPerpanjang" class="btn btn-secondary">Perpanjang</button>
                 <button id="btnKembalikan" class="btn btn-danger">Kembalikan</button>
             </div>
@@ -118,11 +151,11 @@
 
 <div id="customModal" class="modal-overlay hidden">
     <div class="modal-content">
-        <h3 id="modalTitle" style="margin-bottom: 12px;">Konfirmasi</h3>
-        <p id="modalBody" style="color: var(--text-sub); margin-bottom: 24px;">Lanjutkan aksi ini?</p>
-        <div style="display: flex; gap: 10px;">
-            <button id="modalCancel" class="btn btn-secondary">Batal</button>
-            <button id="modalConfirm" class="btn btn-primary">Ya, Lanjut</button>
+        <h3 id="modalTitle" style="margin-bottom: 12px; font-weight: 800;">Konfirmasi</h3>
+        <p id="modalBody" style="color: var(--text-sub); margin-bottom: 28px; font-size: 14px; line-height: 1.5;">Lanjutkan aksi ini?</p>
+        <div style="display: flex; gap: 12px;">
+            <button id="modalCancel" class="btn btn-secondary" style="flex: 1;">Batal</button>
+            <button id="modalConfirm" class="btn btn-primary" style="flex: 1;">Lanjut</button>
         </div>
     </div>
 </div>
@@ -130,89 +163,154 @@
 <script type="module">
     import { supabase as client } from './supa/supa.js';
 
-    let state = { member: null, book: null, sirkulasiId: null };
+    let state = { member: null, book: null, sirkulasi: null, mode: 'NEW' };
     let modalCallback = null;
 
-    async function loadDetail() {
+    async function init() {
         const sessionData = sessionStorage.getItem('pending_loan');
-        if (!sessionData) { window.location.href = 'sirkulasi.html'; return; }
+        if (!sessionData) return goBack();
         const payload = JSON.parse(sessionData);
 
-        // 1. Fetch data segar via RPC Search agar sinkron
-        const { data: memberRes } = await client.rpc('sirkulasi_search_handler', { p_mode: 'MEMBER', p_query: payload.member.subtitle });
-        const { data: bookRes } = await client.rpc('sirkulasi_search_handler', { p_mode: 'BOOK', p_query: payload.book.subtitle });
+        try {
+            const [mRes, bRes] = await Promise.all([
+                client.from('anggota').select('*').eq('id', payload.member.id).single(),
+                client.from('eksemplar').select('*, biblio!eksemplar_biblio_id_fkey(*)').eq('kode', payload.book.subtitle).single()
+            ]);
 
-        if (!memberRes?.[0] || !bookRes?.[0]) return goBack();
+            if (mRes.error || bRes.error) throw new Error("Gagal ambil data");
+            state.member = mRes.data;
+            state.book = bRes.data;
 
-        state.member = memberRes[0];
-        state.book = bookRes[0];
+            if (payload.sirkulasi_id) {
+                const { data: sData } = await client.from('sirkulasi').select('*').eq('id', payload.sirkulasi_id).single();
+                if (sData) {
+                    state.sirkulasi = sData;
+                    state.mode = 'EXISTING';
+                }
+            }
 
-        // 2. Render Dasar
-        document.getElementById('detNama').innerText = state.member.title;
-        document.getElementById('detNis').innerText = state.member.subtitle;
-        document.getElementById('memberTags').innerHTML = `<span class="tag">${state.member.tag1}</span><span class="tag">${state.member.tag2}</span>`;
-        
-        document.getElementById('detJudul').innerText = state.book.title;
-        document.getElementById('detKode').innerText = state.book.subtitle;
-        document.getElementById('bookTags').innerHTML = `<span class="tag">${state.book.tag1}</span><span class="tag">${state.book.tag2}</span>`;
+            renderUI();
+        } catch (e) {
+            console.error(e);
+            alert("Error: Data tidak ditemukan.");
+            goBack();
+        }
+    }
 
-        // 3. LOGIKA PEMBEDA: Cek apakah buku yang dibuka adalah buku yang sedang dipinjam
-        const isCurrentlyBorrowed = state.member.active_loan_code === state.book.subtitle;
-        
-        if (isCurrentlyBorrowed) {
-            // MODE: SUDAH DIPINJAM (Tampilkan tombol Perpanjang/Kembali)
-            state.sirkulasiId = state.member.active_loan_id;
-            document.getElementById('detTempo').innerText = "Sedang Dipinjam";
-            document.getElementById('detStatus').innerText = "DIPINJAM";
-            document.getElementById('detStatus').style.background = "var(--brand)";
-            showSuccessState(true);
-        } else {
-            // MODE: AKAN DIPINJAM (Tampilkan tombol Konfirmasi)
-            const isAvailable = state.book.status_label?.toLowerCase() === 'tersedia';
-            document.getElementById('detStatus').innerText = (state.book.status_label || "TERSEDIA").toUpperCase();
-            document.getElementById('detStatus').style.background = isAvailable ? "var(--success)" : "var(--danger)";
-            document.getElementById('btnKonfirmasi').disabled = !isAvailable;
+    function renderUI() {
+        document.getElementById('detNama').innerText = state.member.nama;
+        document.getElementById('detNis').innerText = state.member.nis;
+        document.getElementById('memberTags').innerHTML = `
+            <span class="tag">${state.member.jenjang}</span>
+            <span class="tag">${state.member.kamar || state.member.organisasi || '-'}</span>
+        `;
+
+        document.getElementById('detJudul').innerText = state.book.biblio.judul;
+        document.getElementById('detKode').innerText = state.book.kode;
+        document.getElementById('bookTags').innerHTML = `
+            <span class="tag">${state.book.biblio.penulis || '-'}</span>
+            <span class="tag">${state.book.status}</span>
+        `;
+
+        // Sembunyikan denda secara default setiap render
+        document.getElementById('dendaArea').classList.add('hidden');
+
+        if (state.mode === 'EXISTING') {
+            document.getElementById('statusHeader').classList.remove('hidden');
+            document.getElementById('preAction').classList.add('hidden');
+            document.getElementById('postAction').classList.remove('hidden');
+            document.getElementById('detStatus').innerText = 'DIPINJAM';
+            document.getElementById('detStatus').style.background = 'var(--brand)';
+            document.getElementById('labelTempo').innerText = 'Batas Kembali';
+
+            const tglPinjam = new Date(state.sirkulasi.tgl_pinjam);
+            const tglTempo = new Date(tglPinjam);
+            tglTempo.setDate(tglTempo.getDate() + 4);
             
-            const t = new Date(); t.setDate(t.getDate() + 4);
-            document.getElementById('detTempo').innerText = "Tempo: " + t.toISOString().split('T')[0];
+            document.getElementById('detTempo').innerText = tglTempo.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+
+            const hariIni = new Date();
+            hariIni.setHours(0,0,0,0);
+            tglTempo.setHours(0,0,0,0);
+
+            if (hariIni > tglTempo) {
+                const diffTime = Math.abs(hariIni - tglTempo);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const denda = diffDays * 1000;
+                document.getElementById('dendaArea').classList.remove('hidden');
+                document.getElementById('teksDenda').innerText = `Terlambat ${diffDays} Hari (Rp ${denda.toLocaleString('id-ID')})`;
+            }
+        } else {
+            document.getElementById('statusHeader').classList.add('hidden');
+            document.getElementById('preAction').classList.remove('hidden');
+            document.getElementById('postAction').classList.add('hidden');
+            document.getElementById('detStatus').innerText = 'TERSEDIA';
+            document.getElementById('detStatus').style.background = 'var(--success)';
+            document.getElementById('labelTempo').innerText = 'Estimasi Kembali';
+            
+            const estBack = new Date();
+            estBack.setDate(estBack.getDate() + 4);
+            document.getElementById('detTempo').innerText = estBack.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
         }
 
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('content').classList.remove('hidden');
     }
 
-    async function runAction(actionType) {
-        const { data, error } = await client.rpc('sirkulasi_action_handler', {
-            p_action: actionType,
-            p_member_id: state.member.id,
-            p_book_code: state.book.subtitle,
-            p_sirkulasi_id: state.sirkulasiId
-        });
+    async function prosesPinjam() {
+        const { data, error } = await client.from('sirkulasi').insert([{
+            member_id: state.member.id,
+            biblio_id: state.book.biblio.id,
+            nis: state.member.nis,
+            nama_anggota: state.member.nama,
+            kamar: state.member.kamar || state.member.organisasi,
+            kode_eksemplar: state.book.kode,
+            judul_buku: state.book.biblio.judul,
+            penulis: state.book.biblio.penulis,
+            tgl_pinjam: new Date().toISOString().split('T')[0],
+            status: 'DIPINJAM'
+        }]).select().single();
 
-        if (error) {
-            alert("Error: " + error.message);
-        } else {
-            if (actionType === 'CONFIRM') {
-                state.sirkulasiId = data.id;
-                document.getElementById('detTempo').innerText = "Jatuh Tempo: " + data.due_date;
-                showSuccessState(false);
-            } else if (actionType === 'RETURN') {
-                window.location.href = 'sirkulasi.html';
-            } else if (actionType === 'EXTEND') {
-                document.getElementById('detTempo').innerText = "Perpanjang: " + data.due_date;
-                closeModal();
-            }
-        }
+        if (error) return alert("Error: " + error.message);
+
+        await client.from('eksemplar').update({ status: 'Dipinjam' }).eq('id', state.book.id);
+        
+        // Simpan sirkulasi_id ke sessionStorage agar jika di-refresh tidak error
+        const sessionData = JSON.parse(sessionStorage.getItem('pending_loan'));
+        sessionData.sirkulasi_id = data.id;
+        sessionStorage.setItem('pending_loan', JSON.stringify(sessionData));
+
+        state.sirkulasi = data;
+        state.mode = 'EXISTING';
+        renderUI();
     }
 
-    function showSuccessState(isDirect) {
-        document.getElementById('successMsg').classList.remove('hidden');
-        document.getElementById('msgText').innerText = isDirect ? 'PINJAMAN AKTIF' : '✓ BERHASIL';
-        document.getElementById('preAction').classList.add('hidden');
-        document.getElementById('postAction').classList.remove('hidden');
+    async function prosesKembali() {
+        await client.from('sirkulasi').update({ 
+            status: 'KEMBALI', 
+            tgl_kembali: new Date().toISOString().split('T')[0] 
+        }).eq('id', state.sirkulasi.id);
+
+        await client.from('eksemplar').update({ status: 'Tersedia' }).eq('kode', state.book.kode);
+        goBack();
     }
 
-    // Modal & Event Listeners
+    async function prosesPerpanjang() {
+        const tglBaru = new Date().toISOString().split('T')[0];
+        const { data, error } = await client.from('sirkulasi')
+            .update({ tgl_pinjam: tglBaru })
+            .eq('id', state.sirkulasi.id)
+            .select()
+            .single();
+
+        if (error) return alert("Gagal: " + error.message);
+        
+        // UPDATE STATE LOKAL & RENDER ULANG (Tanpa reload)
+        state.sirkulasi = data;
+        renderUI();
+        alert("Berhasil diperpanjang!");
+    }
+
     function showConfirm(title, body, cb) {
         document.getElementById('modalTitle').innerText = title;
         document.getElementById('modalBody').innerText = body;
@@ -220,16 +318,22 @@
         modalCallback = cb;
     }
 
-    function closeModal() { document.getElementById('customModal').classList.add('hidden'); }
-    window.goBack = () => window.location.href = 'sirkulasi.html';
+    document.getElementById('btnKonfirmasi').onclick = () => showConfirm("Konfirmasi Pinjam", "Proses peminjaman buku ini?", prosesPinjam);
+    document.getElementById('btnKembalikan').onclick = () => showConfirm("Kembalikan Buku", "Selesaikan transaksi peminjaman?", prosesKembali);
+    document.getElementById('btnPerpanjang').onclick = () => showConfirm("Perpanjang", "Masa pinjam akan diperbarui (4 hari dari sekarang).", prosesPerpanjang);
+    
+    document.getElementById('modalCancel').onclick = () => document.getElementById('customModal').classList.add('hidden');
+    document.getElementById('modalConfirm').onclick = () => {
+        document.getElementById('customModal').classList.add('hidden');
+        if(modalCallback) modalCallback();
+    };
 
-    document.getElementById('btnKonfirmasi').onclick = () => runAction('CONFIRM');
-    document.getElementById('btnKembalikan').onclick = () => showConfirm("Kembalikan", "Buku sudah diterima kembali?", () => runAction('RETURN'));
-    document.getElementById('btnPerpanjang').onclick = () => showConfirm("Perpanjang", "Tambah masa pinjam 4 hari?", () => runAction('EXTEND'));
-    document.getElementById('modalCancel').onclick = closeModal;
-    document.getElementById('modalConfirm').onclick = () => modalCallback && modalCallback();
+    window.goBack = () => {
+        sessionStorage.removeItem('pending_loan');
+        window.location.href = 'sirkulasi.html';
+    };
 
-    loadDetail();
+    init();
 </script>
 </body>
 </html>
