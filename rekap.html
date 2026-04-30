@@ -19,7 +19,6 @@
             }
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-main); }
         ::-webkit-scrollbar-thumb { 
@@ -48,7 +47,6 @@
         }
         .card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -15px rgba(0,0,0,0.2); }
         
-        /* Rank Image Container - Transparent & Large */
         .rank-container { 
             width: 100px; height: 100px; 
             display: flex; align-items: center; justify-content: center; 
@@ -70,7 +68,6 @@
             border: 1px solid var(--border); 
         }
         
-        /* Progress Bar Animation */
         .progress-track { width: 100%; height: 8px; background: var(--bg-main); border-radius: 10px; overflow: hidden; margin-top: 12px; }
         .progress-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); width: 0; }
         
@@ -107,8 +104,7 @@
         <p class="text-[10px] font-black uppercase tracking-[2px] mt-4 opacity-40">Calculating Insights...</p>
     </div>
 
-    <div id="rekapGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-0 transition-opacity duration-500">
-        </div>
+    <div id="rekapGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 opacity-0 transition-opacity duration-500"></div>
 </div>
 
 <script type="module">
@@ -118,7 +114,6 @@
     const firstDayMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-01`;
     document.getElementById('startDate').value = firstDayMonth;
 
-    // Rank logic based on your uploaded images
     const getRankInfo = (score) => {
         if (score >= 98) return { name: "Immortal", color: "text-indigo-400", file: "Immortal.jpg" };
         if (score >= 94) return { name: "Mythic Glory", color: "text-amber-500", file: "Glory.jpg" };
@@ -157,7 +152,8 @@
                 const alpha = logs.filter(l => l.status === 'Alpha').length;
                 const totalLogs = logs.length;
                 
-                const score = totalLogs > 0 ? Math.round((hadir / totalLogs) * 100) : 0;
+                // LOGIKA: Izin dihitung sebagai Hadir (hadir + izin)
+                const score = totalLogs > 0 ? Math.round(((hadir + izin) / totalLogs) * 100) : 0;
                 const rank = getRankInfo(score);
 
                 return `
