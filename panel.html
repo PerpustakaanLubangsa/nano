@@ -168,7 +168,7 @@
         <span class="lib-brand-text">LUBANGSA<br><span style="opacity: 0.5; font-weight: 500;">LIBRARY</span></span>
     </div>
     
-    <nav>
+<nav>
         <div id="nav-beranda" onclick="loadPage('beranda.html', this)" class="sidebar-item active">
             <span><i class="fa-solid fa-house-chimney mr-3 opacity-70"></i>Beranda</span>
         </div>
@@ -178,9 +178,14 @@
         </div>
 
         <p class="nav-label">Operasional</p>
+        
         <div id="nav-absensi" onclick="loadPage('absensi.html', this)" class="sidebar-item">
             <span><i class="fa-solid fa-calendar-check mr-3 opacity-70"></i>Absensi</span>
             <div id="absensiDot" class="dot-notif"></div>
+        </div>
+
+        <div onclick="loadPage('data_pengunjung.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-users-viewfinder mr-3 opacity-70"></i>Data Pengunjung</span>
         </div>
         
         <div class="dropdown-container">
@@ -204,19 +209,41 @@
         </div>
 
         <p class="nav-label">Koleksi & Anggota</p>
-        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item"><span><i class="fa-solid fa-book mr-3 opacity-70"></i>Bibliografi</span></div>
-        <div onclick="loadPage('manajemen_rak.html', this)" class="sidebar-item"><span><i class="fa-solid fa-layer-group mr-3 opacity-70"></i>Manajemen Rak</span></div>
-        <div onclick="loadPage('manajemen_kategori.html', this)" class="sidebar-item"><span><i class="fa-solid fa-tags mr-3 opacity-70"></i>Kategori</span></div>
-        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item"><span><i class="fa-solid fa-retweet mr-3 opacity-70"></i>Sirkulasi</span></div>
-        <div onclick="loadPage('barcode.html', this)" class="sidebar-item"><span><i class="fa-solid fa-barcode mr-3 opacity-70"></i>Barcode</span></div>
-        <div onclick="loadPage('label.html', this)" class="sidebar-item"><span><i class="fa-solid fa-print mr-3 opacity-70"></i>Label</span></div>
-        <div onclick="loadPage('daftar-peminjam.html', this)" class="sidebar-item"><span><i class="fa-solid fa-list-ul mr-3 opacity-70"></i>Peminjam</span></div>
-        <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item"><span><i class="fa-solid fa-users mr-3 opacity-70"></i>Anggota</span></div>
+        <div onclick="loadPage('bibliografi.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-book mr-3 opacity-70"></i>Bibliografi</span>
+        </div>
+        <div onclick="loadPage('manajemen_rak.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-layer-group mr-3 opacity-70"></i>Manajemen Rak</span>
+        </div>
+        <div onclick="loadPage('manajemen_kategori.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-tags mr-3 opacity-70"></i>Kategori</span>
+        </div>
+        <div onclick="loadPage('sirkulasi.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-retweet mr-3 opacity-70"></i>Sirkulasi</span>
+        </div>
+        <div onclick="loadPage('barcode.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-barcode mr-3 opacity-70"></i>Barcode</span>
+        </div>
+        <div onclick="loadPage('label.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-print mr-3 opacity-70"></i>Label</span>
+        </div>
+        <div onclick="loadPage('daftar-peminjam.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-list-ul mr-3 opacity-70"></i>Peminjam</span>
+        </div>
+        <div onclick="loadPage('keanggotaan.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-users mr-3 opacity-70"></i>Anggota</span>
+        </div>
 
         <p class="nav-label">Sistem</p>
-        <div id="menuAkun" onclick="loadPage('account.html', this)" class="sidebar-item hidden"><span><i class="fa-solid fa-shield-halved mr-3 opacity-70"></i>Akun</span></div>
-        <div id="menuFeedback" onclick="loadPage('admin_feedback.html', this)" class="sidebar-item hidden"><span><i class="fa-solid fa-comment-dots mr-3 opacity-70"></i>Feedback</span></div>
-        <div onclick="loadPage('about.html', this)" class="sidebar-item"><span><i class="fa-solid fa-circle-info mr-3 opacity-70"></i>Tentang</span></div>
+        <div id="menuAkun" onclick="loadPage('account.html', this)" class="sidebar-item hidden">
+            <span><i class="fa-solid fa-shield-halved mr-3 opacity-70"></i>Akun</span>
+        </div>
+        <div id="menuFeedback" onclick="loadPage('admin_feedback.html', this)" class="sidebar-item hidden">
+            <span><i class="fa-solid fa-comment-dots mr-3 opacity-70"></i>Feedback</span>
+        </div>
+        <div onclick="loadPage('about.html', this)" class="sidebar-item">
+            <span><i class="fa-solid fa-circle-info mr-3 opacity-70"></i>Tentang</span>
+        </div>
     </nav>
 
     <div class="sidebar-footer" onclick="openLogoutModal()">
