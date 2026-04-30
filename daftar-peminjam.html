@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirkulasi • Perpustakaan Lubangsa</title>
+    <title>Daftar Peminjam</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-main: #fcfdfe; --text-main: #1a1c1e; --text-muted: #5e6266;
@@ -21,43 +20,44 @@
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg-main); color: var(--text-main); }
         
-        .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s; color: var(--text-muted); }
+        .tab-btn { padding: 16px 24px; font-size: 14px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s; color: var(--text-muted); flex: 1; text-align: center; }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
         
-        .card-sirkulasi { background: var(--bg-main); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; transition: transform 0.2s; }
-        .card-sirkulasi:hover { transform: translateY(-2px); }
+        .card-sirkulasi { background: var(--bg-main); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         
         .badge-late { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; }
         
-        #sentinel { height: 20px; width: 100%; }
         .loader { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--accent); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Style untuk Iframe */
+        .content-frame { width: 100%; height: calc(100vh - 80px); border: none; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-0">
 
     <div class="max-w-4xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-2xl font-800 tracking-tight">Data Sirkulasi</h1>
-            <p class="text-sm text-muted">Pantau peminjaman dan keterlambatan buku.</p>
-        </header>
-
-        <div class="flex border-b border-[var(--border)] mb-6">
+        <div class="flex border-b border-[var(--border)] sticky top-0 bg-[var(--bg-main)] z-10">
             <div onclick="switchTab('semua')" id="tab-semua" class="tab-btn active">Semua Pinjaman</div>
             <div onclick="switchTab('terlambat')" id="tab-terlambat" class="tab-btn">Terlambat</div>
         </div>
 
-        <div id="list-container"></div>
+        <div id="content-semua" class="p-4">
+            <div id="list-container"></div>
+            <div id="sentinel" class="flex justify-center p-4">
+                <div id="bottom-loader" class="loader hidden"></div>
+            </div>
+        </div>
 
-        <div id="sentinel" class="flex justify-center p-4">
-            <div id="bottom-loader" class="loader hidden"></div>
+        <div id="content-terlambat" class="hidden">
+            <iframe src="daftar-keterlambatan.html" class="content-frame"></iframe>
         </div>
     </div>
 
 <script type="module">
     import { supabase } from './supa/supa.js';
 
-    let currentTab = 'semua'; // 'semua' atau 'terlambat'
     let page = 0;
     const limit = 10;
     let hasMore = true;
@@ -66,20 +66,18 @@
     const listContainer = document.getElementById('list-container');
     const bottomLoader = document.getElementById('bottom-loader');
 
-    // Reset dan ganti Tab
+    // Fungsi Switch Tab
     window.switchTab = (tab) => {
-        if (currentTab === tab) return;
-        currentTab = tab;
-        
-        // Update UI Tab
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${tab}`).classList.add('active');
-        
-        // Reset Data
-        listContainer.innerHTML = '';
-        page = 0;
-        hasMore = true;
-        fetchData();
+
+        if (tab === 'semua') {
+            document.getElementById('content-semua').classList.remove('hidden');
+            document.getElementById('content-terlambat').classList.add('hidden');
+        } else {
+            document.getElementById('content-semua').classList.add('hidden');
+            document.getElementById('content-terlambat').classList.remove('hidden');
+        }
     };
 
     async function fetchData() {
@@ -90,25 +88,12 @@
         const from = page * limit;
         const to = from + limit - 1;
 
-        let query = supabase
+        const { data, error } = await supabase
             .from('sirkulasi')
             .select('*')
+            .eq('status', 'DIPINJAM')
             .order('tgl_pinjam', { ascending: false })
             .range(from, to);
-
-        if (currentTab === 'terlambat') {
-            // Logika terlambat: Belum kembali DAN tgl_pinjam lebih lama dari 7 hari (asumsi durasi 7 hari)
-            const today = new Date();
-            const dueDateLimit = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
-            
-            query = query
-                .eq('status', 'DIPINJAM')
-                .lt('tgl_pinjam', dueDateLimit);
-        } else {
-            query = query.eq('status', 'DIPINJAM');
-        }
-
-        const { data, error } = await query;
 
         if (error) {
             console.error(error);
@@ -124,33 +109,23 @@
 
     function renderData(items) {
         if (items.length === 0 && page === 0) {
-            listContainer.innerHTML = `<div class="p-10 text-center text-muted text-sm">Tidak ada data ditemukan.</div>`;
+            listContainer.innerHTML = `<div class="p-10 text-center text-muted text-sm italic">Tidak ada peminjaman aktif.</div>`;
             return;
         }
 
         items.forEach(item => {
-            const pinjamDate = new Date(item.tgl_pinjam);
-            const today = new Date();
-            const diffTime = Math.abs(today - pinjamDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            // Hitung Keterlambatan (Misal durasi pinjam 7 hari)
-            const isLate = diffDays > 7;
-            const lateDays = diffDays - 7;
-
             const card = document.createElement('div');
             card.className = 'card-sirkulasi';
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div>
                         <h3 class="font-bold text-sm leading-tight">${item.judul_buku || 'Judul Tidak Diketahui'}</h3>
-                        <p class="text-[11px] text-muted uppercase font-bold mt-1">${item.kode_eksemplar}</p>
+                        <p class="text-[11px] text-muted uppercase font-bold mt-1 tracking-wider">${item.kode_eksemplar}</p>
                     </div>
-                    ${isLate ? `<span class="badge-late">LATE ${lateDays} DAYS</span>` : ''}
                 </div>
                 
                 <div class="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border)]">
-                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold uppercase">
                         ${item.nama_anggota ? item.nama_anggota.charAt(0) : '?'}
                     </div>
                     <div class="flex-1">
@@ -167,7 +142,6 @@
         });
     }
 
-    // --- INFINITE SCROLL LOGIC ---
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && hasMore) {
             fetchData();
@@ -175,10 +149,7 @@
     }, { threshold: 0.1 });
 
     observer.observe(document.getElementById('sentinel'));
-
-    // Initial Load
     fetchData();
-
 </script>
 </body>
 </html>
