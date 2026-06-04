@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Bibliografi • Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #fcfdfe; --text-main: #1a1c1e; --text-muted: #5e6266;
+            --accent: #0061ff; --border: #e9eef2; --input-bg: #f3f6f9;
+            --modal-overlay: rgba(240, 244, 248, 0.85);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #000000; --text-main: #e2e2e6; --text-muted: #8e9189;
+                --accent: #a8c7fa; --border: #222427; --input-bg: #111315;
+                --modal-overlay: rgba(0, 0, 0, 0.95);
+            }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #8884; border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding: 20px 24px; scroll-behavior: smooth; }
+        
+        .editor-wrapper { max-width: 720px; margin: 0 auto; }
+        
+        .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-top: 32px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; letter-spacing: 1px; }
+        .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+        
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
+        .form-control { width: 100%; background: var(--input-bg); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: var(--text-main); outline: none; transition: 0.3s; }
+        .form-control:focus { border-color: var(--accent); background: var(--bg-main); box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.1); }
+        .form-control[readonly] { cursor: default; opacity: 0.8; }
+        
+        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; background: var(--input-bg); padding: 8px; border-radius: 12px; border: 1px solid transparent; min-height: 48px; align-items: center; }
+        .tag-item { background: var(--accent); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .tag-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 14px; min-width: 120px; padding: 4px; }
+
+        .eks-tag { background: var(--input-bg); border: 1px solid var(--border); padding: 12px 16px; border-radius: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; }
+        .eks-tag:hover { border-color: var(--accent); }
+
+        .modal { position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease; }
+        #eksModal { z-index: 1000; }
+        #selectorModal { z-index: 2000; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .modal-card { background: var(--bg-main); width: 100%; max-width: 400px; border-radius: 28px; padding: 32px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.1); transform: scale(0.9); transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal.active .modal-card { transform: scale(1); }
+
+        .btn-save-main { background: var(--accent); color: #000; padding: 14px 32px; border-radius: 30px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; transition: 0.3s; }
+        .btn-save-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 97, 255, 0.2); }
+
+        .option-list { max-height: 280px; overflow-y: auto; margin-top: 10px; scroll-behavior: smooth; }
+        .option-item { padding: 14px 18px; border-radius: 14px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; margin-bottom: 6px; background: var(--input-bg); }
+        .option-item:hover { border-color: var(--accent); background: var(--bg-main); }
+        .option-item.highlight { border-color: var(--accent); background: rgba(0, 97, 255, 0.05); }
+
+        .loader-full { position: fixed; inset: 0; background: var(--bg-main); z-index: 9999; display: none; align-items: center; justify-content: center; }
+        .loader-full.active { display: flex; }
+
+        #toast-container { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast { background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: toastIn 0.3s forwards; }
+        @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .status-msg { font-size: 10px; font-weight: 700; margin-top: 4px; display: none; }
+        .status-msg.error { display: block; color: #ff453a; }
+        .status-msg.success { display: block; color: #32d74b; }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+<div id="loader" class="loader-full"><i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-3xl"></i></div>
+
+<div id="selectorModal" class="modal">
+    <div class="modal-card">
+        <h3 id="selTitle" class="font-extrabold text-lg mb-2 tracking-tight">Pilih Data</h3>
+        <p id="selDesc" class="text-[11px] text-muted font-bold mb-4 uppercase tracking-wider">Gunakan kolom cari untuk mempercepat</p>
+        
+        <div class="relative mb-4">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs"></i>
+            <input type="text" id="selSearch" class="form-control !pl-10 !py-3 !text-xs" placeholder="Cari nama atau klasifikasi...">
+        </div>
+
+        <div id="selList" class="option-list"></div>
+        
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal('selectorModal')" class="text-xs font-bold text-muted px-4 py-2">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<div id="eksModal" class="modal">
+    <div class="modal-card">
+        <h3 class="font-extrabold text-lg mb-6 tracking-tight">Detail Eksemplar</h3>
+        <div class="form-group">
+            <label>Barcode / Kode Eksemplar</label>
+            <input type="text" id="m_kode" class="form-control" placeholder="Contoh: B00123">
+            <div id="m_kode_msg" class="status-msg"></div>
+        </div>
+        <div class="form-group">
+            <label>Nomor Panggil</label>
+            <input type="text" id="m_panggil" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Lokasi Rak</label>
+            <div class="flex gap-2">
+                <input type="text" id="m_rak" class="form-control" readonly placeholder="Pilih rak...">
+                <button type="button" onclick="openSelector('rak')" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-[10px] uppercase">Pilih</button>
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8">
+            <button type="button" onclick="closeModal('eksModal')" class="px-5 py-2 text-xs font-bold text-muted">Batal</button>
+            <button type="button" id="btnSaveEks" onclick="saveEks()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal">
+    <div class="modal-card max-w-[340px] text-center">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fa-solid fa-trash-can text-xl"></i>
+        </div>
+        <h3 class="font-extrabold text-lg mb-2">Hapus Koleksi?</h3>
+        <p class="text-sm text-muted mb-8 leading-relaxed">Tindakan ini permanen. Seluruh data eksemplar juga akan dihapus.</p>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="closeModal('confirmModal')" class="bg-zinc-100 dark:bg-zinc-900 py-3 rounded-2xl font-bold text-xs">Batal</button>
+            <button id="btnConfirmDelete" class="bg-red-500 text-white py-3 rounded-2xl font-bold text-xs">Ya, Hapus</button>
+        </div>
+    </div>
+</div>
+
+<div class="editor-wrapper">
+    
+    <form id="biblioForm">
+        <div class="section-title" style="margin-top: 0;">Informasi Dasar</div>
+        <div class="form-group">
+            <label>Judul Koleksi</label>
+            <input type="text" id="f_judul" class="form-control" required placeholder="Masukkan judul lengkap...">
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div class="form-group"><label>Penulis</label><input type="text" id="f_penulis" class="form-control"></div>
+            <div class="form-group"><label>Penerbit</label><input type="text" id="f_penerbit" class="form-control"></div>
+            <div class="form-group"><label>Tahun Terbit</label><input type="text" id="f_tahun" class="form-control"></div>
+            <div class="form-group"><label>ISBN / ISSN</label><input type="text" id="f_isbn" class="form-control"></div>
+            
+            <div class="form-group">
+                <label>Kategori Utama</label>
+                <div class="flex gap-2">
+                    <input type="text" id="f_kategori" class="form-control" readonly placeholder="Pilih kategori...">
+                    <button type="button" onclick="openSelector('kategori')" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-[10px] uppercase">Pilih</button>
+                </div>
+            </div>
+            
+            <div class="form-group"><label>Deskripsi Fisik</label><input type="text" id="f_fisik" class="form-control"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Topik (Tekan Enter)</label>
+            <div class="tag-container" id="topikWrapper">
+                <input type="text" id="f_topik_input" class="tag-input" placeholder="Sejarah, Agama, Teknik...">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>URL Sampul Buku</label>
+            <input type="url" id="f_sampul" class="form-control" placeholder="https://...">
+        </div>
+
+        <div class="form-group">
+            <label>Abstrak / Catatan</label>
+            <textarea id="f_abstrak" class="form-control" rows="4"></textarea>
+        </div>
+
+        <div class="section-title">Unit Eksemplar</div>
+        <div id="eksList" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"></div>
+        <button type="button" onclick="openModal('eksModal')" class="text-[11px] font-black text-blue-500 uppercase tracking-wider hover:underline">+ Tambah Eksemplar</button>
+
+        <div class="mt-16 pt-8 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between">
+            <span id="btnDelete" class="text-red-500 text-[10px] font-black uppercase cursor-pointer hidden transition-opacity hover:opacity-70" onclick="askDelete()">Hapus Koleksi</span>
+            <button type="submit" class="btn-save-main">Simpan Perubahan</button>
+        </div>
+    </form>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let editId = sessionStorage.getItem('editBiblioId'); 
+    let eksemplars = [];
+    let topics = [];
+    let editingEksIndex = null;
+    let barcodeValid = true;
+    let typingTimer;
+
+    const masterData = { kategori: null, rak: null };
+
+    // --- TOAST & MODAL ---
+    function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    window.openModal = (id, index = null) => {
+        if(id === 'eksModal') setupEksModal(index);
+        document.getElementById(id).classList.add('active');
+    };
+
+    window.closeModal = (id) => {
+        document.getElementById(id).classList.remove('active');
+        if(id === 'selectorModal') document.getElementById('selSearch').value = '';
+    };
+
+    // --- PENYESUAIAN NAVIGASI UNTUK IFRAME OVERLAY ---
+    window.goBack = () => {
+        sessionStorage.removeItem('editBiblioId');
+        // Mengirim instruksi ke window parent (halaman utama) untuk menutup iframe layer
+        window.parent.postMessage('closeIframe', '*');
+    };
+
+    // --- SELECTOR SYSTEM WITH SEARCH & AUTO SCROLL ---
+    window.openSelector = async (type) => {
+        const list = document.getElementById('selList');
+        const title = document.getElementById('selTitle');
+        const searchInput = document.getElementById('selSearch');
+        
+        list.innerHTML = `<div class="p-6 text-center text-xs font-bold text-muted animate-pulse">Memproses...</div>`;
+        document.getElementById('selectorModal').classList.add('active');
+        searchInput.focus();
+
+        if (!masterData[type]) {
+            const query = type === 'kategori' ? 
+                supabase.from('kategori').select('nama_kategori').order('nama_kategori') :
+                supabase.from('rak').select('nama_rak, kode_klasifikasi').order('nama_rak');
+            
+            const { data } = await query;
+            masterData[type] = data || [];
+        }
+
+        renderSelectorList(type, masterData[type]);
+
+        searchInput.oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            const items = list.querySelectorAll('.option-item');
+            let found = false;
+
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                const isMatch = text.includes(val);
+                
+                item.style.display = isMatch ? 'block' : 'none';
+                
+                if (val && isMatch && !found) {
+                    item.classList.add('highlight');
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    found = true;
+                } else {
+                    item.classList.remove('highlight');
+                }
+            });
+        };
+    };
+
+    function renderSelectorList(type, data) {
+        const list = document.getElementById('selList');
+        const targetInputId = type === 'kategori' ? 'f_kategori' : 'm_rak';
+
+        if (data.length === 0) {
+            list.innerHTML = `<div class="p-10 text-center text-xs text-muted font-bold">Data tidak ditemukan</div>`;
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            const primary = type === 'kategori' ? item.nama_kategori : item.nama_rak;
+            const secondary = type === 'kategori' ? 'Kategori Koleksi' : (item.kode_klasifikasi || 'Tanpa Klasifikasi');
+            
+            div.innerHTML = `
+                <div class="text-[10px] font-black text-blue-500 uppercase mb-0.5">${secondary}</div>
+                <div class="text-sm font-black">${primary}</div>
+            `;
+            div.onclick = () => selectValue(targetInputId, primary);
+            fragment.appendChild(div);
+        });
+        
+        list.innerHTML = '';
+        list.appendChild(fragment);
+    }
+
+    window.selectValue = (targetId, value) => {
+        document.getElementById(targetId).value = value;
+        closeModal('selectorModal');
+    };
+
+    // --- BARCODE CHECKER (DEBOUNCED) ---
+    const mKodeInput = document.getElementById('m_kode');
+    const mKodeMsg = document.getElementById('m_kode_msg');
+    const btnSaveEks = document.getElementById('btnSaveEks');
+
+    mKodeInput.addEventListener('input', () => {
+        clearTimeout(typingTimer);
+        mKodeMsg.innerText = 'Mengecek...';
+        typingTimer = setTimeout(checkBarcode, 500);
+    });
+
+    async function checkBarcode() {
+        const kode = mKodeInput.value.trim();
+        if (!kode) { mKodeMsg.innerText = ''; return; }
+
+        const isDupLocal = eksemplars.some((e, i) => e.kode === kode && i !== editingEksIndex);
+        if (isDupLocal) return setBarcodeStatus(false, "Sudah ada di daftar");
+
+        const { data } = await supabase.from('eksemplar').select('biblio_id').eq('kode', kode).maybeSingle();
+        if (data && data.biblio_id !== editId) setBarcodeStatus(false, "Sudah dipakai koleksi lain");
+        else setBarcodeStatus(true, "Barcode tersedia");
+    }
+
+    function setBarcodeStatus(valid, msg) {
+        barcodeValid = valid;
+        mKodeMsg.innerText = msg;
+        mKodeMsg.className = `status-msg ${valid ? 'success' : 'error'}`;
+        btnSaveEks.disabled = !valid;
+        btnSaveEks.style.opacity = valid ? '1' : '0.4';
+    }
+
+    // --- EKSEMPLAR UNIT LOGIC ---
+    function setupEksModal(index) {
+        editingEksIndex = index;
+        setBarcodeStatus(true, '');
+        const fields = ['m_kode', 'm_panggil', 'm_rak'];
+        if (index !== null) {
+            const e = eksemplars[index];
+            document.getElementById('m_kode').value = e.kode;
+            document.getElementById('m_panggil').value = e.nomor_panggil || '';
+            document.getElementById('m_rak').value = e.lokasi_rak || '';
+        } else {
+            fields.forEach(f => document.getElementById(f).value = '');
+        }
+    }
+
+    window.saveEks = () => {
+        if(!barcodeValid) return;
+        const kode = document.getElementById('m_kode').value.trim();
+        if(!kode) return showToast("Barcode wajib diisi");
+
+        const data = { 
+            kode, 
+            nomor_panggil: document.getElementById('m_panggil').value, 
+            lokasi_rak: document.getElementById('m_rak').value,
+            status: 'Tersedia'
+        };
+
+        if (editingEksIndex !== null) eksemplars[editingEksIndex] = data;
+        else eksemplars.push(data);
+        
+        closeModal('eksModal');
+        renderEksemplar();
+    };
+
+    window.deleteEks = (index) => {
+        eksemplars.splice(index, 1);
+        renderEksemplar();
+    };
+
+    function renderEksemplar() {
+        const list = document.getElementById('eksList');
+        list.innerHTML = eksemplars.map((e, i) => `
+            <div class="eks-tag" onclick="openModal('eksModal', ${i})">
+                <div class="flex-1">
+                    <div class="text-[11px] font-black uppercase text-blue-500">${e.kode}</div>
+                    <div class="text-[10px] text-muted font-bold mt-0.5">${e.nomor_panggil || 'No Call'} | ${e.lokasi_rak || 'No Rak'}</div>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); deleteEks(${i})" class="text-red-400 hover:text-red-600 transition-colors">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // --- TOPIC SYSTEM ---
+    const topikInput = document.getElementById('f_topik_input');
+    topikInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = topikInput.value.trim();
+            if (val && !topics.includes(val)) {
+                topics.push(val);
+                renderTopics();
+                topikInput.value = '';
+            }
+        }
+    });
+
+    function renderTopics() {
+        const wrapper = document.getElementById('topikWrapper');
+        wrapper.querySelectorAll('.tag-item').forEach(tag => tag.remove());
+        topics.forEach((topic, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'tag-item';
+            tag.innerHTML = `${topic} <i class="fa-solid fa-xmark cursor-pointer"></i>`;
+            tag.querySelector('i').onclick = () => { topics.splice(index, 1); renderTopics(); };
+            wrapper.insertBefore(tag, topikInput);
+        });
+    }
+
+    // --- MAIN CRUD ---
+    if (editId) loadDetail();
+
+    async function loadDetail() {
+        document.getElementById('loader').classList.add('active');
+        const { data: bib } = await supabase.from('biblio').select('*').eq('id', editId).single();
+        if (bib) {
+            document.getElementById('btnDelete').classList.remove('hidden');
+            const map = {
+                f_judul: 'judul', f_penulis: 'penulis', f_penerbit: 'penerbit',
+                f_tahun: 'tahun_terbit', f_isbn: 'isbn_issn', f_kategori: 'kategori',
+                f_fisik: 'deskripsi_fisik', f_sampul: 'sampul_url', f_abstrak: 'abstrak'
+            };
+            Object.keys(map).forEach(key => document.getElementById(key).value = bib[map[key]] || '');
+            topics = Array.isArray(bib.topik) ? bib.topik : [];
+            renderTopics();
+            
+            const { data: eks } = await supabase.from('eksemplar').select('*').eq('biblio_id', editId);
+            eksemplars = eks || [];
+            renderEksemplar();
+        }
+        document.getElementById('loader').classList.remove('active');
+    }
+
+    document.getElementById('biblioForm').onsubmit = async (e) => {
+        e.preventDefault();
+        document.getElementById('loader').classList.add('active');
+        
+        const payload = {
+            judul: document.getElementById('f_judul').value,
+            penulis: document.getElementById('f_penulis').value,
+            penerbit: document.getElementById('f_penerbit').value,
+            tahun_terbit: document.getElementById('f_tahun').value,
+            isbn_issn: document.getElementById('f_isbn').value,
+            kategori: document.getElementById('f_kategori').value,
+            deskripsi_fisik: document.getElementById('f_fisik').value,
+            sampul_url: document.getElementById('f_sampul').value,
+            abstrak: document.getElementById('f_abstrak').value,
+            topik: topics,
+            updated_at: new Date()
+        };
+
+        let result;
+        if (editId) {
+            result = await supabase.from('biblio').update(payload).eq('id', editId);
+        } else {
+            result = await supabase.from('biblio').insert([payload]).select();
+            if (!result.error) editId = result.data[0].id;
+        }
+
+        if (!result.error) {
+            await supabase.from('eksemplar').delete().eq('biblio_id', editId);
+            if (eksemplars.length > 0) {
+                const eksReady = eksemplars.map(ek => {
+                    const { id, created_at, ...clean } = ek;
+                    return { ...clean, biblio_id: editId };
+                });
+                await supabase.from('eksemplar').insert(eksReady);
+            }
+            showToast("Tersimpan!");
+            setTimeout(goBack, 800);
+        } else {
+            showToast("Gagal menyimpan");
+            document.getElementById('loader').classList.remove('active');
+        }
+    };
+
+    window.askDelete = () => openModal('confirmModal');
+    document.getElementById('btnConfirmDelete').onclick = async () => {
+        closeModal('confirmModal');
+        document.getElementById('loader').classList.add('active');
+        const { error } = await supabase.from('biblio').delete().eq('id', editId);
+        if (!error) {
+            showToast("Dihapus");
+            setTimeout(goBack, 800);
+        } else {
+            showToast("Gagal");
+            document.getElementById('loader').classList.remove('active');
+        }
+    };
+</script>
+</body>
+</html>

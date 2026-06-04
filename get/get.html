@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Main Dashboard</title>
+    
+    <link rel="stylesheet" href="colors.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-page: #0f0f0f;
+            --bg-card: rgba(26, 26, 26, 0.65);
+            --bg-card-hover: rgba(38, 38, 38, 0.85);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent: #007aff;
+            --accent-danger: #ff453a;
+            --accent-success: #30d158;
+            --radius: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding-top: 5px; /* Memberi sedikit ruang untuk deteksi scroll top */
+        }
+
+        /* --- INVISIBLE TOP TRIGGER --- */
+        #triggerTop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 2px;
+            background: transparent;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* --- HEADER STYLING --- */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand-area h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-area h1 span {
+            color: var(--accent);
+            font-weight: 300;
+        }
+
+        .brand-area p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px 24px 60px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* --- TOTAL STATS ROW (MINI KPI) --- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            width: 100%;
+        }
+
+        .mini-stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .mini-stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mini-stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        /* --- GRID MENU UTAMA --- */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            width: 100%;
+        }
+
+        .menu-card {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius);
+            padding: 40px 30px;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .menu-card:hover {
+            background-color: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--text-main);
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .menu-card:hover .card-icon-wrapper {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .card-info h2 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
+        }
+
+        .card-info p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .card-arrow {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            font-size: 14px;
+            color: var(--text-muted);
+            opacity: 0;
+            transform: translateX(-5px);
+            transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+        }
+
+        .menu-card:hover .card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--accent);
+        }
+
+        /* --- RESPONSIVE ADJUSTMENT --- */
+        @media (max-width: 992px) {
+            .stats-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+                padding-top: 30px;
+            }
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="triggerTop"></div>
+
+    <header>
+        <div class="brand-area">
+            <h1>Central <span>Library</span></h1>
+            <p>Selamat datang di sistem manajemen perpustakaan pintar.</p>
+        </div>
+    </header>
+
+    <main>
+        
+        <section class="stats-row">
+            <div class="mini-stat-card">
+                <span class="mini-stat-label">Pengunjung Hari Ini</span>
+                <div id="totalPengunjung" class="mini-stat-value" style="color: var(--accent-success)">0</div>
+            </div>
+            <div class="mini-stat-card">
+                <span class="mini-stat-label">Peminjam Aktif</span>
+                <div id="totalPeminjam" class="mini-stat-value" style="color: var(--accent)">0</div>
+            </div>
+            <div class="mini-stat-card">
+                <span class="mini-stat-label">Total Sirkulasi</span>
+                <div id="totalPinjam" class="mini-stat-value">0</div>
+            </div>
+            <div class="mini-stat-card">
+                <span class="mini-stat-label">Terlambat</span>
+                <div id="totalTerlambat" class="mini-stat-value" style="color: var(--accent-danger)">0</div>
+            </div>
+            <div class="mini-stat-card">
+                <span class="mini-stat-label">Total Koleksi</span>
+                <div id="totalKoleksi" class="mini-stat-value">0</div>
+            </div>
+        </section>
+
+        <div class="menu-grid">
+            
+            <a href="koleksi.html" class="menu-card">
+                <div class="card-icon-wrapper">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Koleksi Buku</h2>
+                    <p>Eksplorasi katalog, cek ketersediaan rak, dan kelola manajemen buku.</p>
+                </div>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+            </a>
+
+            <a href="sirkulasi.html" class="menu-card">
+                <div class="card-icon-wrapper">
+                    <i class="fa-solid fa-right-left"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Sirkulasi</h2>
+                    <p>Proses peminjaman baru, pengembalian, serta pencatatan denda keterlambatan.</p>
+                </div>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+            </a>
+
+            <a href="pengunjung.html" class="menu-card">
+                <div class="card-icon-wrapper">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Buku Tamu</h2>
+                    <p>Pantau data statistik kunjungan harian anggota maupun tamu umum.</p>
+                </div>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+            </a>
+
+            <a href="pengaturan.html" class="menu-card">
+                <div class="card-icon-wrapper">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Pengaturan</h2>
+                    <p>Konfigurasi integrasi Supabase, hak akses, dan batas waktu peminjaman.</p>
+                </div>
+                <i class="fa-solid fa-arrow-right card-arrow"></i>
+            </a>
+
+        </div>
+    </main>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    // --- FETCH DATA REALTIME DARI SUPABASE ---
+    async function loadDashboardStats() {
+        try {
+            const tzOffset = new Date().getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+
+            const [resSummary, resDashboard, resHariIni] = await Promise.all([
+                supabase.from('view_sirkulasi_summary').select('peminjam_aktif, histori_peminjaman, jumlah_keterlambatan').single(),
+                supabase.from('view_library_dashboard_summary').select('total_koleksi').single(),
+                supabase.from('data_pengunjung').select('id', { count: 'exact', head: true }).eq('tanggal_kunjungan', localISOTime)
+            ]);
+
+            if (resHariIni) {
+                document.getElementById('totalPengunjung').innerText = (resHariIni.count || 0).toLocaleString('id-ID');
+            }
+            if (resSummary.data) {
+                document.getElementById('totalPeminjam').innerText = resSummary.data.peminjam_aktif.toLocaleString('id-ID');
+                document.getElementById('totalPinjam').innerText = resSummary.data.histori_peminjaman.toLocaleString('id-ID');
+                document.getElementById('totalTerlambat').innerText = resSummary.data.jumlah_keterlambatan.toLocaleString('id-ID');
+            }
+            if (resDashboard.data) {
+                document.getElementById('totalKoleksi').innerText = resDashboard.data.total_koleksi.toLocaleString('id-ID');
+            }
+        } catch (err) {
+            console.error("Gagal memperbarui total data dashboard:", err);
+        }
+    }
+
+    loadDashboardStats();
+
+    // --- SCROLL TO TOP TRIGGER: KEMBALI KE BERANDA ---
+    const triggerTop = document.getElementById('triggerTop');
+    
+    // Memberikan delay kecil agar sistem tidak langsung ter-redirect saat halaman baru dimuat
+    setTimeout(() => {
+        const topObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // Jika pengguna melakukan scroll melebihi batas atas (area pemicu terlihat)
+                if (entry.isIntersecting && window.scrollY === 0) {
+                    topObserver.unobserve(triggerTop);
+                    window.location.href = '../beranda.html'; // Target ke folder di atas file ini
+                }
+            });
+        }, { threshold: 0.1 });
+
+        topObserver.observe(triggerTop);
+    }, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Peminjam | Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-card: #ffffff;
+            --text-main: #1f1f1f;
+            --text-muted: #5f6368;
+            --accent: #1a73e8;
+            --border: #e2e8f0;
+            --skeleton-bg: #eeeeee;
+            --radius-sharp: 4px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-card: #111111;
+                --text-main: #e3e3e3;
+                --text-muted: #9aa0a6;
+                --accent: #8ab4f8;
+                --border: #1e1f20;
+                --skeleton-bg: #222222;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; border: none; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        body {
+            background-color: transparent;
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .tab-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: transparent;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .tab-content-wrapper {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+        }
+
+        .tab-btn {
+            padding: 16px 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            flex: 1;
+            text-align: center;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            width: 100%;
+            padding: 80px 20px 40px 20px;
+        }
+
+        .card-sirkulasi {
+            background: var(--bg-card);
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius-sharp);
+            padding: 18px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        .card-sirkulasi:hover {
+            transform: translateY(-2px); 
+            border-color: var(--accent) !important; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+        
+        .loader {
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Style Iframe */
+        .content-frame {
+            width: 100%;
+            height: calc(100vh - 80px);
+            border: none;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="p-0">
+
+    <div class="tab-nav">
+        <div class="tab-content-wrapper">
+            <div onclick="switchTab('semua')" id="tab-semua" class="tab-btn active">Semua Pinjaman</div>
+            <div onclick="switchTab('terlambat')" id="tab-terlambat" class="tab-btn">Terlambat</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="content-semua">
+            <div id="list-container"></div>
+            <div id="sentinel" class="flex justify-center p-4">
+                <div id="bottom-loader" class="loader hidden"></div>
+            </div>
+        </div>
+
+        <div id="content-terlambat" class="hidden">
+            <iframe id="iframe-terlambat" src="about:blank" class="content-frame"></iframe>
+        </div>
+    </div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let page = 0;
+    const limit = 10;
+    let hasMore = true;
+    let isLoading = false;
+
+    const listContainer = document.getElementById('list-container');
+    const bottomLoader = document.getElementById('bottom-loader');
+    const iframeTerlambat = document.getElementById('iframe-terlambat');
+
+    // Tab Switcher dengan Optimasi Lazy Loading Iframe
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+
+        if (tab === 'semua') {
+            document.getElementById('content-semua').classList.remove('hidden');
+            document.getElementById('content-terlambat').classList.add('hidden');
+        } else {
+            document.getElementById('content-semua').classList.add('hidden');
+            document.getElementById('content-terlambat').classList.remove('hidden');
+            
+            // Lazy load resource iframe saat tab diklik pertama kali
+            if (iframeTerlambat.src === 'about:blank' || iframeTerlambat.src === window.location.href) {
+                iframeTerlambat.src = 'daftar-keterlambatan.html';
+            }
+        }
+    };
+
+    // Pengambilan Data Sirkulasi
+    async function fetchData() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+        bottomLoader.classList.remove('hidden');
+
+        const from = page * limit;
+        const to = from + limit - 1;
+
+        try {
+            const { data, error } = await supabase
+                .from('sirkulasi')
+                .select('*')
+                .eq('status', 'DIPINJAM')
+                .order('tgl_pinjam', { ascending: false })
+                .range(from, to);
+
+            if (error) throw error;
+
+            if (data.length < limit) hasMore = false;
+            renderData(data);
+            page++;
+        } catch (err) {
+            console.error("Fetch Error:", err);
+        } finally {
+            isLoading = false;
+            bottomLoader.classList.add('hidden');
+        }
+    }
+
+    // Generator warna avatar berdasarkan huruf depan agar harmonis
+    function getAvatarBgColor(name) {
+        if (!name) return '#5f6368';
+        const colors = ['#1a73e8', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];
+        const charCodeSum = name.charCodeAt(0) + (name.charCodeAt(name.length - 1) || 0);
+        return colors[charCodeSum % colors.length];
+    }
+
+    function renderData(items) {
+        if (items.length === 0 && page === 0) {
+            listContainer.innerHTML = `<div class="p-10 text-center text-[var(--text-muted)] text-sm italic">Tidak ada peminjaman aktif.</div>`;
+            return;
+        }
+
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card-sirkulasi';
+            
+            const avatarColor = getAvatarBgColor(item.nama_anggota);
+            const initial = item.nama_anggota ? item.nama_anggota.charAt(0).toUpperCase() : '?';
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="font-bold text-[15px] leading-tight text-[var(--text-main)]">${item.judul_buku || 'Judul Tidak Diketahui'}</h3>
+                        <p class="text-[11px] text-[var(--text-muted)] uppercase font-bold mt-1.5 tracking-wider">${item.kode_eksemplar}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border)]">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold uppercase shrink-0" style="background-color: ${avatarColor}">
+                        ${initial}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold truncate text-[var(--text-main)]">${item.nama_anggota || 'Nama Tidak Diketahui'}</div>
+                        <div class="text-[10px] text-[var(--text-muted)] mt-0.5">${item.nis || '-'}</div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Tgl Pinjam</div>
+                        <div class="text-xs font-bold text-[var(--text-main)] mt-0.5">${item.tgl_pinjam}</div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    // Infinite Scroll via Intersection Observer
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading && hasMore) {
+            fetchData();
+        }
+    }, { threshold: 0.1 });
+
+    observer.observe(document.getElementById('sentinel'));
+    
+    window.onload = () => {
+        fetchData();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klasifikasi DDC | Lubangsa Lib</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --md-sys-color-surface: #0f0f10;
+            --md-sys-color-on-surface: #f5f5f7;
+            --md-sys-color-primary: #0a84ff;
+            --md-sys-color-container: #1c1c1e;
+            --item-hover: #2c2c2e;
+            --error: #ff453a;
+            --success: #34c759;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; border: none !important; outline: none !important; }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            min-height: 100vh;
+            padding-bottom: 100px;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+
+        .sticky-search {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 16, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        }
+
+        .search-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8e918f;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--md-sys-color-container);
+            color: white;
+            padding: 18px 20px 18px 55px;
+            border-radius: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .ddc-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ddc-card {
+            background: var(--md-sys-color-container);
+            padding: 15px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .ddc-card:hover {
+            background: var(--item-hover);
+        }
+
+        .ddc-card.highlight {
+            background: rgba(10, 132, 255, 0.15);
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid var(--md-sys-color-primary) !important;
+        }
+
+        .ddc-num {
+            min-width: 85px; 
+            height: 55px;
+            padding: 0 12px;
+            background: var(--md-sys-color-primary);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 15px; color: white;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .ddc-info { flex: 1; font-weight: 700; font-size: 16px; }
+
+        .more-wrapper { position: relative; }
+        .btn-more {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: transparent;
+            color: #8e918f;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-more:hover { background: #3a3a3c; color: white; }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0; top: 45px;
+            background: #2c2c2e;
+            border-radius: 12px;
+            width: 140px;
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 50;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .dropdown-menu.show { display: flex; }
+
+        .dropdown-item {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #f5f5f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 65px; height: 65px;
+            border-radius: 22px;
+            background: var(--md-sys-color-primary);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 15px 35px rgba(10, 132, 255, 0.3);
+            cursor: pointer;
+            z-index: 200;
+        }
+
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(12px);
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: var(--md-sys-color-container);
+            width: 90%; max-width: 400px; padding: 35px; border-radius: 30px;
+        }
+        .modal-content input {
+            width: 100%; background: #2c2c2e; color: white;
+            padding: 18px; border-radius: 16px; margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        #toast {
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            padding: 14px 28px; background: var(--success); color: white; border-radius: 50px;
+            font-weight: 800; font-size: 14px; transition: 0.5s; z-index: 2000;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<div id="toast">Berhasil!</div>
+
+<div class="sticky-search">
+    <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Cari Kode atau Nama Rak..." oninput="handleSearch()">
+    </div>
+</div>
+
+<div class="container">
+    <div id="ddcList" class="ddc-grid"></div>
+</div>
+
+<div class="fab" id="fabAdd" onclick="openAddModal()">
+    <i class="fa-solid fa-plus"></i>
+</div>
+
+<div id="actionModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="modalTitle" style="margin-bottom: 25px; font-weight: 800; text-align: center;">TAMBAH RAK</h2>
+        <input type="hidden" id="editId">
+        <input type="text" id="formKode" placeholder="Kode Rentang (Misal: 100-200)">
+        <input type="text" id="formNama" placeholder="Nama Kategori/Rak">
+        <button id="btnSubmit" onclick="handleSubmit()" style="width:100%; padding:18px; border-radius:16px; background:var(--md-sys-color-primary); color:white; font-weight:800; cursor:pointer;">SIMPAN DATA</button>
+        <p onclick="closeModal()" style="color: #8e918f; margin-top: 20px; cursor: pointer; text-align:center; font-size: 13px; font-weight: 600;">Batalkan</p>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let allData = [];
+
+    // Global listener untuk tutup dropdown
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('show'));
+    });
+
+    async function loadData() {
+        const { data, error } = await supabase.rpc('get_klasifikasi');
+        if (!error) {
+            allData = data;
+            render(data);
+            
+            // Cek jika ada parameter pencarian dari URL (untuk auto-highlight)
+            const params = new URLSearchParams(window.location.search);
+            const initialSearch = params.get('search');
+            if (initialSearch) {
+                document.getElementById('searchInput').value = initialSearch;
+                handleSearch();
+            }
+        }
+    }
+
+    function render(items) {
+        const list = document.getElementById('ddcList');
+        if (items.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#444; margin-top:50px;">Belum ada data.</p>`;
+            return;
+        }
+        list.innerHTML = items.map(item => `
+            <div class="ddc-card" id="card-${item.kode_ddc}" onclick="selectThis('${item.kode_ddc}', '${item.nama_kategori}', event)">
+                <div class="ddc-num">${item.kode_ddc}</div>
+                <div class="ddc-info">${item.nama_kategori}</div>
+                
+                <div class="more-wrapper">
+                    <button class="btn-more" onclick="toggleDropdown(event, '${item.id}')">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <div class="dropdown-menu" id="drop-${item.id}">
+                        <div class="dropdown-item" onclick="openEditModal(event, '${item.id}', '${item.kode_ddc}', '${item.nama_kategori}')">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </div>
+                        <div class="dropdown-item" style="color:var(--error)" onclick="deleteData(event, '${item.id}')">
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- FUNGSI CALLBACK KE IFRAME ---
+    window.selectThis = (kode, nama, e) => {
+        // Jika yang diklik adalah tombol menu/dropdown, jangan kirim data balik
+        if (e.target.closest('.more-wrapper')) return;
+
+        const valueStr = `${kode} - ${nama}`;
+        
+        // Kirim ke parent window (editor.html)
+        if (window.parent) {
+            window.parent.postMessage({
+                type: 'SELECT_KLASIFIKASI',
+                value: valueStr
+            }, '*');
+        }
+    };
+
+    window.toggleDropdown = (e, id) => {
+        e.stopPropagation();
+        const menu = document.getElementById(`drop-${id}`);
+        const isShowing = menu.classList.contains('show');
+        document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('show'));
+        if (!isShowing) menu.classList.add('show');
+    };
+
+    window.openAddModal = () => {
+        document.getElementById('modalTitle').innerText = "TAMBAH RAK";
+        document.getElementById('editId').value = "";
+        document.getElementById('formKode').value = "";
+        document.getElementById('formNama').value = "";
+        document.getElementById('actionModal').classList.add('show');
+    };
+
+    window.openEditModal = (e, id, kode, nama) => {
+        e.stopPropagation();
+        document.getElementById('modalTitle').innerText = "EDIT RAK";
+        document.getElementById('editId').value = id;
+        document.getElementById('formKode').value = kode;
+        document.getElementById('formNama').value = nama;
+        document.getElementById('actionModal').classList.add('show');
+    };
+
+    window.closeModal = () => document.getElementById('actionModal').classList.remove('show');
+
+    window.handleSubmit = async () => {
+        const id = document.getElementById('editId').value;
+        const kode = document.getElementById('formKode').value.trim();
+        const nama = document.getElementById('formNama').value.trim();
+
+        if (!kode || !nama) return showToast("Lengkapi data", true);
+
+        const rpcName = id ? 'update_klasifikasi' : 'add_klasifikasi';
+        const payload = id ? { p_id: id, p_kode: kode, p_nama: nama } : { p_kode: kode, p_nama: nama };
+
+        const { error } = await supabase.rpc(rpcName, payload);
+        if (!error) {
+            showToast(id ? "Berhasil diperbarui" : "Berhasil ditambahkan");
+            closeModal();
+            loadData();
+        } else {
+            showToast("Gagal menyimpan data", true);
+        }
+    };
+
+    window.deleteData = async (e, id) => {
+        e.stopPropagation();
+        if (!confirm("Yakin ingin menghapus rak ini?")) return;
+        const { error } = await supabase.rpc('delete_klasifikasi', { p_id: id });
+        if (!error) {
+            showToast("Data dihapus");
+            loadData();
+        }
+    };
+
+    window.handleSearch = () => {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.ddc-card').forEach(c => c.classList.remove('highlight'));
+        
+        if (query === "") return;
+
+        const target = allData.find(d => 
+            d.kode_ddc.toLowerCase().includes(query) || 
+            d.nama_kategori.toLowerCase().includes(query)
+        );
+
+        if (target) {
+            const el = document.getElementById(`card-${target.kode_ddc}`);
+            if (el) {
+                el.classList.add('highlight');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.background = isError ? "var(--error)" : "var(--success)";
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    loadData();
+</script>
+</body>
+</html>

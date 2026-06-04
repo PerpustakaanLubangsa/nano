@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Kategori • Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #fcfdfe; --text-main: #1a1c1e; --text-muted: #5e6266;
+            --accent: #0061ff; --border: #e9eef2; --input-bg: #f3f6f9;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #0a0a0a; --text-main: #e2e2e6; --text-muted: #8e9189;
+                --accent: #a8c7fa; --border: #222427; --input-bg: #16181a;
+            }
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; padding: 24px; }
+        
+        .form-control { background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; color: var(--text-main); outline: none; width: 100%; transition: 0.3s; }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.1); }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        th { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 12px; text-align: left; font-weight: 800; }
+        td { background: var(--input-bg); padding: 14px; font-size: 13px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        td:first-child { border-left: 1px solid var(--border); border-radius: 16px 0 0 16px; }
+        td:last-child { border-right: 1px solid var(--border); border-radius: 0 16px 16px 0; }
+
+        .btn-primary { background: var(--accent); color: #000; padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; transition: 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-main); padding: 32px; border-radius: 24px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
+
+        #toast { position: fixed; bottom: 24px; right: 24px; background: #1a1c1e; color: white; padding: 12px 24px; border-radius: 16px; font-size: 12px; display: none; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="katModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle" class="text-xl font-extrabold mb-6">Tambah Kategori</h2>
+        <form id="katForm">
+            <div class="mb-6">
+                <label class="text-[10px] font-black uppercase text-muted block mb-2">Nama Kategori</label>
+                <input type="text" id="f_nama" class="form-control" placeholder="Contoh: Fiksi, Referensi..." required>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="text-xs font-bold text-muted px-4">Batal</button>
+                <button type="submit" class="btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-10">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Master Kategori</h1>
+            <p class="text-sm text-muted">Kelola kategori besar untuk koleksi buku</p>
+        </div>
+        <button onclick="openModal()" class="btn-primary"><i class="fa-solid fa-plus mr-2"></i>Tambah Kategori</button>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table>
+            <thead>
+                <tr>
+                    <th width="60">ID</th>
+                    <th>Nama Kategori</th>
+                    <th width="120">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="katTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let editId = null;
+
+    function checkAccess() {
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            window.top.location.replace('login.html');
+        }
+    }
+
+    async function loadData() {
+        const { data } = await supabase.from('kategori').select('*').order('id', { ascending: true });
+        if (data) renderTable(data);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('katTableBody');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-muted">Belum ada kategori</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td class="text-muted font-bold">#${item.id}</td>
+                <td class="font-extrabold uppercase tracking-tight">${item.nama_kategori}</td>
+                <td>
+                    <div class="flex gap-3">
+                        <button onclick="editData(${item.id}, '${item.nama_kategori}')" class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteData(${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.openModal = () => {
+        editId = null;
+        document.getElementById('katForm').reset();
+        document.getElementById('modalTitle').innerText = "Tambah Kategori";
+        document.getElementById('katModal').classList.add('active');
+    };
+
+    window.closeModal = () => document.getElementById('katModal').classList.remove('active');
+
+    document.getElementById('katForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const nama = document.getElementById('f_nama').value;
+        
+        let res;
+        if (editId) {
+            res = await supabase.from('kategori').update({ nama_kategori: nama }).eq('id', editId);
+        } else {
+            res = await supabase.from('kategori').insert([{ nama_kategori: nama }]);
+        }
+
+        if (!res.error) {
+            showToast("Kategori berhasil disimpan");
+            closeModal();
+            loadData();
+        } else {
+            showToast("Gagal menyimpan data");
+        }
+    };
+
+    window.editData = (id, nama) => {
+        editId = id;
+        document.getElementById('f_nama').value = nama;
+        document.getElementById('modalTitle').innerText = "Edit Kategori";
+        document.getElementById('katModal').classList.add('active');
+    };
+
+    window.deleteData = async (id) => {
+        if (confirm("Hapus kategori ini?")) {
+            const { error } = await supabase.from('kategori').delete().eq('id', id);
+            if (!error) {
+                showToast("Kategori dihapus");
+                loadData();
+            }
+        }
+    };
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    checkAccess();
+    loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsip Pengunjung • Perpustakaan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #f8f9fa; --bg-card: #ffffff; --text-main: #1f1f1f;
+            --text-muted: #5f6368; --accent: #1a73e8; --border: #e2e8f0;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #000000; --bg-card: #121212; --text-main: #e3e3e3;
+                --text-muted: #9aa0a6; --accent: #8ab4f8; --border: #2d2d2d;
+            }
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-main); color: var(--text-main); min-height: 100vh; }
+        
+        .folder-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+        }
+        .folder-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,0,0,0.1); }
+        
+        .breadcrumb-item:not(:last-child)::after { content: '/'; margin: 0 10px; color: var(--text-muted); opacity: 0.5; }
+        
+        .icon-folder { font-size: 44px; color: #fabb05; filter: drop-shadow(0 4px 6px rgba(250, 187, 5, 0.2)); }
+        .icon-month { font-size: 44px; color: var(--accent); filter: drop-shadow(0 4px 6px rgba(26, 115, 232, 0.2)); }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10">
+            <div class="flex items-center gap-2 mb-4 text-xs font-black uppercase tracking-[3px] text-blue-500">
+                <i class="fa-solid fa-box-archive"></i> Arsip Digital
+            </div>
+            <h1 class="text-4xl font-800 tracking-tight mb-8">Data Pengunjung</h1>
+            
+            <nav class="flex items-center bg-[var(--bg-card)] p-4 px-6 rounded-2xl border border-[var(--border)] shadow-sm text-sm">
+                <div onclick="renderYears()" class="breadcrumb-item cursor-pointer hover:text-blue-500 transition font-bold">Root</div>
+                <div id="breadcrumb-year" class="breadcrumb-item hidden font-medium text-muted"></div>
+            </nav>
+        </header>
+
+        <div id="folder-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
+
+        <div id="loader" class="hidden flex flex-col items-center py-24">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            <p class="text-[10px] font-black mt-6 opacity-40 uppercase tracking-[2px]">Mengkatalogkan Data...</p>
+        </div>
+    </div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const grid = document.getElementById('folder-grid');
+    const loader = document.getElementById('loader');
+    const bcy = document.getElementById('breadcrumb-year');
+
+    let archiveData = {}; 
+
+    async function init() {
+        showLoader(true);
+        try {
+            // Mengambil HANYA kolom tanggal_kunjungan
+            const { data, error } = await supabase
+                .from('data_pengunjung')
+                .select('tanggal_kunjungan')
+                .not('tanggal_kunjungan', 'is', null) // Pastikan data tidak null
+                .order('tanggal_kunjungan', { ascending: false });
+
+            if (error) throw error;
+
+            data.forEach(item => {
+                // Gunakan String Split untuk menghindari bug zona waktu pada objek Date
+                const parts = item.tanggal_kunjungan.split('-'); 
+                const year = parts[0]; 
+                const month = parts[1]; 
+
+                if (!archiveData[year]) archiveData[year] = new Set();
+                archiveData[year].add(month);
+            });
+
+            // Konversi Set ke Array terurut
+            Object.keys(archiveData).forEach(y => {
+                archiveData[y] = Array.from(archiveData[y]).sort((a, b) => b - a);
+            });
+
+            renderYears();
+        } catch (err) {
+            console.error(err);
+            grid.innerHTML = `<p class="col-span-full text-center py-10 opacity-50 font-medium">Gagal memuat arsip data.</p>`;
+        } finally {
+            showLoader(false);
+        }
+    }
+
+    window.renderYears = () => {
+        bcy.classList.add('hidden');
+        grid.innerHTML = '';
+        const years = Object.keys(archiveData).sort((a, b) => b - a);
+
+        if (years.length === 0) {
+            grid.innerHTML = `<p class="col-span-full text-center py-10 opacity-30 italic">Belum ada data pengunjung terdaftar.</p>`;
+            return;
+        }
+
+        years.forEach(year => {
+            const div = document.createElement('div');
+            div.className = 'folder-card p-8 flex flex-col items-center gap-5';
+            div.onclick = () => renderMonths(year);
+            div.innerHTML = `
+                <i class="fa-solid fa-folder icon-folder"></i>
+                <span class="font-800 text-base tracking-tight">${year}</span>
+            `;
+            grid.appendChild(div);
+        });
+    };
+
+    window.renderMonths = (year) => {
+        bcy.innerText = year;
+        bcy.classList.remove('hidden');
+        grid.innerHTML = '';
+
+        const months = archiveData[year];
+        const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+        months.forEach(m => {
+            const monthIdx = parseInt(m) - 1;
+            const div = document.createElement('div');
+            div.className = 'folder-card p-8 flex flex-col items-center gap-5';
+            div.onclick = () => {
+                window.location.href = `detail_data_pengunjung.html?year=${year}&month=${m}`;
+            };
+            div.innerHTML = `
+                <i class="fa-solid fa-folder-open icon-month"></i>
+                <div class="text-center">
+                    <span class="block font-800 text-base tracking-tight">${monthNames[monthIdx]}</span>
+                    <span class="text-[10px] opacity-40 font-black uppercase tracking-widest">${year}</span>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+    };
+
+    function showLoader(show) {
+        loader.classList.toggle('hidden', !show);
+        grid.classList.toggle('hidden', show);
+    }
+
+    init();
+</script>
+</body>
+</html>

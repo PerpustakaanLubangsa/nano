@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manajemen Karya | Perpustakaan Lubangsa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-color: #3b82f6;
+            --bg-form: #0a0a0c; 
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif;
+            outline: none !important;
+        }
+
+        h2, button, .font-heading, label {
+            font-family: 'Outfit', sans-serif !important;
+        }
+        
+        body { 
+            background: transparent; 
+            color: var(--text-primary); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .transparent-card { 
+            background: var(--bg-form);
+            border: none !important; 
+        }
+        
+        .transparent-input {
+            background: transparent; 
+            border: 1px solid var(--border-color); 
+            color: var(--text-primary); 
+            width: 100%; 
+            padding: 12px 16px; 
+            font-size: 14px; 
+            transition: all 0.2s ease;
+        }
+        .transparent-input:focus { 
+            border-color: var(--accent-color); 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .transparent-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .search-results-wrapper { position: relative; }
+        .search-dropdown-panel {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0; 
+            background: var(--bg-form);
+            border: 1px solid var(--border-color); z-index: 50; display: none;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+        .search-item {
+            padding: 12px 16px; font-size: 13px; cursor: pointer; font-weight: 500;
+            border-bottom: 1px solid var(--border-color); color: var(--text-primary);
+            transition: background 0.15s ease;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: rgba(255, 255, 255, 0.03); color: var(--accent-color); }
+
+        .btn-submit {
+            width: 100%; padding: 14px; background-color: var(--accent-color);
+            color: white; border: none; font-size: 14px;
+            font-weight: 600; cursor: pointer; letter-spacing: 0.02em;
+            transition: opacity 0.15s ease;
+        }
+        .btn-submit:hover { opacity: 0.9; }
+        .btn-submit:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .toast-notif {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(150%);
+            background: #111112; color: #ffffff; padding: 12px 24px; font-size: 12px;
+            font-weight: 600; z-index: 1000;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .toast-notif.active { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center">
+
+<div class="w-full max-w-xl transparent-card rounded-2xl p-6 md:p-8 space-y-6">
+    
+    <div class="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+        <button onclick="handleBack()" class="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-white transition-colors">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Kembali
+        </button>
+        <span id="modeBadge" class="text-[10px] font-bold bg-blue-500/10 px-3 py-1 rounded-full uppercase text-[var(--accent-color)] tracking-wider">MODE TAMBAH</span>
+    </div>
+
+    <div>
+        <h2 id="formTitle" class="text-xl font-bold text-white tracking-wide">Formulir Input Karya Santri</h2>
+        <p id="formDesc" class="text-xs text-[var(--text-secondary)] mt-1">Salin teks naskah dan arsipkan karya berkala baru santri</p>
+    </div>
+
+    <form id="karyaForm" class="space-y-5">
+        
+        <div class="space-y-2 search-results-wrapper">
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block tracking-wide">Pemilik Karya (Cari Nama / NIS)</label>
+            <div class="relative flex items-center">
+                <input type="text" id="searchAnggota" class="transparent-input rounded-xl font-medium pr-10" placeholder="Ketik NIS atau nama lengkap anggota..." autocomplete="off" required>
+                <i id="searchIcon" class="fa-solid fa-magnifying-glass absolute right-4 text-xs text-[var(--text-secondary)]"></i>
+            </div>
+            <input type="hidden" id="selectedAnggotaId" required>
+            <div id="searchPanel" class="search-dropdown-panel rounded-xl"></div>
+        </div>
+
+        <div id="profilPreviewCard" class="border border-[var(--border-color)] rounded-xl p-4 space-y-3 hidden">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-color)]">Profil Pemilik Karya</div>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-neutral-900 border border-[var(--border-color)] flex-shrink-0 relative overflow-hidden rounded-full">
+                    <div id="viewFotoPlaceholder" class="absolute inset-0 flex items-center justify-center text-neutral-400 font-bold text-sm"><i class="fa-solid fa-user text-base"></i></div>
+                </div>
+                <div class="space-y-1 min-w-0 flex-1">
+                    <div>
+                        <div id="viewNama" class="text-sm font-bold text-white truncate tracking-wide"></div>
+                        <div id="viewNis" class="text-xs text-[var(--text-secondary)] font-medium font-mono"></div>
+                    </div>
+                    <div class="flex gap-4 text-xs text-neutral-400">
+                        <div><span class="text-neutral-500 font-medium">Kamar:</span> <span id="viewKamar" class="font-semibold"></span></div>
+                        <div><span class="text-neutral-500 font-medium">Org:</span> <span id="viewOrganisasi" class="font-semibold text-ellipsis"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block tracking-wide">Kategori Karya</label>
+            <input type="text" id="kategoriKarya" class="transparent-input rounded-xl font-medium" placeholder="Contoh: Esai, Opini, Puisi, Cerpen" required>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block tracking-wide">Judul Karya</label>
+            <input type="text" id="judulKarya" class="transparent-input rounded-xl font-medium" placeholder="Ketik judul naskah secara lengkap..." required>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block tracking-wide">Sampul Gambar Naskah (Opsional)</label>
+            <div class="flex items-center gap-3">
+                <label for="fotoUrlFile" class="cursor-pointer flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 border border-[var(--border-color)] text-xs font-bold text-gray-300 px-4 py-3 rounded-xl transition-colors">
+                    <i class="fa-solid fa-cloud-arrow-up text-[var(--accent-color)]"></i> Pilih Gambar
+                </label>
+                <input type="file" id="fotoUrlFile" accept="image/*" class="hidden">
+                <div id="fileNamePreview" class="text-xs text-[var(--text-secondary)] truncate italic max-w-xs">Belum ada file dipilih</div>
+            </div>
+            <div id="existingImageContainer" class="hidden pt-1">
+                <a id="existingImageUrl" href="#" target="_blank" class="text-[10px] font-bold text-emerald-400 hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-image"></i> Lihat Sampul Saat Ini
+                </a>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block tracking-wide">Substansi / Konten Isi Karya</label>
+            <textarea id="isiKarya" class="transparent-input rounded-xl min-h-[160px] font-medium leading-relaxed" placeholder="Tempelkan atau tulis teks naskah di sini..." required></textarea>
+        </div>
+
+        <div class="pt-2">
+            <button type="submit" id="btnSubmit" class="btn-submit rounded-xl">
+                <span id="btnText">Simpan Karya Baru</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<div id="toast" class="toast-notif rounded-xl"></div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const form = document.getElementById('karyaForm');
+    const searchInput = document.getElementById('searchAnggota');
+    const hiddenAnggotaId = document.getElementById('selectedAnggotaId');
+    const searchPanel = document.getElementById('searchPanel');
+    const profilCard = document.getElementById('profilPreviewCard');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnText = document.getElementById('btnText');
+    const toast = document.getElementById('toast');
+    
+    const fileInput = document.getElementById('fotoUrlFile');
+    const fileNamePreview = document.getElementById('fileNamePreview');
+    const existingImageContainer = document.getElementById('existingImageContainer');
+    const existingImageUrl = document.getElementById('existingImageUrl');
+
+    const modeBadge = document.getElementById('modeBadge');
+    const formTitle = document.getElementById('formTitle');
+    const formDesc = document.getElementById('formDesc');
+
+    let debounceTimer;
+    let selectedIdentitasValid = ""; 
+    let editModeKaryaId = null;
+    let existingFotoUrl = null; // Menyimpan url foto lama ketika edit mode
+
+    async function checkAuthProtection() {
+        const { data: { session } } = await supabase.auth.getSession();
+        const localLogin = sessionStorage.getItem('isLoggedIn');
+        if (!session || localLogin !== 'true') {
+            sessionStorage.clear();
+            window.location.replace('login.html');
+        }
+    }
+
+    function showToast(message, duration = 3000) {
+        toast.innerText = message;
+        toast.classList.add('active');
+        setTimeout(() => toast.classList.remove('active'), duration);
+    }
+
+    // Listener tampilan nama file yang dipilih
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            fileNamePreview.textContent = fileInput.files[0].name;
+            fileNamePreview.className = "text-xs text-blue-400 font-medium truncate max-w-xs";
+        } else {
+            fileNamePreview.textContent = "Belum ada file dipilih";
+            fileNamePreview.className = "text-xs text-[var(--text-secondary)] truncate italic max-w-xs";
+        }
+    });
+
+    async function checkFormModeConfiguration() {
+        const savedKaryaId = localStorage.getItem('selectedKaryaId');
+        
+        if (savedKaryaId) {
+            editModeKaryaId = savedKaryaId;
+            
+            modeBadge.textContent = "MODE EDIT";
+            modeBadge.className = "text-[10px] font-bold bg-amber-500/10 px-3 py-1 rounded-full uppercase text-amber-500 tracking-wider";
+            formTitle.textContent = "Formulir Edit Arsip Karya";
+            formDesc.textContent = "Perbarui substansi teks dokumen naskah yang tersimpan";
+            btnText.textContent = "Perbarui Dokumen";
+            
+            searchInput.disabled = true;
+            document.getElementById('searchIcon').className = "fa-solid fa-lock absolute right-4 text-xs text-neutral-600";
+            
+            await loadDataKaryaLama(savedKaryaId);
+        } else {
+            editModeKaryaId = null;
+        }
+    }
+
+    async function loadDataKaryaLama(id) {
+        try {
+            const { data, error } = await supabase
+                .from('karya')
+                .select(`
+                    id, kategori, judul, isi, foto_url, anggota_id,
+                    anggota (id, nis, nama, kamar, organisasi)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            if (data && data.anggota) {
+                document.getElementById('kategoriKarya').value = data.kategori || '';
+                document.getElementById('judulKarya').value = data.judul || '';
+                document.getElementById('isiKarya').value = data.isi || '';
+                
+                // Simpan tautan foto lama
+                if (data.foto_url) {
+                    existingFotoUrl = data.foto_url;
+                    existingImageUrl.href = data.foto_url;
+                    existingImageContainer.classList.remove('hidden');
+                }
+
+                const profile = data.anggota;
+                hiddenAnggotaId.value = profile.id;
+                selectedIdentitasValid = `${profile.nis ? profile.nis + ' - ' : ''}${profile.nama.toUpperCase()}`;
+                searchInput.value = selectedIdentitasValid;
+
+                document.getElementById('viewNama').innerText = profile.nama.toUpperCase();
+                document.getElementById('viewNis').innerText = profile.nis ? `NIS: ${profile.nis}` : 'NIS: -';
+                document.getElementById('viewKamar').innerText = (profile.kamar || '-').toUpperCase();
+                document.getElementById('viewOrganisasi').innerText = (profile.organisasi || '-').toUpperCase();
+                document.getElementById('viewFotoPlaceholder').innerText = profile.nama.charAt(0).toUpperCase();
+
+                profilCard.classList.remove('hidden');
+            }
+        } catch (err) {
+            showToast(`Gagal memuat arsip: ${err.message}`);
+        }
+    }
+
+    searchInput.addEventListener('input', () => {
+        if (editModeKaryaId) return; 
+
+        clearTimeout(debounceTimer);
+        const query = searchInput.value.trim();
+
+        if (query.toUpperCase() !== selectedIdentitasValid) {
+            hiddenAnggotaId.value = '';
+            profilCard.classList.add('hidden');
+        }
+
+        if (query.length < 2) {
+            searchPanel.innerHTML = '';
+            searchPanel.style.display = 'none';
+            return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('anggota')
+                    .select('id, nis, nama, kamar, organisasi')
+                    .or(`nama.ilike.%${query}%,nis.ilike.%${query}%`)
+                    .order('nama', { ascending: true })
+                    .limit(5);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    searchPanel.innerHTML = data.map(item => `
+                        <div class="search-item" 
+                             data-id="${item.id}" 
+                             data-nis="${item.nis || ''}"
+                             data-nama="${item.nama}"
+                             data-kamar="${item.kamar || 'TIDAK ADA'}"
+                             data-organisasi="${item.organisasi || 'TIDAK ADA'}">
+                            <span class="text-blue-400 font-mono text-xs mr-2">${item.nis || '[NO-NIS]'}</span> ${item.nama.toUpperCase()}
+                        </div>
+                    `).join('');
+                    searchPanel.style.display = 'block';
+                } else {
+                    searchPanel.innerHTML = `<div class="p-4 text-xs text-center font-medium text-neutral-500">DATA TIDAK DITEMUKAN</div>`;
+                    searchPanel.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err.message);
+            }
+        }, 200); 
+    });
+
+    searchPanel.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-item');
+        if (item) {
+            const id = item.getAttribute('data-id'); 
+            const nis = item.getAttribute('data-nis'); 
+            const nama = item.getAttribute('data-nama');
+            const kamar = item.getAttribute('data-kamar');
+            const organisasi = item.getAttribute('data-organisasi');
+
+            selectedIdentitasValid = `${nis ? nis + ' - ' : ''}${nama.toUpperCase()}`;
+            searchInput.value = selectedIdentitasValid;
+            hiddenAnggotaId.value = id;
+
+            document.getElementById('viewNama').innerText = nama.toUpperCase();
+            document.getElementById('viewNis').innerText = nis ? `NIS: ${nis}` : 'NIS: -';
+            document.getElementById('viewKamar').innerText = kamar.toUpperCase();
+            document.getElementById('viewOrganisasi').innerText = organisasi.toUpperCase();
+            document.getElementById('viewFotoPlaceholder').innerText = nama.charAt(0).toUpperCase();
+
+            profilCard.classList.remove('hidden');
+            searchPanel.innerHTML = '';
+            searchPanel.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-results-wrapper')) {
+            searchPanel.innerHTML = '';
+            searchPanel.style.display = 'none';
+        }
+    });
+
+    // SISTEM AUTOKOMPRES GAMBAR (Client-Side Compression)
+    function compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Hitung rasio dimensi baru jika melebihi batas maksimal
+                    if (width > maxWidth || height > maxHeight) {
+                        if (width > height) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        } else {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    // Buat Canvas HTML5 untuk menggambar ulang gambar dengan dimensi baru
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Konversi canvas kembali menjadi Blob File bertipe JPEG dengan kualitas tertentu
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            // Bungkus blob menjadi objek File asli agar kompatibel dengan sistem upload
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                type: "image/jpeg",
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error("Gagal melakukan kompresi data gambar."));
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+
+    // Fungsi khusus mengunggah gambar ke bucket 'sampul_karya'
+    async function uploadSampulKarya(file) {
+        const fileExtension = file.name.split('.').pop();
+        const uniqueFileName = `${crypto.randomUUID()}.${fileExtension}`;
+        const filePath = `${uniqueFileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('sampul_karya')
+            .upload(filePath, file);
+
+        if (error) throw error;
+
+        const { data: publicUrlData } = supabase.storage
+            .from('sampul_karya')
+            .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const anggotaId = hiddenAnggotaId.value; 
+        const kategori = document.getElementById('kategoriKarya').value.trim();
+        const judul = document.getElementById('judulKarya').value.trim();
+        const isi = document.getElementById('isiKarya').value.trim();
+        const fileFoto = fileInput.files[0];
+
+        if (!anggotaId || searchInput.value.trim().toUpperCase() !== selectedIdentitasValid.toUpperCase()) {
+            showToast("Identitas pemilik tidak valid. Silakan pilih dari opsi pencarian.");
+            searchInput.focus();
+            return;
+        }
+
+        btnSubmit.disabled = true;
+        btnText.innerText = "Sedang Menyimpan...";
+
+        try {
+            let finalFotoUrl = editModeKaryaId ? existingFotoUrl : null;
+
+            // Jika ada file baru yang dipilih, jalankan autokompresi lalu unggah
+            if (fileFoto) {
+                btnText.innerText = "Mengompresi Gambar...";
+                let fileToUpload = fileFoto;
+                
+                // Kompresi hanya dipicu jika input adalah file gambar murni
+                if (fileFoto.type.startsWith('image/')) {
+                    try {
+                        fileToUpload = await compressImage(fileFoto);
+                        console.log(`Ukuran Awal: ${(fileFoto.size / 1024).toFixed(2)} KB -> Ukuran Setelah Kompresi: ${(fileToUpload.size / 1024).toFixed(2)} KB`);
+                    } catch (compressErr) {
+                        console.warn("Gagal mengompres gambar, menggunakan file asli:", compressErr.message);
+                    }
+                }
+
+                btnText.innerText = "Mengunggah Gambar...";
+                finalFotoUrl = await uploadSampulKarya(fileToUpload);
+            }
+
+            const payload = {
+                anggota_id: anggotaId,
+                kategori: kategori.toUpperCase(),
+                judul: judul,
+                isi: isi,
+                foto_url: finalFotoUrl
+            };
+
+            if (editModeKaryaId) {
+                const { error } = await supabase
+                    .from('karya')
+                    .update(payload)
+                    .eq('id', editModeKaryaId);
+
+                if (error) throw error;
+                showToast("Sukses! Perubahan naskah berhasil diperbarui.");
+                setTimeout(() => handleBack(), 1200);
+            } else {
+                const { error } = await supabase
+                    .from('karya')
+                    .insert([payload]);
+
+                if (error) throw error;
+
+                showToast("Sukses! Naskah karya baru berhasil disimpan.");
+                form.reset();
+                fileNamePreview.textContent = "Belum ada file dipilih";
+                fileNamePreview.className = "text-xs text-[var(--text-secondary)] truncate italic max-w-xs";
+                hiddenAnggotaId.value = '';
+                selectedIdentitasValid = '';
+                profilCard.classList.add('hidden');
+            }
+
+        } catch (err) {
+            showToast(`ERROR: ${err.message}`);
+        } finally {
+            btnSubmit.disabled = false;
+            btnText.innerText = editModeKaryaId ? "Perbarui Dokumen" : "Simpan Karya Baru";
+        }
+    });
+
+    window.handleBack = () => {
+        localStorage.removeItem('selectedKaryaId');
+        window.location.href = 'admin_karya.html';
+    };
+
+    (async () => {
+        await checkAuthProtection();
+        await checkFormModeConfiguration();
+    })();
+</script>
+</body>
+</html>

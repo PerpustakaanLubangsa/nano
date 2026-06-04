@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Lockscreen Minimalis Premium (Instant)</title>
+    
+    <link rel="stylesheet" href="colors.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=100;300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-page: transparent;
+            --bg-card: rgba(26, 26, 26, 0.65); 
+            --text-main-color: var(--text-main, #ffffff);
+            --text-secondary: var(--text-muted, #a0a0a0);
+            --accent: var(--primary, #007aff); 
+            --accent-danger: var(--error, #ff453a);
+            --accent-success: #30d158; 
+            --radius: 20px; 
+        }
+
+        /* Kebijakan Scroll Snap */
+        html {
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            height: 100vh;
+            overflow-y: scroll;
+            scrollbar-width: none; /* Sembunyikan scrollbar Firefox */
+        }
+        html::-webkit-scrollbar {
+            display: none; /* Sembunyikan scrollbar Chrome/Safari */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main-color);
+            min-height: 101vh; /* Cukup menyediakan sedikit ruang ekstra untuk memicu scroll */
+        }
+
+        /* Container Section Full Page */
+        .section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8vh 40px 5vh 40px;
+        }
+
+        /* --- HALAMAN 1: LOCKSCREEN --- */
+        .lockscreen-clock-area {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px; 
+            margin-top: 2vh;
+        }
+
+        .lockscreen-time {
+            font-size: 130px;
+            font-weight: 100; 
+            color: var(--text-main-color);
+            line-height: 0.95;
+            letter-spacing: -3px;
+        }
+
+        .lockscreen-date {
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--text-main-color);
+            letter-spacing: -0.2px;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: auto; /* Memastikan grid menempel ke bawah dengan rapi tanpa text hint */
+        }
+
+        .stat-box {
+            background-color: var(--bg-card);
+            border: none;
+            border-radius: var(--radius);
+            padding: 28px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            text-align: center;
+            gap: 10px; 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        }
+        
+        .stat-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            width: 22px;
+            height: 22px;
+            opacity: 0.5;
+        }
+
+        .stat-box.success .stat-icon { color: var(--accent-success); opacity: 0.9; }
+        .stat-box.danger .stat-icon { color: var(--accent-danger); opacity: 0.9; }
+
+        .stat-value { 
+            font-size: 38px; 
+            font-weight: 600; 
+            color: var(--text-main-color); 
+            letter-spacing: -1px; 
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        /* --- TRIGER ZONE (Invisible Gateway) --- */
+        #triggerZone {
+            height: 20px; /* Area pemicu tipis di bawah halaman utama */
+            width: 100vw;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <section id="pageLockscreen" class="section">
+        <div class="lockscreen-clock-area">
+            <div id="lockscreenTime" class="lockscreen-time">00:00</div>
+            <div id="lockscreenDate" class="lockscreen-date">Memuat Tanggal...</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box success">
+                <div class="stat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                    </svg>
+                </div>
+                <p id="valPengunjungHariIni" class="stat-value" style="color: var(--accent-success)">0</p>
+                <span class="stat-label">Pengunjung</span>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                </div>
+                <p id="valPeminjamAktif" class="stat-value" style="color: var(--accent)">0</p>
+                <span class="stat-label">Peminjam Aktif</span>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                </div>
+                <p id="valHistoriPeminjaman" class="stat-value">0</p>
+                <span class="stat-label">Total Pinjam</span>
+            </div>
+            
+            <div class="stat-box danger">
+                <div class="stat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+                <p id="valKeterlambatan" class="stat-value" style="color: var(--accent-danger)">0</p>
+                <span class="stat-label">Terlambat</span>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h18v3H3V3Z" />
+                    </svg>
+                </div>
+                <p id="valTotalKoleksi" class="stat-value">0</p>
+                <span class="stat-label">Total Koleksi</span>
+            </div>
+        </div>
+    </section>
+
+    <div id="triggerZone"></div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const timeEl = document.getElementById('lockscreenTime');
+    const dateEl = document.getElementById('lockscreenDate');
+    let lastMin = -1;
+
+    // --- JAM & TANGGAL REALTIME ---
+    function updateClock() {
+        const now = new Date();
+        const currentMin = now.getMinutes();
+        
+        if (currentMin !== lastMin) {
+            lastMin = currentMin;
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(currentMin).padStart(2, '0');
+            timeEl.innerText = `${hours}:${minutes}`;
+            
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            dateEl.innerText = now.toLocaleDateString('id-ID', options);
+        }
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // --- INTEGRASI SUPABASE KPI DATA ---
+    async function fetchKPIStats() {
+        try {
+            const tzOffset = new Date().getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+
+            const [resSummary, resDashboard, resHariIni] = await Promise.all([
+                supabase.from('view_sirkulasi_summary').select('peminjam_aktif, histori_peminjaman, jumlah_keterlambatan').single(),
+                supabase.from('view_library_dashboard_summary').select('total_koleksi').single(),
+                supabase.from('data_pengunjung').select('id', { count: 'exact', head: true }).eq('tanggal_kunjungan', localISOTime)
+            ]);
+
+            if (resHariIni) {
+                document.getElementById('valPengunjungHariIni').innerText = (resHariIni.count || 0).toLocaleString('id-ID');
+            }
+            if (resSummary.data) {
+                document.getElementById('valPeminjamAktif').innerText = resSummary.data.peminjam_aktif.toLocaleString('id-ID');
+                document.getElementById('valHistoriPeminjaman').innerText = resSummary.data.histori_peminjaman.toLocaleString('id-ID');
+                document.getElementById('valKeterlambatan').innerText = resSummary.data.jumlah_keterlambatan.toLocaleString('id-ID');
+            }
+            if (resDashboard.data) {
+                document.getElementById('valTotalKoleksi').innerText = resDashboard.data.total_koleksi.toLocaleString('id-ID');
+            }
+        } catch (err) {
+            console.error("Gagal memuat statistik KPI:", err);
+        }
+    }
+    fetchKPIStats();
+
+    // --- INTERSECTION OBSERVER: REDIRECT INSTAN TANPA JEDA ---
+    const triggerZone = document.getElementById('triggerZone');
+
+    const instantObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // Ketika area pemicu di bawah terdeteksi walau hanya sedikit (langsung lempar halaman)
+            if (entry.isIntersecting) {
+                instantObserver.unobserve(triggerZone); // Berhenti mengamati untuk mencegah dobel eksekusi
+                window.location.href = 'get/get.html';
+            }
+        });
+    }, { 
+        threshold: 0.01 // Sensitivitas super tinggi, tersentuh 1% langsung pindah
+    });
+
+    instantObserver.observe(triggerZone);
+</script>
+</body>
+</html>

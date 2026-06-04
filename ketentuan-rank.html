@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    
+    <title>Ketentuan Peringkat - Snowy Library</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-page: #f8f9fa; --text-primary: #202124;
+            --text-secondary: #5f6368; --border-color: #dadce0; --accent: #1a73e8; --surface: #ffffff;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-page: #000000; --text-primary: #e8eaed;
+                --text-secondary: #9aa0a6; --border-color: #333333; --accent: #8ab4f8; --surface: #121212;
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
+        body { background-color: var(--bg-page); color: var(--text-primary); min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+        
+        .rule-card { border-bottom: 1px solid var(--border-color); }
+        
+        /* Gaya Gambar Rank agar seragam dengan halaman utama */
+        .rank-badge-preview { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; opacity: 0; transition: opacity 0.3s; }
+        .rank-badge-preview.loaded { opacity: 1; }
+        
+        /* Efek Loading Skeleton */
+        .skeleton-circle { background: var(--border-color); border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 0.8; } 100% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="pb-10">
+
+<div class="sticky top-0 z-50 px-4 pt-4 pb-4 bg-[var(--bg-page)] shadow-sm">
+    <div class="max-w-2xl mx-auto flex items-center gap-4">
+        <button onclick="window.location.href='rank.html'" class="text-[var(--text-secondary)]">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </button>
+        <h1 class="text-lg font-bold">Ketentuan Peringkat</h1>
+    </div>
+</div>
+
+<div class="max-w-2xl mx-auto px-4 mt-4">
+    <div class="bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden p-2 shadow-sm">
+        <div class="p-4 text-center border-b border-[var(--border-color)] opacity-70">
+            <i class="fa-solid fa-star text-amber-500 text-2xl mb-2"></i>
+            <h2 class="text-xs font-black uppercase tracking-widest">Sistem Tingkatan Skor</h2>
+            <p class="text-[10px] text-[var(--text-secondary)] mt-1">Kumpulkan poin literasi untuk membuka tingkatan baru Anda.</p>
+        </div>
+        
+        <div id="rankRulesList">
+            </div>
+    </div>
+    
+    <div class="mt-6 text-center px-6">
+        <button onclick="window.location.href='rank.html'" class="w-full bg-[var(--accent)] text-white py-4 rounded-full font-bold text-sm shadow-md active:scale-95 transition-transform">
+            KEMBALI KE PERINGKAT
+        </button>
+    </div>
+</div>
+
+<script>
+    // Menambahkan aset ikon/gambar lokal atau URL folder penyimpanan gambar rank Anda jika ada
+    // Untuk saat ini, diletakkan placeholder penanda (atau bisa otomatis membaca path gambar di server Anda)
+    const RANK_RULES = [
+        { n: 'Immortal', min: 100, f: 'Sang Penjaga Pustaka.', img: 'immortal.png' },
+        { n: 'Glory', min: 80, f: 'Literasi Tanpa Batas.', img: 'glory.png' },
+        { n: 'Honor', min: 60, f: 'Pembaca Elit Terpuji.', img: 'honor.png' },
+        { n: 'Mythic', min: 50, f: 'Petualang Buku Sejati.', img: 'mythic.png' },
+        { n: 'Legend', min: 40, f: 'Akrab Dengan Ilmu.', img: 'legend.png' },
+        { n: 'Epic', min: 30, f: 'Pembaca Aktif Mingguan.', img: 'epic.png' },
+        { n: 'Grandmaster', min: 20, f: 'Sudah Jadi Rutinitas.', img: 'grandmaster.png' },
+        { n: 'Master', min: 10, f: 'Pembaca Reguler.', img: 'master.png' },
+        { n: 'Elite', min: 5, f: 'Mulai Menaruh Minat.', img: 'elite.png' },
+        { n: 'Warrior', min: 0, f: 'Baru Memulai Langkah.', img: 'warrior.png' }
+    ];
+
+    // Mengganti penanda titik warna bulat sebelumnya menjadi komponen gambar rank asli 
+    document.getElementById('rankRulesList').innerHTML = RANK_RULES.map(r => `
+        <div class="flex justify-between items-center p-4 rule-card last:border-none">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 skeleton-circle flex-shrink-0">
+                    <img src="./supa/assets/${r.img}" 
+                         class="rank-badge-preview" 
+                         onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton-circle')"
+                         onerror="this.removeAttribute('src'); this.parentElement.classList.remove('skeleton-circle'); this.insertAdjacentHTML('beforebegin', '<i class=\\'fa-solid fa-shield-halved text-xl opacity-30 mt-2.5 block text-center\\'></i>')">
+                </div>
+                <div>
+                    <p class="text-sm font-extrabold uppercase tracking-tight">${r.n}</p>
+                    <p class="text-[10px] opacity-60 font-medium mt-0.5">${r.f}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm font-black text-[var(--accent)] italic">≥ ${r.min}</p>
+                <p class="text-[8px] font-bold uppercase opacity-40">Min Pts</p>
+            </div>
+        </div>
+    `).join('');
+</script>
+
+</body>
+</html>

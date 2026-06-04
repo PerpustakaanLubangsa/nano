@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detail Dokumen Naskah | Perpustakaan Lubangsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-page: #070708;
+            --bg-card: #111112;
+            --text-primary: #f5f5f7;
+            --text-secondary: #7e8280;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --accent-color: #0a84ff;
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            outline: none !important;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .modern-card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+        }
+
+        /* Styling Artikel Isian Supabase (Rich Text Guard) */
+        .article-body {
+            font-size: 14px;
+            line-height: 1.75;
+            color: #d1d1d6;
+        }
+        .article-body p { margin-bottom: 1.25rem; }
+        .article-body h2 { font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 1.75rem; margin-bottom: 0.75rem; text-transform: uppercase; }
+        .article-body h3 { font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
+        .article-body ul, .article-body ol { margin-left: 1.25rem; margin-bottom: 1.25rem; list-style-type: square; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="max-w-3xl mx-auto">
+        
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border-color)]">
+            <button onclick="backToHub()" class="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-white transition-colors uppercase tracking-wide">
+                <i class="fa-solid fa-arrow-left-long"></i> Kembali ke Dashboard
+            </button>
+            
+            <div id="actionHeader" class="flex items-center gap-2 opacity-0 transition-opacity duration-200">
+                <button id="btnEditDirect" class="w-8 h-8 flex items-center justify-center bg-neutral-900 border border-neutral-800 text-gray-400 hover:text-white rounded-md">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <main id="mainContent" class="hidden">
+            
+            <div class="flex items-center justify-between mb-4">
+                <span id="txtKategori" class="text-[10px] font-bold text-[var(--accent-color)] tracking-wider uppercase bg-blue-500/10 px-2.5 py-1 rounded-md">
+                    -
+                </span>
+            </div>
+
+            <h1 id="txtJudul" class="text-xl md:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight mb-5">
+                Memuat Judul Dokumen...
+            </h1>
+
+            <div class="modern-card p-3.5 mb-6 bg-[#0a0a0b] flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div id="boxAvatar" class="w-9 h-10 bg-neutral-900 border border-neutral-800 shrink-0 rounded-md flex items-center justify-center text-blue-400 font-bold text-xs uppercase">
+                        -
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[8px] font-bold text-neutral-500 uppercase tracking-widest block mb-0.5">Kontributor Media</span>
+                        <h2 id="txtNama" class="text-xs font-bold text-white truncate uppercase tracking-wide">-</h2>
+                        <p id="txtSubInfo" class="text-[9px] font-semibold text-neutral-600 uppercase tracking-tight truncate mt-0.5">
+                            Kamar - • Organisasi -
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="text-right shrink-0">
+                    <span class="text-[8px] font-bold text-neutral-500 uppercase tracking-widest block mb-1">Rilis Berkala</span>
+                    <p id="txtTanggal" class="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">-</p>
+                </div>
+            </div>
+
+            <article id="txtIsi" class="article-body px-1 min-h-[250px]">
+            </article>
+
+        </main>
+
+        <div id="articleLoader" class="py-24 text-center text-[var(--text-secondary)] modern-card">
+            <i class="fa-solid fa-circle-notch animate-spin text-[var(--accent-color)] text-lg mb-2"></i>
+            <p class="font-bold tracking-widest uppercase text-[9px]">Mengunduh Salinan Dokumen...</p>
+        </div>
+
+        <div id="errorState" class="py-20 text-center text-[var(--text-secondary)] modern-card hidden">
+            <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 text-red-500"></i>
+            <p id="errorMsg" class="text-xs font-bold tracking-wider uppercase text-neutral-400">Gagal memvalidasi data naskah</p>
+            <button onclick="backToHub()" class="mt-4 px-4 py-2 bg-neutral-900 border border-neutral-800 text-[10px] font-bold text-white uppercase rounded-md">Kembali</button>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { supabase } from './supa/supa.js';
+
+        const articleLoader = document.getElementById('articleLoader');
+        const errorState = document.getElementById('errorState');
+        const errorMsg = document.getElementById('errorMsg');
+        const mainContent = document.getElementById('mainContent');
+
+        const karyaId = localStorage.getItem('selectedKaryaId');
+
+        async function loadDetailKarya() {
+            if (!karyaId) {
+                showError("Akses ditolak. Token identitas naskah tidak ditemukan di storage.");
+                return;
+            }
+
+            try {
+                // Kolom 'foto' dihapus dari klausa select sesuai dengan realita tabel anggota Anda
+                const { data, error } = await supabase
+                    .from('karya')
+                    .select(`
+                        id, judul, isi, kategori, dibuat_pada, anggota_id,
+                        anggota (id, nama, kamar, organisasi)
+                    `)
+                    .eq('id', karyaId)
+                    .single();
+
+                if (error) throw error;
+                if (!data) {
+                    showError("Dokumen arsip tidak eksis atau telah dihapus oleh admin lain.");
+                    return;
+                }
+
+                renderData(data);
+            } catch (err) {
+                console.error("Fetch Error:", err.message);
+                showError("Gagal terhubung ke server: " + err.message);
+            }
+        }
+
+        function renderData(item) {
+            const profile = item.anggota || {};
+
+            document.getElementById('txtJudul').textContent = item.judul || 'UNTITLED';
+            document.getElementById('txtKategori').textContent = item.kategori || 'UMUM';
+            
+            document.getElementById('txtNama').textContent = (profile.nama || 'ANONIM').toUpperCase();
+            
+            // Format info Kamar dan Organisasi kontributor
+            const kamar = (profile.kamar || '-').toUpperCase();
+            const organisasi = (profile.organisasi || '-').toUpperCase();
+            document.getElementById('txtSubInfo').textContent = `KAMAR ${kamar} • ORG: ${organisasi}`;
+            
+            // Format waktu terbit
+            document.getElementById('txtTanggal').textContent = item.dibuat_pada ? new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            }) : '-';
+
+            // Menghasilkan inisial nama secara otomatis untuk wadah avatar
+            const boxAvatar = document.getElementById('boxAvatar');
+            boxAvatar.textContent = profile.nama ? profile.nama.trim().charAt(0).toUpperCase() : 'S';
+
+            // Render isi naskah
+            document.getElementById('txtIsi').innerHTML = item.isi || '<p class="text-neutral-600">Naskah kosong.</p>';
+
+            // Tombol edit mengarah ke berkas form-karya.html
+            document.getElementById('btnEditDirect').onclick = () => {
+                window.location.href = 'form-karya.html';
+            };
+
+            articleLoader.classList.add('hidden');
+            document.getElementById('actionHeader').classList.remove('opacity-0');
+            mainContent.classList.remove('hidden');
+        }
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            articleLoader.classList.add('hidden');
+            mainContent.classList.add('hidden');
+            errorState.classList.remove('hidden');
+        }
+
+        window.backToHub = () => {
+            localStorage.removeItem('selectedKaryaId');
+            window.location.href = 'admin_karya.html';
+        };
+
+        document.addEventListener('DOMContentLoaded', loadDetailKarya);
+    </script>
+</body>
+</html>

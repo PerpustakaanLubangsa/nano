@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detail Naskah | Perpustakaan Lubangsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* Latar belakang halaman dibolongkan (transparent) */
+            --bg-page: transparent;
+            --text-primary: #f5f5f7;
+            --text-secondary: #7e8280;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --accent-color: #0a84ff;
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            outline: none !important;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Mengatur format paragraf naskah agar nyaman dibaca */
+        .article-body {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #e4e4e7;
+            letter-spacing: -0.01em;
+        }
+        
+        .article-body p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .article-body p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex justify-center">
+
+    <div class="w-full max-w-2xl space-y-6">
+        
+        <div class="flex items-center justify-between border-b border-neutral-900 pb-4">
+            <button onclick="handleBack()" class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] bg-[#111112] hover:bg-[#161618] hover:text-white px-3 py-2 border border-neutral-900 transition-colors">
+                <i class="fa-solid fa-arrow-left text-xs text-[var(--accent-color)]"></i> Kembali
+            </button>
+            <div id="metaKategori" class="text-[9px] font-black bg-blue-500/10 px-2.5 py-2 rounded-none uppercase text-[var(--accent-color)] tracking-wider">
+                MEMUAT...
+            </div>
+        </div>
+
+        <div id="loadingView" class="py-20 text-center text-[var(--text-secondary)] bg-[#0c0c0e] border border-neutral-900/50">
+            <i class="fa-solid fa-circle-notch animate-spin text-[var(--accent-color)] text-sm mb-2"></i>
+            <p class="font-bold tracking-widest uppercase text-[8px]">Membuka Dokumen...</p>
+        </div>
+
+        <article id="mainContent" class="space-y-6 hidden bg-[#0c0c0e] p-6 md:p-8 border border-neutral-900/50">
+            
+            <div class="space-y-3">
+                <h1 id="artJudul" class="text-lg md:text-xl font-extrabold tracking-tight text-white uppercase leading-tight">
+                    </h1>
+                
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-y border-neutral-900 py-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 rounded-full">
+                            <div id="artFotoPlaceholder" class="w-full h-full flex items-center justify-center text-neutral-400 text-[10px] font-bold bg-neutral-900 rounded-full">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 id="artNama" class="text-[10px] font-bold text-gray-200 uppercase tracking-wider"></h4>
+                            <p id="artAtribut" class="text-[8px] font-semibold text-neutral-500 uppercase tracking-tight mt-0.5">
+                                </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 shrink-0 font-bold uppercase tracking-wider">
+                        <div class="text-right">
+                            <div class="text-[7px] text-neutral-500 tracking-widest mb-0.5">Rilis Arsip</div>
+                            <div id="artTanggal" class="text-[10px] font-extrabold text-gray-400 tracking-tight">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="artIsi" class="article-body font-medium pt-2">
+                </div>
+
+        </article>
+
+    </div>
+
+    <script type="module">
+        import { supabase } from './supa/supa.js';
+
+        const loadingView = document.getElementById('loadingView');
+        const mainContent = document.getElementById('mainContent');
+
+        function handleBack() {
+            localStorage.removeItem('selectedKaryaId');
+            window.location.href = 'karya.html'; 
+        }
+        window.handleBack = handleBack;
+
+        async function loadDetailKarya() {
+            const karyaId = localStorage.getItem('selectedKaryaId');
+            
+            if (!karyaId) {
+                window.location.replace('karya.html');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('karya')
+                    .select(`
+                        id, judul, isi, kategori, dibuat_pada, anggota_id,
+                        anggota (nama, kamar, organisasi)
+                    `)
+                    .eq('id', karyaId)
+                    .single();
+
+                if (error) throw error;
+                if (!data) throw new Error("Arsip naskah tidak ditemukan di database.");
+
+                const profile = data.anggota || {};
+
+                document.getElementById('metaKategori').innerText = data.kategori || 'RUBRIK';
+                document.getElementById('artJudul').innerText = data.judul || 'UNTITLED';
+                document.getElementById('artNama').innerText = (profile.nama || 'ANONIM').toUpperCase();
+                
+                // Set Atribut Kamar dan Organisasi dengan fallback nilai '-' jika data null
+                const kamarText = profile.kamar ? profile.kamar.toUpperCase() : '-';
+                const organisasiText = profile.organisasi ? profile.organisasi.toUpperCase() : '-';
+                document.getElementById('artAtribut').innerText = `${kamarText} • ${organisasiText}`;
+
+                if (data.dibuat_pada) {
+                    const opsi = { day: 'numeric', month: 'short', year: 'numeric' };
+                    document.getElementById('artTanggal').innerText = new Date(data.dibuat_pada).toLocaleDateString('id-ID', opsi);
+                } else {
+                    document.getElementById('artTanggal').innerText = '-';
+                }
+
+                // Format Line-Break Isi Naskah
+                const isiKonten = data.isi || 'Tidak ada deskripsi teks.';
+                const formattedIsi = isiKonten
+                    .split('\n\n')
+                    .map(paragraf => `<p>${paragraf.replace(/\n/g, '<br>')}</p>`)
+                    .join('');
+                document.getElementById('artIsi').innerHTML = formattedIsi;
+
+                // Set inisial nama pertama pada placeholder avatar lingkaran kecil
+                const placeholderEl = document.getElementById('artFotoPlaceholder');
+                if (profile.nama) {
+                    placeholderEl.innerText = profile.nama.charAt(0).toUpperCase();
+                } else {
+                    placeholderEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
+                }
+
+                loadingView.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Gagal memuat detail naskah:", err.message);
+                alert(`Gagal Memuat Naskah: ${err.message}`);
+                handleBack();
+            }
+        }
+
+        (() => {
+            loadDetailKarya();
+        })();
+    </script>
+</body>
+</html>

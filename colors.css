@@ -1,0 +1,18 @@
+/* colors.css */
+:root {
+    /* Warna Utama Global */
+    --bg-global: #0d0d0d;          /* Warna hitam arang lembut pilihan Anda */
+    --bg-sidebar-solid: #0a0a0a;   /* Hitam pekat untuk sidebar saat lebar */
+    --bg-sidebar-trans: rgba(16, 16, 18, 0.6); /* Transparan saat sidebar ciut */
+    
+    /* Warna Aksen & Komponen */
+    --primary: #0a84ff;            /* Biru iOS / Modern Muted Blue */
+    --primary-transparent: rgba(10, 132, 255, 0.15); /* Biru aktif tembus pandang */
+    --error: #ff453a;              /* Merah sistem untuk logout/error */
+    --item-hover: rgba(255, 255, 255, 0.04); /* Efek hover menu */
+    
+    /* Warna Teks */
+    --text-main: #f5f5f7;          /* Putih terang utama */
+    --text-muted: #9aa0a6;         /* Abu-abu untuk menu pasif */
+    --text-label: rgba(255, 255, 255, 0.25); /* Label kategori menu */
+}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tentang Sistem • Gemini</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg-main: #ffffff;
+--bg-card: #f0f4f9;
+--text-main: #1f1f1f;
+--text-muted: #474747;
+--accent: #0b57d0;
+--border: #c4c7c5;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+--bg-main: #000000;
+--bg-card: #1e1f20;
+--text-main: #e3e3e3;
+--text-muted: #c4c7c5;
+--accent: #a8c7fa;
+--border: #444746;
+}
+}
+* { margin: 0; padding: 0; box-sizing: border-box; border: none; outline: none; }
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: var(--bg-main);
+color: var(--text-main);
+line-height: 1.5;
+-webkit-font-smoothing: antialiased;
+}
+.container {
+max-width: 800px;
+margin: 0 auto;
+padding: 80px 24px;
+}
+.hero-section {
+margin-bottom: 64px;
+}
+h1 {
+font-size: 40px;
+font-weight: 500;
+letter-spacing: -0.5px;
+margin-bottom: 16px;
+color: var(--text-main);
+}
+.hero-p {
+font-size: 18px;
+color: var(--text-muted);
+max-width: 600px;
+}
+.feature-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+margin-bottom: 48px;
+}
+.card {
+background: var(--bg-card);
+padding: 24px;
+border-radius: 24px;
+}
+.card i {
+font-size: 20px;
+margin-bottom: 16px;
+display: block;
+color: var(--accent);
+}
+.card h3 {
+font-size: 16px;
+font-weight: 600;
+margin-bottom: 8px;
+}
+.card p {
+font-size: 14px;
+color: var(--text-muted);
+line-height: 1.6;
+}
+.stats-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+margin-bottom: 48px;
+}
+.stat-item {
+padding: 20px;
+border: 1px solid var(--border);
+border-radius: 16px;
+}
+.stat-label {
+font-size: 11px;
+font-weight: 500;
+color: var(--text-muted);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+margin-bottom: 4px;
+}
+.stat-value {
+font-size: 15px;
+font-weight: 600;
+}
+.team-section {
+margin-top: 64px;
+}
+.team-title {
+font-size: 12px;
+font-weight: 600;
+color: var(--text-muted);
+margin-bottom: 20px;
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+.team-list {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+}
+.team-chip {
+background: var(--bg-card);
+padding: 8px 16px;
+border-radius: 10px;
+font-size: 13px;
+font-weight: 500;
+}
+footer {
+margin-top: 120px;
+padding-bottom: 40px;
+font-size: 11px;
+color: var(--text-muted);
+letter-spacing: 0.5px;
+}
+@media (max-width: 640px) {
+.container { padding: 40px 20px; }
+.feature-grid { grid-template-columns: 1fr; }
+.stats-grid { grid-template-columns: 1fr; }
+h1 { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<section class="hero-section">
+<h1>Sistem Perpustakaan Lubangsa</h1>
+<p class="hero-p">Infrastruktur manajemen data modern yang dibangun untuk performa, stabilitas, dan skalabilitas jangka panjang.</p>
+</section>
+<div class="feature-grid">
+<div class="card">
+<i class="fa-solid fa-layer-group"></i>
+<h3>Arsitektur Modern</h3>
+<p>Menggunakan stack teknologi terbaru untuk memastikan sistem tetap responsif dan bebas dari legacy error.</p>
+</div>
+<div class="card">
+<i class="fa-solid fa-shield-check"></i>
+<h3>Integritas Data</h3>
+<p>Manajemen database yang presisi untuk menjamin akurasi data sirkulasi dan keanggotaan santri secara real-time.</p>
+</div>
+</div>
+<div class="stats-grid">
+<div class="stat-item">
+<p class="stat-label">Launch Date</p>
+<p class="stat-value">01 Jan 2026</p>
+</div>
+<div class="stat-item">
+<p class="stat-label">System Architect</p>
+<p class="stat-value">Adlan Madjied RIdho</p>
+</div>
+<div class="stat-item">
+<p class="stat-label">Environment</p>
+<p class="stat-value">Production Stable</p>
+</div>
+</div>
+<section class="team-section">
+<p class="team-title">Kontributor Sistem</p>
+<div class="team-list">
+<div class="team-chip">Roni Firdaus</div>
+<div class="team-chip">Ainor Rosiki</div>
+<div class="team-chip">Achmed Sayfi</div>
+<div class="team-chip">Khairul Yaqin</div>
+<div class="team-chip">A. Mundzir AR</div>
+<div class="team-chip">Moh. Mosleh</div>
+<div class="team-chip">Muhammad Hady</div>
+<div class="team-chip">Ach. Khalid</div>
+</div>
+</section>
+<footer>
+&copy; 2026 LUBANGSA LIBRARY SYSTEM. ALL RIGHTS RESERVED.
+</footer>
+</div>
+</body>
+</html>

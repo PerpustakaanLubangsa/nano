@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Pengunjung • Compact View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #f8f9fa; --bg-card: #ffffff; --text-main: #1f1f1f;
+            --text-muted: #5f6368; --accent: #1a73e8; --border: #e2e8f0;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #000000; --bg-card: #121212; --text-main: #e3e3e3;
+                --text-muted: #9aa0a6; --accent: #8ab4f8; --border: #2d2d2d;
+            }
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-main); color: var(--text-main); font-size: 12px; }
+        
+        .table-container { 
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; 
+        }
+        /* Tabel Sempit & Kecil */
+        th { 
+            text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; 
+            color: var(--text-muted); padding: 10px 12px; border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid var(--border); line-height: 1.2; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(26, 115, 232, 0.04); }
+
+        .btn-action { transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; }
+        .btn-action:hover { transform: translateY(-1px); opacity: 0.9; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-full mx-auto">
+        <header class="mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="history.back()" class="btn-action text-blue-500">
+                        <i class="fa-solid fa-arrow-left"></i> KEMBALI
+                    </button>
+                    <div>
+                        <h1 id="title-period" class="text-xl font-800 tracking-tight leading-none uppercase">Memuat Periode...</h1>
+                        <p class="text-[10px] text-muted font-medium opacity-60 uppercase tracking-widest mt-1">Data Log Pengunjung</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="exportToExcel()" class="btn-action bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-sm">
+                        <i class="fa-solid fa-file-excel"></i> SALIN KE EXCEL
+                    </button>
+                    <div class="bg-blue-500/10 text-blue-500 px-3 py-2 rounded-lg text-[10px] font-black uppercase">
+                        <span id="count-total">0</span> DATA
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="table-container shadow-sm">
+            <div class="overflow-x-auto">
+                <table id="visitor-table" class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50/50 dark:bg-white/5">
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Nama</th>
+                            <th>Kamar</th>
+                            <th>Jenjang</th>
+                            <th>Judul Buku</th>
+                            <th>Kategori</th>
+                            <th>Aktivitas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-body">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div id="empty-state" class="hidden py-16 text-center">
+                <i class="fa-solid fa-folder-open text-3xl opacity-10 mb-3"></i>
+                <p class="text-[11px] text-muted italic">Tidak ada data ditemukan.</p>
+            </div>
+
+            <div id="loader" class="py-16 text-center">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const year = urlParams.get('year');
+    const month = urlParams.get('month');
+
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    let currentData = [];
+
+    async function loadDetail() {
+        if (!year || !month) return;
+
+        document.getElementById('title-period').innerText = `${monthNames[parseInt(month)-1]} ${year}`;
+
+        try {
+            // LOGIKA AMAN: Awal bulan ini sampai awal bulan depan
+            const firstDay = `${year}-${month}-01`;
+            let nextYear = parseInt(year);
+            let nextMonth = parseInt(month) + 1;
+            if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+            const firstDayNextMonth = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+
+            const { data, error } = await supabase
+                .from('data_pengunjung')
+                .select('tanggal_kunjungan, nama, kamar, jenjang, judul_buku, kategori, aktivitas')
+                .gte('tanggal_kunjungan', firstDay)
+                .lt('tanggal_kunjungan', firstDayNextMonth)
+                .order('tanggal_kunjungan', { ascending: true });
+
+            if (error) throw error;
+            currentData = data;
+            renderTable(data);
+        } catch (err) {
+            console.error(err);
+            alert("Database Error: " + err.message);
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+
+    function renderTable(items) {
+        const tbody = document.getElementById('data-body');
+        const countTotal = document.getElementById('count-total');
+        const emptyState = document.getElementById('empty-state');
+        
+        countTotal.innerText = items.length;
+        tbody.innerHTML = '';
+
+        if (items.length === 0) {
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        items.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="font-bold whitespace-nowrap opacity-60 text-[10px]">${item.tanggal_kunjungan}</td>
+                <td class="font-extrabold uppercase text-blue-500">${item.nama}</td>
+                <td class="font-bold">${item.kamar}</td>
+                <td class="opacity-70">${item.jenjang || '-'}</td>
+                <td class="font-medium">${item.judul_buku || '-'}</td>
+                <td><span class="text-[10px] bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded font-bold uppercase">${item.kategori || '-'}</span></td>
+                <td class="italic text-muted">${item.aktivitas || '-'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Fungsi Export ke Excel
+    window.exportToExcel = () => {
+        if (currentData.length === 0) return alert("Tidak ada data untuk disalin.");
+        
+        const worksheet = XLSX.utils.json_to_sheet(currentData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Pengunjung");
+        
+        // Simpan file
+        XLSX.writeFile(workbook, `Data_Pengunjung_${month}_${year}.xlsx`);
+    };
+
+    loadDetail();
+</script>
+</body>
+</html>

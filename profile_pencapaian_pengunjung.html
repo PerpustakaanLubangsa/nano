@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profil Detail - Snowy Library</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8f9fa; --text: #202124; --accent: #1a73e8; --border: #dadce0; --chart-grid: #eeeeee; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #060608; --text: #e8eaed; --accent: #3b82f6; --border: #1e293b; --chart-grid: #1e293b; } }
+        body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .glass-card { background: transparent; border: none; border-radius: 20px; }
+        .stat-box { background: transparent; border: none; border-radius: 12px; padding: 12px; }
+        #mainContent { opacity: 0; transform: translateY(15px); transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
+        #mainContent.reveal-active { opacity: 1; transform: translateY(0); }
+        .rank-animated { animation: floatGame 3.5s ease-in-out infinite; will-change: transform; }
+        @keyframes floatGame { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
+        .rank-shoot-shake { animation: shootRecoil 0.2s ease-out both !important; }
+        @keyframes shootRecoil { 0% { transform: scale(1); } 15% { transform: scale(0.85) translateY(4px); } 30% { transform: scale(1.05) translateY(-2px); } 100% { transform: scale(1); } }
+        .avatar-frame { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; border: 3px solid var(--bg); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        * { scrollbar-width: none; } *::-webkit-scrollbar { display: none; }
+        #gameLoader { position: fixed; inset: 0; z-index: 999; background: #030712; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s ease; }
+        .cyber-bar-container { width: 280px; height: 4px; background: #1f2937; border-radius: 10px; overflow: hidden; }
+        .cyber-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #2563eb, #3b82f6); transition: width 0.1s ease-out; box-shadow: 0 0 10px #3b82f6; }
+        #epicRankIntro { position: fixed; inset: 0; z-index: 998; background: radial-gradient(circle at center, rgba(10,11,18,0.99) 0%, rgba(3,7,18,1) 100%); display: none; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.3s ease; }
+        .epic-stamp { animation: gamePopImpact 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform: scale(0.2); opacity: 0; will-change: transform, opacity; }
+        .epic-text-pop { animation: gameTextSpread 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; opacity: 0; letter-spacing: 0.1em; will-change: transform, opacity; }
+        .aura-ray { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); animation: spinAura 15s linear infinite; pointer-events: none; z-index: -1; }
+        @keyframes spinAura { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes gamePopImpact { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes gameTextSpread { 0% { opacity: 0; transform: translateY(10px); letter-spacing: 0.1em; } 100% { opacity: 1; transform: translateY(0); letter-spacing: 0.2em; } }
+        .fly-to-position { position: fixed !important; z-index: 1000 !important; transform-origin: top left; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease; will-change: transform, opacity; }
+        .screen-shake { animation: shakeImpact 0.3s cubic-bezier(.36,.07,.19,.97) both; will-change: transform; }
+        @keyframes shakeImpact { 10%, 90% { transform: translate3d(-1px, -1px, 0); } 20%, 80% { transform: translate3d(1px, 1px, 0); } 40%, 60% { transform: translate3d(-2px, 0, 0); } }
+        .impact-flash { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%); border-radius: 50%; opacity: 0; pointer-events: none; z-index: 10; }
+        .impact-flash.active { animation: flashBurst 0.35s ease-out forwards; }
+        @keyframes flashBurst { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+        .marquee-container { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
+        .marquee-content { display: inline-block; animation: marqueeEffect 10s linear infinite; }
+        @keyframes marqueeEffect { 0% { transform: translate3d(0, 0, 0); } 85%, 100% { transform: translate3d(-50%, 0, 0); } }
+        .stagger-hide { opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+        .stagger-show { opacity: 1; transform: translateY(0); }
+        .scroll-loader { display: flex; justify-content: center; align-items: center; padding: 12px; width: 100%; }
+        .spinner-mini { width: 16px; height: 16px; border: 2px solid rgba(59,130,246,0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spinMini 0.6s linear infinite; }
+        @keyframes spinMini { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+<div id="gameLoader">
+    <div class="text-center space-y-4">
+        <h2 class="text-white text-[11px] font-black tracking-[0.4em] uppercase animate-pulse opacity-80">CONNECTING TO SERVER</h2>
+        <div class="cyber-bar-container"><div id="loadingProgress" class="cyber-bar"></div></div>
+        <p id="loadingPercent" class="text-[10px] text-gray-500 font-bold tracking-widest">0%</p>
+    </div>
+</div>
+
+<div id="epicRankIntro">
+    <div class="aura-ray"></div>
+    <div class="text-center space-y-5 relative">
+        <p class="text-[10px] text-blue-400 font-black tracking-[0.5em] uppercase opacity-90 animate-pulse">RANK ACQUIRED</p>
+        <div class="w-64 h-64 flex items-center justify-center relative">
+            <img id="mIntroRankImg" src="" class="w-56 h-56 object-contain epic-stamp" alt="Rank">
+        </div>
+        <h1 id="mIntroRankLabel" class="text-white text-3xl font-black uppercase italic epic-text-pop text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">---</h1>
+    </div>
+</div>
+
+<div id="mainContent" class="max-w-7xl mx-auto space-y-6">
+    <div class="flex items-center gap-4">
+        <button onclick="window.location.href='form.html'" class="w-10 h-10 flex items-center justify-center rounded-full glass-card active:scale-95 transition-all">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div>
+            <h1 class="text-[10px] font-black uppercase tracking-widest opacity-50">Member Profile</h1>
+            <p id="mNIS" class="text-xs font-bold opacity-70">Loading...</p>
+        </div>
+    </div>
+
+    <div id="profileTargetCard" class="glass-card p-8 flex flex-col items-center text-center gap-5 relative overflow-hidden">
+        <div id="rankBadgeAnchor" class="w-40 h-40 flex items-center justify-center relative">
+            <div id="impactFlash" class="impact-flash"></div>
+            <img id="mRankImg" src="" onclick="this.classList.add('rank-shoot-shake'); setTimeout(()=>this.classList.remove('rank-shoot-shake'), 200);" class="w-40 h-40 rank-animated object-contain opacity-0 transition-opacity duration-300 cursor-pointer" alt="Badge">
+        </div>
+        <div id="mRankLabel" class="stagger-hide w-fit px-5 py-1.5 rounded-full border border-[var(--accent)] text-[var(--accent)] text-[10px] font-black tracking-widest uppercase bg-blue-500/5">---</div>
+        <div id="mProfileContainer" class="stagger-hide flex flex-row items-center justify-center gap-4 mt-2 w-full max-w-sm md:max-w-md mx-auto">
+            <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.src='image/profile/profile.jpg'">
+            <div class="min-w-0 text-left flex-1 overflow-hidden">
+                <div id="mNamaWrapper" class="marquee-container">
+                    <h2 id="mNama" class="text-xl md:text-2xl font-extrabold uppercase leading-tight text-left">---</h2>
+                </div>
+                <p id="mOrgInfo" class="text-[11px] font-bold uppercase tracking-wide opacity-60 mt-1">---</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="lowerGridContent" class="stagger-hide grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div class="md:col-span-4 space-y-5">
+            <div class="glass-card p-5 bg-blue-600 text-white border-none shadow-xl relative overflow-hidden">
+                <p class="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Library Points</p>
+                <div class="flex items-baseline gap-1 mb-2">
+                    <h3 id="mTotalPoin" class="text-4xl font-black">0</h3> <span class="text-xs font-bold opacity-60">PTS</span>
+                </div>
+            </div>
+            <div class="glass-card p-4">
+                <p class="text-[9px] font-black uppercase mb-2 opacity-50 tracking-widest">Kategori Utama</p>
+                <div class="relative h-44"><canvas id="categoryChart"></canvas></div>
+            </div>
+        </div>
+        <div class="md:col-span-4 glass-card p-5 flex flex-col">
+            <p class="text-[10px] font-black uppercase mb-4 opacity-50 tracking-widest flex-shrink-0">Daftar Buku Terakhir Dibaca</p>
+            <div id="mBookList" class="space-y-2 max-h-[580px] overflow-y-auto pr-1 flex-1"></div>
+        </div>
+        <div class="md:col-span-4 glass-card p-5 flex flex-col">
+            <p class="text-[10px] font-black uppercase mb-4 opacity-50 tracking-widest flex-shrink-0">Riwayat Mutasi Poin</p>
+            <div id="mMutasiList" class="space-y-2 max-h-[580px] overflow-y-auto pr-1 flex-1"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let categoryChartInstance = null;
+    let currentUserId = null;
+    const ITEMS_PER_PAGE = 12;
+    
+    let mutasiPage = 0, hasMoreMutasi = true, isMutasiLoading = false;
+    let bookPage = 0, hasMoreBooks = true, isBooksLoading = false;
+    let bookObserver = null, mutasiObserver = null;
+
+    function preloadAssets(urls, onProgress) {
+        let loaded = 0;
+        if (urls.length === 0) return onProgress(100);
+        urls.forEach(url => {
+            const img = new Image();
+            img.onload = img.onerror = () => { onProgress(Math.round((++loaded / urls.length) * 100)); };
+            img.src = url;
+        });
+    }
+
+    // Fungsi Pengambilan ID Anggota (Mendukung id, id_anggota, dan nis)
+    async function fetchDatabaseData() {
+        const stored = JSON.parse(sessionStorage.getItem('last_guest')) || JSON.parse(localStorage.getItem('selectedUser'));
+        if (!stored) { window.location.href = 'form.html'; return null; }
+        
+        const targetId = String(stored.id || stored.id_anggota || stored.nis).trim();
+
+        // Mengambil data murni profil dari view_profil_anggota
+        const { data: profile, error } = await supabase
+            .from('view_profil_anggota')
+            .select('*')
+            .or(`id.eq."${targetId}",nis.eq."${targetId}"`)
+            .maybeSingle();
+
+        if (error || !profile) {
+            console.error("Gagal memuat profil database:", error);
+            return null;
+        }
+        
+        currentUserId = profile.id;
+        return { profile };
+    }
+
+    async function fetchBukuDibacaChunk(page) {
+        if (!currentUserId) return [];
+        const from = page * ITEMS_PER_PAGE, to = from + ITEMS_PER_PAGE - 1;
+        const { data, error } = await supabase
+            .from('view_buku_dibaca_per_anggota')
+            .select('judul_buku, total_dibaca')
+            .eq('id_anggota', currentUserId)
+            .order('total_dibaca', { ascending: false })
+            .range(from, to);
+        return error ? [] : (data || []);
+    }
+
+    async function fetchMutasiPoinChunk(page) {
+        if (!currentUserId) return [];
+        const from = page * ITEMS_PER_PAGE, to = from + ITEMS_PER_PAGE - 1;
+        const { data, error } = await supabase
+            .from('mutasi_poin')
+            .select('poin, keterangan, created_at')
+            .eq('anggota_id', currentUserId)
+            .order('created_at', { ascending: false })
+            .range(from, to);
+        return error ? [] : (data || []);
+    }
+
+    async function fetchKategoriStatistik() {
+        if (!currentUserId) return [];
+        const { data, error } = await supabase
+            .from('view_kategori_per_anggota')
+            .select('kategori, total_kategori')
+            .eq('id_anggota', currentUserId)
+            .order('total_kategori', { ascending: false });
+        return error ? [] : (data || []);
+    }
+
+    async function renderInterface(u) {
+        const namaTarget = u.nama || 'Tanpa Nama';
+        const containerNama = document.getElementById('mNamaWrapper');
+        containerNama.innerHTML = namaTarget.length > 18 
+            ? `<div class="marquee-content text-xl md:text-2xl font-extrabold uppercase leading-tight"><span>${namaTarget}</span><span class="mx-10 text-blue-500">•</span><span>${namaTarget}</span><span class="mx-10 text-blue-500">•</span></div>`
+            : `<h2 class="text-xl md:text-2xl font-extrabold uppercase leading-tight text-left">${namaTarget}</h2>`;
+
+        document.getElementById('mNIS').innerText = `ID: ${u.nis || u.id || '---'}`;
+        document.getElementById('mOrgInfo').innerText = `${u.organisasi || '-'} / Kmr: ${u.kamar || '-'}`;
+        document.getElementById('mAvatar').src = 'image/profile/profile.jpg';
+        document.getElementById('mRankLabel').innerText = (u.rank || 'WARRIOR').toUpperCase();
+        document.getElementById('mTotalPoin').innerText = u.total_poin || 0;
+
+        const kategoriData = await fetchKategoriStatistik();
+        const isDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+        const textClr = isDark ? '#e8eaed' : '#202124', gridClr = isDark ? '#1e293b' : '#eeeeee';
+
+        if (categoryChartInstance) categoryChartInstance.destroy();
+        if (kategoriData.length > 0) {
+            const labels = kategoriData.map(k => (k.kategori || 'LAINNYA').toUpperCase());
+            const values = kategoriData.map(k => k.total_kategori || 0);
+
+            categoryChartInstance = new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ data: values, backgroundColor: '#2563eb', borderRadius: 4, barThickness: 10 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridClr }, ticks: { color: textClr, font: { size: 8 } } }, y: { grid: { display: false }, ticks: { color: textClr, font: { size: 8, weight: 'bold' } } } } }
+            });
+        }
+
+        bookPage = 0; hasMoreBooks = true;
+        document.getElementById('mBookList').innerHTML = '';
+        await loadMoreBooks();
+    }
+
+    function bindScrollTrigger(containerId, triggerId, observerRef, callback) {
+        if (observerRef) observerRef.disconnect();
+        const trigger = document.getElementById(triggerId);
+        if (!trigger) return new IntersectionObserver(() => {});
+        
+        const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) callback(); }, { root: document.getElementById(containerId), threshold: 1.0 });
+        obs.observe(trigger);
+        return obs;
+    }
+
+    async function loadMoreBooks() {
+        if (isBooksLoading || !hasMoreBooks) return;
+        isBooksLoading = true;
+        const bookList = document.getElementById('mBookList');
+        document.getElementById('bookScrollTrigger')?.remove();
+
+        if (bookPage > 0) bookList.insertAdjacentHTML('beforeend', `<div id="bLoadingTmp" class="scroll-loader"><div class="spinner-mini"></div></div>`);
+        const newBooks = await fetchBukuDibacaChunk(bookPage);
+        document.getElementById('bLoadingTmp')?.remove();
+
+        if (bookPage === 0 && newBooks.length === 0) {
+            bookList.innerHTML = '<p class="text-[10px] opacity-40 italic py-10 text-center">Belum ada riwayat buku</p>';
+            hasMoreBooks = false;
+        } else if (newBooks.length > 0) {
+            bookList.insertAdjacentHTML('beforeend', newBooks.map(b => `
+                <div class="flex justify-between items-center p-3 rounded-xl border border-[var(--border)] bg-slate-500/5">
+                    <div class="min-w-0 flex-1 pr-2">
+                        <span class="text-[10px] font-bold truncate block uppercase">${b.judul_buku || 'Buku Tanpa Judul'}</span>
+                        <span class="text-[8px] opacity-50 block font-bold mt-0.5">DIBACA: ${b.total_dibaca || 0}x</span>
+                    </div>
+                    <i class="fa-solid fa-book opacity-40 text-[10px] flex-shrink-0"></i>
+                </div>`).join(''));
+
+            if (newBooks.length < ITEMS_PER_PAGE) { hasMoreBooks = false; } 
+            else {
+                bookPage++;
+                bookList.insertAdjacentHTML('beforeend', `<div id="bookScrollTrigger" class="scroll-loader"><div class="spinner-mini"></div></div>`);
+                bookObserver = bindScrollTrigger('mBookList', 'bookScrollTrigger', bookObserver, loadMoreBooks);
+            }
+        } else { hasMoreBooks = false; }
+        isBooksLoading = false;
+    }
+
+    async function loadMoreMutasi() {
+        if (isMutasiLoading || !hasMoreMutasi) return;
+        isMutasiLoading = true;
+        const mutasiList = document.getElementById('mMutasiList');
+        document.getElementById('mutasiScrollTrigger')?.remove();
+
+        if (mutasiPage > 0) mutasiList.insertAdjacentHTML('beforeend', `<div id="mLoadingTmp" class="scroll-loader"><div class="spinner-mini"></div></div>`);
+        const newMutasi = await fetchMutasiPoinChunk(mutasiPage);
+        document.getElementById('mLoadingTmp')?.remove();
+
+        if (mutasiPage === 0 && newMutasi.length === 0) {
+            mutasiList.innerHTML = '<p class="text-[10px] opacity-40 italic py-10 text-center">Belum Ada Poin Tambahan.</p>';
+            hasMoreMutasi = false;
+        } else if (newMutasi.length > 0) {
+            mutasiList.insertAdjacentHTML('beforeend', newMutasi.map(m => `
+                <div class="p-3 rounded-xl border border-[var(--border)] flex items-center justify-between gap-2 bg-slate-500/5">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] font-extrabold uppercase truncate leading-tight">${m.keterangan || 'Mutasi Poin'}</p>
+                        <p class="text-[8px] opacity-50 font-bold mt-0.5">${new Date(m.created_at).toLocaleDateString('id-ID')}</p>
+                    </div>
+                    <span class="text-xs font-black px-2 py-1 rounded-lg ${m.poin >= 0 ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'} italic flex-shrink-0">${m.poin >= 0 ? '+' : ''}${m.poin}</span>
+                </div>`).join(''));
+
+            if (newMutasi.length < ITEMS_PER_PAGE) { hasMoreMutasi = false; } 
+            else {
+                mutasiPage++;
+                mutasiList.insertAdjacentHTML('beforeend', `<div id="mutasiScrollTrigger" class="scroll-loader"><div class="spinner-mini"></div></div>`);
+                mutasiObserver = bindScrollTrigger('mMutasiList', 'mutasiScrollTrigger', mutasiObserver, loadMoreMutasi);
+            }
+        } else { hasMoreMutasi = false; }
+        isMutasiLoading = false;
+    }
+
+    function runEpicPresentation(rankImgUrl, rankLabelText) {
+        const introScreen = document.getElementById('epicRankIntro'), introImg = document.getElementById('mIntroRankImg');
+        const finalImg = document.getElementById('mRankImg'), finalAnchor = document.getElementById('rankBadgeAnchor');
+        
+        document.getElementById('mIntroRankLabel').innerText = rankLabelText.toUpperCase();
+        introImg.src = finalImg.src = rankImgUrl;
+        introScreen.style.display = 'flex';
+
+        setTimeout(() => {
+            const rStart = introImg.getBoundingClientRect(), rEnd = finalAnchor.getBoundingClientRect();
+            const flyer = introImg.cloneNode(true);
+            flyer.classList.remove('epic-stamp'); flyer.classList.add('fly-to-position');
+            Object.assign(flyer.style, { top: rStart.top+'px', left: rStart.left+'px', width: rStart.width+'px', height: rStart.height+'px' });
+            document.body.appendChild(flyer);
+
+            introScreen.style.opacity = '0';
+            setTimeout(() => introScreen.style.display = 'none', 300);
+            document.getElementById('mainContent').classList.add('reveal-active');
+
+            requestAnimationFrame(() => {
+                setTimeout(() => { flyer.style.transform = `translate3d(${rEnd.left - rStart.left}px, ${rEnd.top - rStart.top}px, 0) scale(${rEnd.width / rStart.width})`; }, 20);
+            });
+
+            setTimeout(() => {
+                flyer.remove(); finalImg.classList.remove('opacity-0');
+                finalAnchor.classList.add('screen-shake'); finalImg.classList.add('rank-shoot-shake');
+                document.getElementById('impactFlash').classList.add('active');
+
+                setTimeout(() => document.getElementById('mRankLabel').classList.add('stagger-show'), 150);
+                setTimeout(() => document.getElementById('mProfileContainer').classList.add('stagger-show'), 350);
+                setTimeout(() => document.getElementById('lowerGridContent').classList.add('stagger-show'), 550);
+                setTimeout(() => { finalAnchor.classList.remove('screen-shake'); document.getElementById('impactFlash').classList.remove('active'); }, 350);
+            }, 420);
+        }, 1700); 
+    }
+
+    async function initEngine() {
+        const dataPayload = await fetchDatabaseData();
+        if (!dataPayload) return;
+        const { profile } = dataPayload;
+
+        const assets = ['image/profile/profile.jpg'];
+        if (profile.avatar_rank) assets.push(profile.avatar_rank);
+
+        preloadAssets(assets, (progress) => {
+            document.getElementById('loadingProgress').style.width = progress + '%';
+            document.getElementById('loadingPercent').innerText = progress + '%';
+
+            if (progress === 100) {
+                setTimeout(async () => {
+                    document.getElementById('gameLoader').style.opacity = '0';
+                    setTimeout(() => document.getElementById('gameLoader').style.display = 'none', 300);
+                    
+                    mutasiPage = 0; hasMoreMutasi = true;
+                    document.getElementById('mMutasiList').innerHTML = '';
+                    await renderInterface(profile);
+                    await loadMoreMutasi();
+
+                    if (profile.avatar_rank) { runEpicPresentation(profile.avatar_rank, profile.rank || 'WARRIOR'); } 
+                    else {
+                        document.getElementById('mainContent').classList.add('reveal-active');
+                        ['mRankLabel', 'mProfileContainer', 'lowerGridContent'].forEach(id => document.getElementById(id).classList.add('stagger-show'));
+                    }
+                    setupRealtimeListener();
+                }, 200);
+            }
+        });
+    }
+
+    function setupRealtimeListener() {
+        if (!currentUserId) return;
+        supabase
+            .channel('realtime_profile_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'mutasi_poin', filter: `anggota_id=eq.${currentUserId}` }, async () => {
+                const updatePayload = await fetchDatabaseData();
+                if (updatePayload) {
+                    await renderInterface(updatePayload.profile);
+                    mutasiPage = 0; hasMoreMutasi = true;
+                    document.getElementById('mMutasiList').innerHTML = '';
+                    await loadMoreMutasi();
+
+                    const rankImg = document.getElementById('mRankImg');
+                    rankImg.classList.add('rank-shoot-shake');
+                    setTimeout(() => rankImg.classList.remove('rank-shoot-shake'), 200);
+                }
+            })
+            .subscribe();
+    }
+
+    window.addEventListener('DOMContentLoaded', initEngine);
+</script>
+</body>
+</html>

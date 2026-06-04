@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profil Detail - Snowy Library</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8f9fa; --text: #202124; --accent: #1a73e8; --card: #ffffff; --border: #dadce0; --chart-grid: #eeeeee; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #0b0b0b; --text: #e8eaed; --accent: #8ab4f8; --card: #161616; --border: #2d2d2d; --chart-grid: #2d2d2d; } }
+        body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        
+        .glass-card { background: var(--bg); border: none; border-radius: 20px; }
+        .stat-box { background: var(--bg); border: none; border-radius: 12px; padding: 12px; }
+        
+        #gameLoader {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+        .loader-spinner {
+            width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .game-animate { opacity: 0; transform: translateY(30px) scale(0.95); transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .loaded .game-animate { opacity: 1; transform: translateY(0) scale(1); }
+        
+        .loaded .anim-1 { transition-delay: 0.1s; }
+        .loaded .anim-2 { transition-delay: 0.25s; }
+        .loaded .anim-3 { transition-delay: 0.4s; }
+        .loaded .anim-4 { transition-delay: 0.55s; }
+        .loaded .anim-5 { transition-delay: 0.7s; }
+
+        .rank-animated {
+            animation: float 4s ease-in-out infinite, pulseGlow 3s ease-in-out infinite alternate;
+            filter: drop-shadow(0 10px 15px rgba(26, 115, 232, 0.3));
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 5px 10px rgba(26, 115, 232, 0.2)); }
+            100% { filter: drop-shadow(0 15px 25px rgba(26, 115, 232, 0.4)); }
+        }
+
+        .avatar-frame { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; border: 3px solid var(--bg); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
+        * { scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+<div id="gameLoader">
+    <div class="loader-spinner mb-4"></div>
+    <div class="text-xs font-black tracking-widest uppercase opacity-70 animate-pulse text-[var(--accent)]">Syncing Data...</div>
+</div>
+
+<div id="mainContainer" class="max-w-7xl mx-auto space-y-6">
+    <div class="flex items-center gap-4 game-animate anim-1">
+        <button onclick="window.location.href='rank.html'" class="w-10 h-10 flex items-center justify-center rounded-full glass-card active:scale-95 transition-all">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div>
+            <h1 class="text-[10px] font-black uppercase tracking-widest opacity-50">Member Profile</h1>
+            <p id="mNIS" class="text-xs font-bold opacity-70">---</p>
+        </div>
+    </div>
+
+    <div class="glass-card p-8 flex flex-col items-center text-center gap-5 game-animate anim-2">
+        <div class="flex-shrink-0">
+            <img id="mRankImg" src="" class="w-40 h-40 rank-animated object-contain opacity-0 transition-opacity duration-300" alt="Rank Badge">
+        </div>
+        
+        <div id="mRankLabel" class="w-fit px-5 py-1.5 rounded-full border border-[var(--accent)] text-[var(--accent)] text-[10px] font-black tracking-widest uppercase">---</div>
+        
+        <div class="flex flex-row items-center justify-center gap-4 mt-2 w-full max-w-md">
+            <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.src='image/profile/profile.jpg'">
+            <div class="min-w-0 text-left">
+                <h2 id="mNama" class="text-xl md:text-2xl font-extrabold uppercase leading-tight truncate">---</h2>
+                <p id="mOrgInfo" class="text-[11px] font-bold uppercase tracking-wide opacity-60 mt-1">---</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <div class="md:col-span-4 space-y-5 game-animate anim-3">
+            <div class="glass-card p-5 bg-blue-600 text-white border-none shadow-xl relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                <p class="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Library Points</p>
+                <div class="flex items-baseline gap-1 mb-2">
+                    <h3 id="mTotalPoin" class="text-4xl font-black">0</h3>
+                    <span class="text-xs font-bold opacity-60">PTS</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-white/10 text-[8px] font-black uppercase opacity-90 tracking-tighter">
+                    <div>Kunjungan: <span id="mPoinKunjungan">0</span></div>
+                    <div>Poin: <span id="mPoinTambahan">0</span></div>
+                </div>
+            </div>
+
+            <div class="stat-box flex justify-between items-center px-4 py-2.5">
+                <p class="text-[9px] font-black opacity-40 uppercase">Total Buku Dibaca</p>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-[var(--accent)] text-xs"></i>
+                    <span id="mKunjungan" class="text-lg font-black italic">0</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <p class="text-[9px] font-black uppercase mb-2 opacity-50 tracking-widest">Rasio Baca vs Pinjam</p>
+                <div class="relative h-32 flex justify-center items-center">
+                    <canvas id="readLoanChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <p class="text-[9px] font-black uppercase mb-2 opacity-50 tracking-widest">Kategori Utama</p>
+                <div class="relative h-36" id="categoryChartContainer">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:col-span-4 glass-card p-5 game-animate anim-4">
+            <p class="text-[10px] font-black uppercase mb-4 opacity-50 tracking-widest">Daftar Buku Terakhir (Maks. 20)</p>
+            <div id="mBookList" class="space-y-2 max-h-[580px] overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="md:col-span-4 glass-card p-5 flex flex-col game-animate anim-5">
+            <p class="text-[10px] font-black uppercase mb-4 opacity-50 tracking-widest flex-shrink-0">Riwayat Mutasi Poin (Maks. 20)</p>
+            <div id="mMutasiList" class="space-y-2 max-h-[580px] overflow-y-auto pr-1 flex-1"></div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let readLoanChartInstance = null;
+    let categoryChartInstance = null;
+
+    function preloadImage(url) {
+        return new Promise((resolve) => {
+            if (!url || url.trim() === '') return resolve();
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = url;
+        });
+    }
+
+    async function loadFullProfile() {
+        const stored = JSON.parse(localStorage.getItem('selectedUser'));
+        if (!stored || (!stored.id && !stored.nis)) {
+            alert("Sesi berakhir, silakan kembali ke peringkat.");
+            window.location.href = 'rank.html';
+            return;
+        }
+
+        const userId = String(stored.id || stored.nis).trim();
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+        
+        let query = supabase.from('anggota').select('*');
+        if (isUuid) {
+            query = query.or(`id.eq."${userId}",nis.eq."${userId}"`);
+        } else {
+            query = query.eq('nis', userId);
+        }
+
+        const { data: u, error } = await query.maybeSingle();
+
+        if (error || !u) {
+            console.error("Gagal memuat profil:", error);
+            alert("Data profil tidak ditemukan.");
+            return;
+        }
+
+        // 1. SINKRONISASI & AMBIL DATA MUTASI (Dibatasi 20 Riwayat Terakhir)
+        const { data: mutasi, error: mutasiErr } = await supabase
+            .from('mutasi_poin')
+            .select('poin, keterangan, created_at')
+            .eq('anggota_id', u.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        // 2. SINKRONISASI & AMBIL BUKU DIBACA (Dibatasi 20 Buku Terbanyak/Terakhir)
+        const { data: vBuku, error: bukuErr } = await supabase
+            .from('view_buku_dibaca_per_anggota')
+            .select('judul_buku, total_dibaca')
+            .eq('id_anggota', u.id)
+            .order('total_dibaca', { ascending: false })
+            .limit(20);
+
+        // 3. SINKRONISASI KATEGORI (Seluruh kategori diambil untuk kebutuhan Chart)
+        const { data: vKategori, error: katErr } = await supabase
+            .from('view_kategori_per_anggota')
+            .select('kategori, total_kategori')
+            .eq('id_anggota', u.id)
+            .order('total_kategori', { ascending: false });
+
+        const avatarUrl = u.foto && u.foto.trim() !== '' ? u.foto : 'image/profile/profile.jpg';
+        const rankUrl = u.avatar_rank && u.avatar_rank.trim() !== '' ? u.avatar_rank : null;
+
+        await Promise.all([
+            preloadImage(avatarUrl),
+            preloadImage(rankUrl)
+        ]);
+
+        // --- RENDER IDENTITAS ---
+        document.getElementById('mNama').innerText = u.nama || 'Tanpa Nama';
+        document.getElementById('mNIS').innerText = `NIS: ${u.nis || '---'}`;
+        document.getElementById('mOrgInfo').innerText = `${u.jenjang || '-'} • ${u.organisasi || '-'} / ${u.kamar || '-'}`;
+        
+        const avatar = document.getElementById('mAvatar');
+        avatar.src = avatarUrl;
+
+        const rankBadge = document.getElementById('mRankImg');
+        if (rankUrl) {
+            rankBadge.src = rankUrl;
+            rankBadge.classList.remove('opacity-0');
+        } else {
+            rankBadge.removeAttribute('src');
+        }
+        
+        document.getElementById('mRankLabel').innerText = (u.rank || 'WARRIOR').toUpperCase();
+
+        // --- RENDER RINGKASAN POIN & BACA (Diambil langsung dari agregat tabel anggota agar tetap akurat) ---
+        document.getElementById('mTotalPoin').innerText = u.total_poin ?? 0;
+        document.getElementById('mPoinKunjungan').innerText = u.total_kunjungan ?? 0;
+        document.getElementById('mPoinTambahan').innerText = u.poin_tambahan ?? 0;
+        document.getElementById('mKunjungan').innerText = u.total_baca ?? 0;
+
+        // --- CHART DONUT (Rasio Baca vs Pinjam) ---
+        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const textClr = isDark ? '#e8eaed' : '#202124';
+        const gridClr = isDark ? '#2d2d2d' : '#eeeeee';
+
+        const ctxDonut = document.getElementById('readLoanChart').getContext('2d');
+        if (readLoanChartInstance) readLoanChartInstance.destroy();
+        readLoanChartInstance = new Chart(ctxDonut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Baca', 'Pinjam'],
+                datasets: [{
+                    data: [u.total_baca || 0, u.total_pinjam || 0],
+                    backgroundColor: ['#1a73e8', '#8ab4f8'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: textClr, font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' } } } },
+                cutout: '70%'
+            }
+        });
+
+        // --- CHART BATANG (Diambil dari view_kategori_per_anggota) ---
+        const ctxBar = document.getElementById('categoryChart').getContext('2d');
+        if (categoryChartInstance) categoryChartInstance.destroy();
+        
+        if (!katErr && vKategori && vKategori.length > 0) {
+            const katLabels = vKategori.map(k => (k.kategori || 'UNKNOWN').toUpperCase());
+            const katValues = vKategori.map(k => Number(k.total_kategori || 0));
+
+            categoryChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: katLabels,
+                    datasets: [{ data: katValues, backgroundColor: '#1a73e8', borderRadius: 4, barThickness: 10 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridClr }, ticks: { color: textClr, font: { size: 8 } }, beginAtZero: true },
+                        y: { grid: { display: false }, ticks: { color: textClr, font: { size: 8, weight: 'bold' } } }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('categoryChartContainer').innerHTML = '<p class="text-[10px] opacity-40 italic text-center py-6">Tidak ada data kategori</p>';
+        }
+
+        // --- RENDER DAFTAR BUKU (Dinamis dari View Ter-limit) ---
+        const bookList = document.getElementById('mBookList');
+        if (!bukuErr && vBuku && vBuku.length > 0) {
+            bookList.innerHTML = vBuku.map(b => `
+                <div class="flex justify-between items-center p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+                    <div class="min-w-0 flex-1 pr-2">
+                        <p class="text-[10px] font-bold truncate uppercase">${b.judul_buku}</p>
+                        <p class="text-[8px] opacity-50 font-semibold mt-0.5">Dibaca: ${b.total_dibaca}x</p>
+                    </div>
+                    <i class="fa-solid fa-book opacity-40 text-[10px] flex-shrink-0"></i>
+                </div>
+            `).join('');
+        } else {
+            bookList.innerHTML = '<p class="text-[10px] opacity-40 italic py-10 text-center">Belum ada riwayat buku</p>';
+        }
+
+        // --- RENDER RIWAYAT MUTASI POIN (Ter-limit) ---
+        const mutasiList = document.getElementById('mMutasiList');
+        if (!mutasiErr && mutasi && mutasi.length > 0) {
+            mutasiList.innerHTML = mutasi.map(m => {
+                const isPlus = m.poin >= 0;
+                const badgeColor = isPlus ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500';
+                const tanda = isPlus ? '+' : '';
+                const tgl = m.created_at ? new Date(m.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '---';
+
+                return `
+                    <div class="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-extrabold uppercase truncate leading-tight">${m.keterangan || 'Mutasi Poin'}</p>
+                            <p class="text-[8px] opacity-50 font-bold mt-0.5">${tgl} • REWARD</p>
+                        </div>
+                        <span class="text-xs font-black px-2 py-1 rounded-lg ${badgeColor} italic flex-shrink-0">
+                            ${tanda}${m.poin}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            mutasiList.innerHTML = '<p class="text-[10px] opacity-40 italic py-10 text-center">Belum ada mutasi poin tambahan</p>';
+        }
+
+        // --- CLOSING LOADER ---
+        const loader = document.getElementById('gameLoader');
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        document.getElementById('mainContainer').classList.add('loaded');
+    }
+
+    window.addEventListener('DOMContentLoaded', loadFullProfile);
+</script>
+
+</body>
+</html>

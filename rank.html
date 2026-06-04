@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    
+    <title>Peringkat Pembaca - Snowy Library</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --bg-page: #f8f9fa; --bg-card: #ffffff; --text-primary: #202124; --text-secondary: #5f6368; --border-color: #dadce0; --accent: #1a73e8; --surface: #ffffff; }
+        @media (prefers-color-scheme: dark) { :root { --bg-page: #000000; --bg-card: #000000; --text-primary: #e8eaed; --text-secondary: #9aa0a6; --border-color: #333333; --accent: #8ab4f8; --surface: #121212; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
+        body { background-color: var(--bg-page); color: var(--text-primary); min-height: 100vh; width: 100%; overflow-x: hidden; }
+        .game-intro-animate { animation: gameSlideIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards; opacity: 0; }
+        @keyframes gameSlideIn { 0% { transform: translateY(-30px) scale(0.95); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        .google-search-bar { background: var(--surface); border: 1px solid var(--border-color); border-radius: 24px; }
+        .member-item { border-bottom: 1px solid var(--border-color); transition: background 0.2s; cursor: pointer; display: flex; align-items: center; }
+        .member-item:active { background-color: rgba(138, 180, 248, 0.1); }
+        .top10-wrapper { display: flex; flex-wrap: wrap; width: 100%; }
+        .top10-card { background: transparent; width: 20%; min-height: 115px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; cursor: pointer; position: relative; }
+        .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; }
+        .marquee-text { display: block; width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .rank-badge { width: 64px; height: 64px; object-fit: contain; opacity: 0; transition: opacity 0.3s; }
+        .rank-badge.loaded { opacity: 1; }
+        .skeleton { background: var(--border-color); border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 0.8; } 100% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="pb-10">
+
+<div class="sticky top-0 z-50 px-4 pt-4 pb-2 bg-[var(--bg-page)] shadow-sm w-full">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='form.html'" class="text-[var(--text-secondary)]"><i class="fa-solid fa-arrow-left text-xl"></i></button>
+            <h1 class="text-lg font-extrabold tracking-tight game-intro-animate">Peringkat Pembaca</h1>
+        </div>
+        <button onclick="window.location.href='ketentuan-rank.html'" class="text-[var(--text-secondary)]"><i class="fa-solid fa-circle-info text-xl"></i></button>
+    </div>
+    <div class="google-search-bar flex items-center px-4 py-2">
+        <i class="fa-solid fa-magnifying-glass text-[var(--text-secondary)] mr-3"></i>
+        <input type="text" id="searchInput" placeholder="Cari nama anggota..." class="bg-transparent border-none outline-none w-full text-sm py-1">
+    </div>
+</div>
+
+<div class="w-full mt-2">
+    <div id="topTenSection" class="hidden mb-6 w-full">
+        <h2 class="text-[11px] font-black uppercase tracking-wider text-[var(--text-secondary)] mb-3 opacity-80 px-4"><i class="fa-solid fa-crown text-amber-500 mr-1"></i> Teratas Pekan Ini</h2>
+        <div id="topTenContainer" class="top10-wrapper px-2"></div>
+    </div>
+    <div id="regularListSection" class="w-full">
+        <h2 id="listTitle" class="text-[11px] font-black uppercase tracking-wider text-[var(--text-secondary)] mb-2 opacity-80 px-4 hidden">Daftar Peringkat</h2>
+        <div id="listContainer" class="w-full"></div>
+    </div>
+    <div id="loadMoreTrigger" class="h-24 flex items-center justify-center w-full">
+        <div id="spinner" class="hidden"><i class="fa-solid fa-circle-notch fa-spin text-[var(--accent)] text-2xl"></i></div>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    let currentPage = 0;
+    const itemsPerPage = 15;
+    let isLastPage = false;
+    let isLoading = false;
+    let searchQuery = "";
+    let debounceTimer;
+    const renderedIds = new Set();
+    let lazyObserver = null;
+
+    async function fetchData(isNewSearch = false) {
+        if (isLoading || (isLastPage && !isNewSearch)) return;
+        isLoading = true;
+        document.getElementById('spinner').classList.remove('hidden');
+
+        if (isNewSearch) {
+            currentPage = 0;
+            isLastPage = false;
+            renderedIds.clear();
+            document.getElementById('listContainer').innerHTML = "";
+            document.getElementById('topTenContainer').innerHTML = "";
+            document.getElementById('topTenSection').classList.add('hidden');
+            document.getElementById('listTitle').classList.add('hidden');
+        }
+
+        let query = supabase
+            .from('view_profil_anggota')
+            .select('id, nis, nama, organisasi, kamar, total_poin, rank, avatar_rank')
+            .order('total_poin', { ascending: false })
+            .range(currentPage * itemsPerPage, (currentPage * itemsPerPage) + itemsPerPage - 1);
+
+        if (searchQuery) query = query.ilike('nama', `%${searchQuery}%`);
+
+        const { data, error } = await query;
+        
+        if (error) {
+            console.error(error);
+            isLoading = false;
+            document.getElementById('spinner').classList.add('hidden');
+            return;
+        }
+        
+        // Perbaikan deteksi halaman terakhir jika data kosong atau kurang dari limit halaman
+        if (!data || data.length < itemsPerPage || data.length === 0) {
+            isLastPage = true;
+        }
+
+        if (data && data.length > 0) {
+            renderItems(data, currentPage * itemsPerPage);
+            currentPage++;
+        }
+        
+        isLoading = false;
+        document.getElementById('spinner').classList.add('hidden');
+    }
+
+    function renderItems(data, startIndex) {
+        const topTenContainer = document.getElementById('topTenContainer');
+        const listContainer = document.getElementById('listContainer');
+        
+        data.forEach((m, i) => {
+            if (renderedIds.has(m.id)) return;
+            renderedIds.add(m.id);
+            const globalRank = startIndex + i + 1;
+            const clickHtml = `onclick='goToDetail(${JSON.stringify({id: m.id, nis: m.nis})})'`;
+
+            if (globalRank <= 10 && !searchQuery) {
+                document.getElementById('topTenSection').classList.remove('hidden');
+                topTenContainer.insertAdjacentHTML('beforeend', `
+                    <div class="top10-card" ${clickHtml}>
+                        <div class="w-16 h-16 skeleton relative mt-1">
+                            <div class="absolute -top-1 -left-1 text-[7px] font-black text-white bg-neutral-800 rounded-full w-4 h-4 flex items-center justify-center z-10">#${globalRank}</div>
+                            <img data-src="${m.avatar_rank}" class="w-full h-full object-contain rank-badge lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')">
+                        </div>
+                        <h3 class="marquee-text font-black text-[9px] uppercase mt-2">• ${m.nama}</h3>
+                        <p class="text-[9px] font-black text-[var(--accent)] italic">${m.total_poin} Pts</p>
+                    </div>`);
+            } else {
+                if(!searchQuery) document.getElementById('listTitle').classList.remove('hidden');
+                listContainer.insertAdjacentHTML('beforeend', `
+                    <div class="p-4 gap-4 member-item w-full" ${clickHtml}>
+                        <div class="text-[10px] font-black text-[var(--text-secondary)] w-6">#${globalRank}</div>
+                        <div class="w-11 h-11 skeleton"><img data-src="${m.avatar_rank}" class="rank-badge lazy-img" onload="this.classList.add('loaded'); this.parentElement.classList.remove('skeleton')"></div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-extrabold text-sm uppercase truncate">${m.nama}</h3>
+                            <p class="text-[9px] font-bold text-[var(--text-secondary)] uppercase opacity-60 truncate">${m.organisasi || '-'} • ${m.kamar || '-'}</p>
+                        </div>
+                        <div class="text-right"><p class="text-sm font-black text-[var(--accent)] italic">${m.total_poin}</p></div>
+                    </div>`);
+            }
+        });
+        updateLazyLoading();
+    }
+
+    function updateLazyLoading() {
+        if (lazyObserver) {
+            lazyObserver.disconnect();
+        }
+        
+        lazyObserver = new IntersectionObserver((entries, obs) => {
+            entries.forEach(e => { 
+                if(e.isIntersecting) { 
+                    const img = e.target;
+                    if(img.dataset.src) {
+                        img.src = img.dataset.src;
+                    }
+                    obs.unobserve(img); 
+                } 
+            });
+        }, { rootMargin: '50px' });
+        
+        document.querySelectorAll('.lazy-img:not([src])').forEach(img => lazyObserver.observe(img));
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        searchQuery = e.target.value.trim();
+        debounceTimer = setTimeout(() => fetchData(true), 400);
+    });
+
+    // Mengubah threshold ke 0.1 agar pemuatan dipicu tepat saat elemen target mulai terlihat di layar bawah
+    const scrollObs = new IntersectionObserver(entries => { 
+        if(entries[0].isIntersecting && !isLoading && !isLastPage) { 
+            fetchData(); 
+        } 
+    }, { rootMargin: '100px', threshold: 0.1 });
+    
+    scrollObs.observe(document.getElementById('loadMoreTrigger'));
+
+    window.goToDetail = (cred) => { 
+        localStorage.setItem('selectedUser', JSON.stringify(cred)); 
+        window.location.href = 'rank-detail.html'; 
+    };
+    
+    // Inisialisasi awal pengunduhan data
+    fetchData(true);
+</script>
+</body>
+</html>

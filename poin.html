@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pencarian & Mutasi Anggota | Perpustakaan Lubangsa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-page: transparent; 
+            --bg-card: #161618; /* Solid / Tidak Transparan */
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --accent-color: #0a84ff;
+            --card-inner: #222224; /* Solid */
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            outline: none !important;
+        }
+
+        body {
+            background-color: transparent; /* Bolong total */
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .modern-card { 
+            background: var(--bg-card); 
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .modern-input {
+            background: var(--card-inner); 
+            border: 1px solid rgba(255, 255, 255, 0.03) !important;
+            color: var(--text-primary); 
+            transition: all 0.2s ease;
+        }
+        .modern-input:focus { 
+            background: #2a2a2c;
+            border-color: rgba(10, 132, 255, 0.3) !important;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(17, 17, 18, 0.3);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(85, 85, 85, 0.4);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 flex justify-center bg-transparent">
+
+    <div class="w-full max-w-6xl space-y-5">
+        
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-neutral-800/60">
+            <div>
+                <div class="flex items-center gap-1.5 text-[9px] font-extrabold text-[var(--accent-color)] tracking-widest uppercase mb-0.5">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-color)] animate-pulse"></span> Otoritas Pustakawan
+                </div>
+                <h1 class="text-lg font-extrabold tracking-tight text-white uppercase">
+                    Manajemen Poin Anggota
+                </h1>
+            </div>
+            <div id="statusNotifikasi" class="text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl hidden transition-all duration-300"></div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            
+            <div class="lg:col-span-5 space-y-4">
+                <div class="modern-card p-4 rounded-xl space-y-4">
+                    <div class="space-y-1.5 relative">
+                        <label class="text-[9px] font-bold uppercase tracking-wider text-neutral-400 pl-1">Cari Anggota (NIS / Nama)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs"></i>
+                            <input type="text" id="searchUser" placeholder="Masukkan nomor NIS atau nama lengkap..." class="w-full modern-input font-semibold text-xs pl-10 pr-3 py-3 rounded-xl tracking-wide placeholder-neutral-600" autocomplete="off">
+                        </div>
+                        
+                        <div id="searchDropdown" class="absolute z-50 w-full max-h-64 overflow-y-auto custom-scrollbar mt-1.5 bg-[#1c1c1e] rounded-xl shadow-2xl hidden border border-neutral-800">
+                            <div id="dropdownContent"></div>
+                            <div id="loadingTrigger" class="p-3 text-[9px] font-bold text-neutral-500 uppercase tracking-wide text-center hidden">
+                                <i class="fa-solid fa-circle-notch animate-spin mr-1.5 text-[var(--accent-color)]"></i> Memuat data...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelKelolaPoin" class="space-y-4 hidden">
+                    <div class="modern-card p-4 rounded-xl flex justify-between items-center">
+                        <div class="min-w-0 pr-3">
+                            <h2 id="detailNama" class="text-xs font-bold text-white uppercase tracking-wide truncate">-</h2>
+                            <p id="detailSub" class="text-[9px] font-semibold text-neutral-400 uppercase tracking-wider mt-0.5 truncate">-</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="text-[8px] font-bold text-neutral-400 block uppercase tracking-widest">Total Akumulasi</span>
+                            <span id="detailTotalPoin" class="text-xs font-black text-amber-500 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1 rounded-md inline-block mt-1">0 PT</span>
+                        </div>
+                    </div>
+
+                    <div class="modern-card p-4 rounded-xl space-y-3">
+                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-neutral-300 border-b border-neutral-800/60 pb-1.5">Penyesuaian Poin</h3>
+                        <form id="formMutasiPoin" class="space-y-3" onsubmit="return false;">
+                            <div class="grid grid-cols-3 gap-2.5">
+                                <div class="col-span-1 space-y-1">
+                                    <label class="text-[9px] font-bold uppercase tracking-wider text-neutral-400 pl-1">Poin</label>
+                                    <input type="number" id="inputPoin" min="1" placeholder="0" class="w-full modern-input font-bold text-xs px-2 py-2.5 rounded-xl text-center" required>
+                                </div>
+                                <div class="col-span-2 space-y-1">
+                                    <label class="text-[9px] font-bold uppercase tracking-wider text-neutral-400 pl-1">Alasan Penyesuaian</label>
+                                    <input type="text" id="inputKeterangan" placeholder="Keterangan mutasi..." class="w-full modern-input font-semibold text-xs px-3 py-2.5 rounded-xl" required>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                                <button type="button" id="btnKurangPoin" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/10 text-[9px] font-extrabold uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-minus-circle"></i> Ambil Poin
+                                </button>
+                                <button type="button" id="btnTambahPoin" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/10 text-[9px] font-extrabold uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-plus-circle"></i> Hadiah Poin
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7">
+                <div class="modern-card p-4 rounded-xl space-y-3 flex flex-col">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-white border-b border-neutral-800/60 pb-2 flex justify-between items-center">
+                        <span>Riwayat Aktivitas Mutasi</span>
+                        <span id="txtIdAnggota" class="text-[8px] font-mono text-neutral-500 hidden"></span>
+                    </h2>
+                    
+                    <div id="scrollContainerRiwayat" class="space-y-2 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div id="riwayatContent" class="space-y-2">
+                            <div class="text-[9px] text-neutral-500 font-bold text-center py-12 uppercase tracking-wider">Silakan cari dan pilih anggota terlebih dahulu</div>
+                        </div>
+                        <div id="riwayatInfiniteLoader" class="text-[9px] font-bold text-neutral-500 uppercase tracking-wide text-center py-2 hidden">
+                            <i class="fa-solid fa-circle-notch animate-spin text-[var(--accent-color)] mr-1"></i> Memuat histori selanjutnya...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modalKonfirmasi" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 hidden">
+        <div class="modern-card w-full max-w-xs p-4 rounded-xl space-y-3 text-center border border-neutral-800">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-white">Hapus Histori Mutasi?</h4>
+            <p class="text-[10px] text-neutral-400 font-medium leading-relaxed">Tindakan ini akan mengembalikan saldo poin anggota ke nilai sebelumnya.</p>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button id="btnBatalHapus" class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[9px] font-bold uppercase tracking-wider py-2 rounded-lg">Batal</button>
+                <button id="btnSetujuHapus" class="bg-red-600 hover:bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider py-2 rounded-lg">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './supa/supa.js';
+
+        let searchTimeout = null;
+        let currentPage = 0;
+        const itemsPerPage = 10;
+        let hasMoreItems = true;
+        let isFetching = false;
+        let currentQuery = '';
+        let selectedIndex = -1;
+
+        // State Global Anggota & Paginasi Riwayat
+        let selectedAnggota = null;
+        let riwayatPage = 0;
+        const riwayatPerPage = 8; 
+        let hasMoreRiwayat = true;
+        let isFetchingRiwayat = false;
+        let itemIdYangAkanDihapus = null;
+        let itemPoinYangAkanDihapus = 0;
+
+        const searchUser = document.getElementById('searchUser');
+        const searchDropdown = document.getElementById('searchDropdown');
+        const dropdownContent = document.getElementById('dropdownContent');
+        const loadingTrigger = document.getElementById('loadingTrigger');
+
+        const panelKelolaPoin = document.getElementById('panelKelolaPoin');
+        const detailNama = document.getElementById('detailNama');
+        const detailSub = document.getElementById('detailSub');
+        const detailTotalPoin = document.getElementById('detailTotalPoin');
+        
+        const scrollContainerRiwayat = document.getElementById('scrollContainerRiwayat');
+        const riwayatContent = document.getElementById('riwayatContent');
+        const riwayatInfiniteLoader = document.getElementById('riwayatInfiniteLoader');
+        const statusNotifikasi = document.getElementById('statusNotifikasi');
+        
+        // Input Form Langsung
+        const inputPoin = document.getElementById('inputPoin');
+        const inputKeterangan = document.getElementById('inputKeterangan');
+        const btnTambahPoin = document.getElementById('btnTambahPoin');
+        const btnKurangPoin = document.getElementById('btnKurangPoin');
+
+        // Modal Konfirmasi Hapus
+        const modalKonfirmasi = document.getElementById('modalKonfirmasi');
+        const btnBatalHapus = document.getElementById('btnBatalHapus');
+        const btnSetujuHapus = document.getElementById('btnSetujuHapus');
+
+        // Handler Tampilkan Notifikasi Internal Halaman
+        function tampilNotifikasi(pesan, jenis = 'sukses') {
+            statusNotifikasi.textContent = pesan;
+            statusNotifikasi.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20', 'bg-red-500/10', 'text-red-400', 'border-red-500/20');
+            
+            if (jenis === 'sukses') {
+                statusNotifikasi.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+            } else {
+                statusNotifikasi.classList.add('bg-red-500/10', 'text-red-400', 'border', 'border-red-500/20');
+            }
+            
+            setTimeout(() => {
+                statusNotifikasi.classList.add('hidden');
+            }, 4000);
+        }
+        
+        searchUser.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            const query = searchUser.value.trim();
+
+            if (query.length < 2) {
+                resetDropdownState();
+                searchDropdown.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                currentQuery = query;
+                resetDropdownState();
+                fetchAnggotaData();
+            }, 300);
+        });
+
+        searchUser.addEventListener('keydown', (e) => {
+            const items = dropdownContent.querySelectorAll('.dropdown-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex++;
+                if (selectedIndex >= items.length) selectedIndex = items.length - 1;
+                updateDropdownSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex--;
+                if (selectedIndex < 0) selectedIndex = 0;
+                updateDropdownSelection(items);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && selectedIndex < items.length) {
+                    items[selectedIndex].click();
+                }
+            }
+        });
+
+        function updateDropdownSelection(items) {
+            items.forEach((item, index) => {
+                if (index === selectedIndex) {
+                    item.classList.add('bg-[#2a2a2c]');
+                    item.classList.remove('bg-[#1c1c1e]');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('bg-[#2a2a2c]');
+                    item.classList.add('bg-[#1c1c1e]');
+                }
+            });
+        }
+
+        searchDropdown.addEventListener('scroll', () => {
+            if (isFetching || !hasMoreItems) return;
+            if (searchDropdown.scrollTop + searchDropdown.clientHeight >= searchDropdown.scrollHeight - 20) {
+                fetchAnggotaData();
+            }
+        });
+
+        function resetDropdownState() {
+            currentPage = 0;
+            hasMoreItems = true;
+            isFetching = false;
+            selectedIndex = -1;
+            dropdownContent.innerHTML = '';
+            loadingTrigger.classList.add('hidden');
+        }
+
+        async function fetchAnggotaData() {
+            if (isFetching || !hasMoreItems) return;
+            isFetching = true;
+            loadingTrigger.classList.remove('hidden');
+
+            const from = currentPage * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            try {
+                const { data, error } = await supabase
+                    .from('anggota')
+                    .select('id, nis, nama, kamar, organisasi, poin_tambahan')
+                    .or(`nama.ilike.%${currentQuery}%,nis.ilike.%${currentQuery}%`)
+                    .order('nama', { ascending: true })
+                    .range(from, to);
+
+                if (error) throw error;
+                renderDropdownResults(data);
+                
+                if (data.length < itemsPerPage) {
+                    hasMoreItems = false;
+                } else {
+                    currentPage++;
+                }
+            } catch (err) {
+                console.error(err.message);
+            } finally {
+                isFetching = false;
+                loadingTrigger.classList.add('hidden');
+            }
+        }
+
+        function renderDropdownResults(listAnggota) {
+            searchDropdown.classList.remove('hidden');
+            if (currentPage === 0) dropdownContent.innerHTML = '';
+
+            if (currentPage === 0 && (!listAnggota || listAnggota.length === 0)) {
+                dropdownContent.innerHTML = `<div class="p-3 text-[9px] font-bold text-neutral-500 uppercase tracking-wide text-center">Anggota tidak ditemukan</div>`;
+                return;
+            }
+
+            listAnggota.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item p-3 hover:bg-[#222224] cursor-pointer flex items-center justify-between transition-colors bg-[#1c1c1e] border-b border-neutral-800/40 last:border-0';
+                item.addEventListener('click', () => handleSelectAnggota(user));
+                
+                item.addEventListener('mouseenter', () => {
+                    const items = dropdownContent.querySelectorAll('.dropdown-item');
+                    selectedIndex = Array.from(items).indexOf(item);
+                    updateDropdownSelection(items);
+                });
+                
+                const currentPoin = user.poin_tambahan !== null ? user.poin_tambahan : 0;
+                const infoNis = user.nis ? `${user.nis} • ` : '';
+
+                item.innerHTML = `
+                    <div class="min-w-0 pr-2">
+                        <div class="text-[10px] font-bold text-gray-200 uppercase tracking-wide truncate">${user.nama}</div>
+                        <div class="text-[8px] font-semibold text-neutral-400 uppercase tracking-tight mt-0.5 truncate">${infoNis}${user.kamar || '-'} • ${user.organisasi || '-'}</div>
+                    </div>
+                    <div class="text-[10px] font-black text-amber-500 shrink-0 bg-amber-500/5 px-2 py-1 rounded-md">${currentPoin} PT</div>
+                `;
+                dropdownContent.appendChild(item);
+            });
+        }
+
+        function handleSelectAnggota(user) {
+            selectedAnggota = user;
+            searchDropdown.classList.add('hidden');
+            searchUser.value = user.nama;
+
+            detailNama.textContent = user.nama;
+            const infoNis = user.nis ? `${user.nis} • ` : '';
+            detailSub.textContent = `${infoNis}${user.kamar || '-'} • ${user.organisasi || '-'}`;
+            detailTotalPoin.textContent = `${user.poin_tambahan || 0} PT`;
+
+            // Langsung memunculkan panel kelola & form poin secara permanen
+            panelKelolaPoin.classList.remove('hidden');
+
+            // Reset total state infinite scroll histori kanan
+            riwayatPage = 0;
+            hasMoreRiwayat = true;
+            isFetchingRiwayat = false;
+            riwayatContent.innerHTML = '';
+            fetchRiwayatPoin(user.id);
+        }
+
+        // LOGIKA INFINITE SCROLL FILTER PARSIAL
+        async function fetchRiwayatPoin(anggotaId) {
+            if (isFetchingRiwayat || !hasMoreRiwayat) return;
+            isFetchingRiwayat = true;
+
+            if (riwayatPage === 0) {
+                riwayatContent.innerHTML = `<div id="riwayat-loader" class="text-[9px] text-neutral-500 font-bold text-center py-12 uppercase tracking-wider"><i class="fa-solid fa-circle-notch animate-spin mr-1 text-[var(--accent-color)]"></i> Memuat Riwayat...</div>`;
+            } else {
+                riwayatInfiniteLoader.classList.remove('hidden');
+            }
+
+            const from = riwayatPage * riwayatPerPage;
+            const to = from + riwayatPerPage - 1;
+
+            try {
+                const { data, error } = await supabase
+                    .from('mutasi_poin')
+                    .select('id, poin, keterangan, created_at')
+                    .eq('anggota_id', anggotaId)
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
+
+                const loader = document.getElementById('riwayat-loader');
+                if (loader) loader.remove();
+
+                if (riwayatPage === 0 && (!data || data.length === 0)) {
+                    riwayatContent.innerHTML = `<div class="text-[9px] text-neutral-600 font-bold text-center py-12 uppercase tracking-wider">Belum ada riwayat poin</div>`;
+                    hasMoreRiwayat = false;
+                    return;
+                }
+
+                data.forEach(log => {
+                    const date = new Date(log.created_at).toLocaleDateString('id-ID', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'
+                    });
+                    
+                    const isPositive = log.poin >= 0;
+                    const badgeClass = isPositive ? 'text-emerald-400 bg-emerald-500/5' : 'text-red-400 bg-red-500/5';
+                    const poinSign = isPositive ? `+${log.poin}` : `${log.poin}`;
+
+                    const row = document.createElement('div');
+                    row.className = 'p-3 bg-[#161618] rounded-xl flex items-center justify-between border border-neutral-800/40';
+                    row.innerHTML = `
+                        <div class="min-w-0 pr-2">
+                            <div class="text-[10px] font-bold text-neutral-300 uppercase tracking-wide truncate">${log.keterangan || 'Tanpa keterangan'}</div>
+                            <div class="text-[8px] font-medium text-neutral-500 mt-0.5"><i class="fa-regular fa-clock text-[7px]"></i> ${date} WIB</div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <div class="text-[10px] font-extrabold px-2 py-0.5 rounded-md ${badgeClass}">${poinSign} PT</div>
+                            <button class="btn-delete text-neutral-600 hover:text-red-400 text-xs p-1 transition-colors" data-id="${log.id}" data-poin="${log.poin}">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    row.querySelector('.btn-delete').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        mintaKonfirmasiHapus(this.getAttribute('data-id'), parseInt(this.getAttribute('data-poin')));
+                    });
+
+                    riwayatContent.appendChild(row);
+                });
+
+                if (data.length < riwayatPerPage) {
+                    hasMoreRiwayat = false;
+                } else {
+                    riwayatPage++;
+                }
+
+            } catch (err) {
+                console.error(err.message);
+                if (riwayatPage === 0) {
+                    riwayatContent.innerHTML = `<div class="text-[9px] text-red-500 font-bold text-center py-4 uppercase">Gagal memuat histori data</div>`;
+                }
+            } finally {
+                isFetchingRiwayat = false;
+                riwayatInfiniteLoader.classList.add('hidden');
+            }
+        }
+
+        // DETEKSI AUTO SCROLL UNTUK RIWAYAT INFINITE
+        scrollContainerRiwayat.addEventListener('scroll', () => {
+            if (isFetchingRiwayat || !hasMoreRiwayat || !selectedAnggota) return;
+            
+            const toleransiTinggi = 30; 
+            const posisiSekarang = scrollContainerRiwayat.scrollTop + scrollContainerRiwayat.clientHeight;
+            const batasBawah = scrollContainerRiwayat.scrollHeight;
+
+            if (posisiSekarang >= batasBawah - toleransiTinggi) {
+                fetchRiwayatPoin(selectedAnggota.id);
+            }
+        });
+
+        // Pengganti dialog confirm native browser
+        function mintaKonfirmasiHapus(id, poin) {
+            itemIdYangAkanDihapus = id;
+            itemPoinYangAkanDihapus = poin;
+            modalKonfirmasi.classList.remove('hidden');
+        }
+
+        btnBatalHapus.addEventListener('click', () => {
+            modalKonfirmasi.classList.add('hidden');
+            itemIdYangAkanDihapus = null;
+        });
+
+        btnSetujuHapus.addEventListener('click', async () => {
+            if (!itemIdYangAkanDihapus || !selectedAnggota) return;
+            modalKonfirmasi.classList.add('hidden');
+
+            const currentTotal = selectedAnggota.poin_tambahan || 0;
+            const restoredTotalPoin = currentTotal - itemPoinYangAkanDihapus;
+
+            try {
+                const { error: errorDelete } = await supabase
+                    .from('mutasi_poin')
+                    .delete()
+                    .eq('id', itemIdYangAkanDihapus);
+
+                if (errorDelete) throw errorDelete;
+
+                const { error: errorUpdateAnggota } = await supabase
+                    .from('anggota')
+                    .update({ poin_tambahan: restoredTotalPoin })
+                    .eq('id', selectedAnggota.id);
+
+                if (errorUpdateAnggota) throw errorUpdateAnggota;
+
+                selectedAnggota.poin_tambahan = restoredTotalPoin;
+                detailTotalPoin.textContent = `${restoredTotalPoin} PT`;
+                tampilNotifikasi("Data riwayat mutasi poin berhasil dihapus!");
+
+                // Sinkronisasi render ulang tanpa refresh
+                riwayatPage = 0;
+                hasMoreRiwayat = true;
+                riwayatContent.innerHTML = '';
+                fetchRiwayatPoin(selectedAnggota.id);
+
+            } catch (err) {
+                console.error(err.message);
+                tampilNotifikasi("Gagal menghapus data: " + err.message, 'gagal');
+            } finally {
+                itemIdYangAkanDihapus = null;
+            }
+        });
+
+        async function submitMutasiPoin(type) {
+            if (!selectedAnggota) return;
+
+            const valPoin = parseInt(inputPoin.value);
+            const keterangan = inputKeterangan.value.trim();
+
+            if (!valPoin || valPoin <= 0 || !keterangan) {
+                tampilNotifikasi("Lengkapi poin & alasan sebelum mengirim!", "gagal");
+                return;
+            }
+
+            const finalPoin = type === 'MINUS' ? -Math.abs(valPoin) : Math.abs(valPoin);
+            const currentTotal = selectedAnggota.poin_tambahan || 0;
+            const newTotalPoin = currentTotal + finalPoin;
+
+            try {
+                const { error: errorMutasi } = await supabase
+                    .from('mutasi_poin')
+                    .insert([{
+                        anggota_id: selectedAnggota.id,
+                        poin: finalPoin,
+                        keterangan: keterangan
+                    }]);
+
+                if (errorMutasi) throw errorMutasi;
+
+                const { error: errorAnggota } = await supabase
+                    .from('anggota')
+                    .update({ poin_tambahan: newTotalPoin })
+                    .eq('id', selectedAnggota.id);
+
+                if (errorAnggota) throw errorAnggota;
+
+                selectedAnggota.poin_tambahan = newTotalPoin;
+                detailTotalPoin.textContent = `${newTotalPoin} PT`;
+                tampilNotifikasi(`Sukses melakukan penyesuaian poin untuk ${selectedAnggota.nama}`);
+                
+                inputPoin.value = '';
+                inputKeterangan.value = '';
+
+                // Segarkan riwayat mutasi dari awal halaman secara parsial
+                riwayatPage = 0;
+                hasMoreRiwayat = true;
+                riwayatContent.innerHTML = '';
+                fetchRiwayatPoin(selectedAnggota.id);
+
+            } catch (err) {
+                console.error(err.message);
+                tampilNotifikasi("Sistem gagal memproses mutasi: " + err.message, 'gagal');
+            }
+        }
+
+        btnTambahPoin.addEventListener('click', () => submitMutasiPoin('PLUS'));
+        btnKurangPoin.addEventListener('click', () => submitMutasiPoin('MINUS'));
+
+        document.addEventListener('click', (e) => {
+            if (!searchUser.contains(e.target) && !searchDropdown.contains(e.target)) {
+                searchDropdown.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
