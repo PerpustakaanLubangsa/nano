@@ -87,23 +87,46 @@
             <img id="mRankImg" src="" onclick="this.classList.add('rank-shoot-shake'); setTimeout(()=>this.classList.remove('rank-shoot-shake'), 200);" class="w-40 h-40 rank-animated object-contain opacity-0 transition-opacity duration-300 cursor-pointer" alt="Badge">
         </div>
         <div id="mRankLabel" class="stagger-hide w-fit px-5 py-1.5 rounded-full border border-[var(--accent)] text-[var(--accent)] text-[10px] font-black tracking-widest uppercase bg-blue-500/5">---</div>
-        <div id="mProfileContainer" class="stagger-hide flex flex-row items-center justify-center gap-4 mt-2 w-full max-w-sm md:max-w-md mx-auto">
-            <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.src='image/profile/profile.jpg'">
-            <div class="min-w-0 text-left flex-1 overflow-hidden">
-                <div id="mNamaWrapper" class="marquee-container">
-                    <h2 id="mNama" class="text-xl md:text-2xl font-extrabold uppercase leading-tight text-left">---</h2>
+        <div id="mProfileContainer" class="stagger-hide flex flex-col items-center justify-center gap-4 mt-2 w-full max-w-sm md:max-w-md mx-auto">
+            <div class="flex flex-row items-center justify-center gap-4 w-full">
+                <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.src='image/profile/profile.jpg'">
+                <div class="min-w-0 text-left flex-1 overflow-hidden">
+                    <div id="mNamaWrapper" class="marquee-container">
+                        <h2 id="mNama" class="text-xl md:text-2xl font-extrabold uppercase leading-tight text-left">---</h2>
+                    </div>
+                    <p id="mOrgInfo" class="text-[11px] font-bold uppercase tracking-wide opacity-60 mt-1">---</p>
                 </div>
-                <p id="mOrgInfo" class="text-[11px] font-bold uppercase tracking-wide opacity-60 mt-1">---</p>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 w-full mt-4 pt-4 border-t border-[var(--border)]">
+                <div class="text-center p-2 rounded-xl bg-slate-500/5 border border-[var(--border)]">
+                    <p class="text-[8px] font-black opacity-50 uppercase tracking-wider mb-0.5">Kunjungan</p>
+                    <p id="mTotalKunjungan" class="font-extrabold text-sm md:text-base">0</p>
+                </div>
+                <div class="text-center p-2 rounded-xl bg-slate-500/5 border border-[var(--border)]">
+                    <p class="text-[8px] font-black opacity-50 uppercase tracking-wider mb-0.5">Pinjam Buku</p>
+                    <p id="mTotalPinjam" class="font-extrabold text-sm md:text-base">0</p>
+                </div>
+                <div class="text-center p-2 rounded-xl bg-slate-500/5 border border-[var(--border)]">
+                    <p class="text-[8px] font-black opacity-50 uppercase tracking-wider mb-0.5">Sesi Baca</p>
+                    <p id="mTotalBaca" class="font-extrabold text-sm md:text-base">0</p>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="lowerGridContent" class="stagger-hide grid grid-cols-1 md:grid-cols-12 gap-6">
         <div class="md:col-span-4 space-y-5">
-            <div class="glass-card p-5 bg-blue-600 text-white border-none shadow-xl relative overflow-hidden">
-                <p class="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Library Points</p>
-                <div class="flex items-baseline gap-1 mb-2">
-                    <h3 id="mTotalPoin" class="text-4xl font-black">0</h3> <span class="text-xs font-bold opacity-60">PTS</span>
+            <div class="glass-card p-5 bg-blue-600 text-white border-none shadow-xl relative overflow-hidden flex justify-between items-center">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Library Points</p>
+                    <div class="flex items-baseline gap-1">
+                        <h3 id="mTotalPoin" class="text-4xl font-black">0</h3> <span class="text-xs font-bold opacity-60">PTS</span>
+                    </div>
+                </div>
+                <div class="text-right bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+                    <p class="text-[8px] font-black uppercase opacity-70 tracking-wider">Poin Tambahan</p>
+                    <p id="mPoinTambahan" class="text-lg font-black italic">+0</p>
                 </div>
             </div>
             <div class="glass-card p-4">
@@ -143,17 +166,17 @@
         });
     }
 
-    // Fungsi Pengambilan ID Anggota (Mendukung id, id_anggota, dan nis)
+    // Mengambil data murni profil langsung dari tabel 'anggota'
     async function fetchDatabaseData() {
         const stored = JSON.parse(sessionStorage.getItem('last_guest')) || JSON.parse(localStorage.getItem('selectedUser'));
         if (!stored) { window.location.href = 'form.html'; return null; }
         
         const targetId = String(stored.id || stored.id_anggota || stored.nis).trim();
 
-        // Mengambil data murni profil dari view_profil_anggota
+        // Hanya menyeleksi kolom data mentah yang ada di skema tabel 'anggota' Anda
         const { data: profile, error } = await supabase
-            .from('view_profil_anggota')
-            .select('*')
+            .from('anggota')
+            .select('id, nis, nama, jenjang, organisasi, kamar, rank, total_kunjungan, total_baca, total_pinjam, poin_tambahan, total_poin, avatar_rank')
             .or(`id.eq."${targetId}",nis.eq."${targetId}"`)
             .maybeSingle();
 
@@ -211,7 +234,13 @@
         document.getElementById('mOrgInfo').innerText = `${u.organisasi || '-'} / Kmr: ${u.kamar || '-'}`;
         document.getElementById('mAvatar').src = 'image/profile/profile.jpg';
         document.getElementById('mRankLabel').innerText = (u.rank || 'WARRIOR').toUpperCase();
+        
+        // Render Poin & Data Statistik dari tabel utama 'anggota'
         document.getElementById('mTotalPoin').innerText = u.total_poin || 0;
+        document.getElementById('mPoinTambahan').innerText = `+${u.poin_tambahan || 0}`;
+        document.getElementById('mTotalKunjungan').innerText = u.total_kunjungan || 0;
+        document.getElementById('mTotalPinjam').innerText = u.total_pinjam || 0;
+        document.getElementById('mTotalBaca').innerText = u.total_baca || 0;
 
         const kategoriData = await fetchKategoriStatistik();
         const isDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
@@ -379,11 +408,12 @@
         });
     }
 
+    // Listener Realtime disesuaikan untuk mendeteksi perubahan langsung di tabel 'anggota'
     function setupRealtimeListener() {
         if (!currentUserId) return;
         supabase
             .channel('realtime_profile_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'mutasi_poin', filter: `anggota_id=eq.${currentUserId}` }, async () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'anggota', filter: `id=eq.${currentUserId}` }, async () => {
                 const updatePayload = await fetchDatabaseData();
                 if (updatePayload) {
                     await renderInterface(updatePayload.profile);
