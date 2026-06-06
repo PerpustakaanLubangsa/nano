@@ -176,11 +176,12 @@
                 const from = currentPage * LIMIT;
                 const to = from + LIMIT - 1;
 
+                // Memperbaiki pemanggilan relasi kolom dari 'organelles' menjadi 'organisasi'
                 let query = supabase
                     .from('karya')
                     .select(`
                         id, kategori, judul, isi, foto_url, dibuat_pada, anggota_id,
-                        anggota (id, nis, nama, kamar, organelles)
+                        anggota (id, nis, nama, kamar, organisasi)
                     `, { count: 'exact' })
                     .order('dibuat_pada', { ascending: false })
                     .range(from, to);
@@ -335,8 +336,6 @@
 
                 // 2. Jika ada foto_url, hapus file fisiknya dari Storage Bucket 'sampul_karya'
                 if (naskah && naskah.foto_url) {
-                    // Ambil nama file asli dari tautan URL publik Supabase
-                    // Contoh URL: https://xxx.supabase.co/storage/v1/object/public/sampul_karya/nama-file-uuid.jpg
                     const namaFile = naskah.foto_url.split('/').pop();
                     
                     if (namaFile) {
