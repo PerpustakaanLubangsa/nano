@@ -191,31 +191,6 @@
     let selectedIdentitasValid = ""; 
     let editModeKaryaId = null;
 
-    // FUNGSI UTAMA FORMAT PARAGRAF & BREAKLINE
-    function convertToParagraphs(text) {
-        if (!text) return '';
-        return text
-            .split(/\n{2,}/) // Split berdasarkan Enter 2 kali atau lebih (Paragraphs)
-            .map(para => {
-                let cleanPara = para.trim();
-                if (!cleanPara) return '';
-                // Ganti Enter 1 kali sisanya di dalam paragraf tersebut dengan <br>
-                let withBreaks = cleanPara.replace(/\n/g, '<br>');
-                return `<p>${withBreaks}</p>`;
-            })
-            .filter(para => para.length > 0)
-            .join('');
-    }
-
-    function revertFromParagraphs(htmlText) {
-        if (!htmlText) return '';
-        return htmlText
-            .replace(/<\/p>\s*<p>/g, '\n\n') // Kembalikan batas paragraf menjadi Enter 2 kali
-            .replace(/<p>/g, '')             // Hapus tag pembuka <p> sisa
-            .replace(/<\/p>/g, '')           // Hapus tag penutup </p> sisa
-            .replace(/<br\s*\/?>/g, '\n');   // Kembalikan tag <br> menjadi Enter 1 kali
-    }
-
     async function checkAuthProtection() {
         const { data: { session } } = await supabase.auth.getSession();
         const localLogin = sessionStorage.getItem('isLoggedIn');
@@ -268,8 +243,8 @@
                 document.getElementById('kategoriKarya').value = data.kategori || '';
                 document.getElementById('judulKarya').value = data.judul || '';
                 
-                // Konversi teks berformat HTML (<p> & <br>) kembali ke wujud Enter (\n) asli di textarea
-                document.getElementById('isiKarya').value = revertFromParagraphs(data.isi || '');
+                // LANGSUNG MASUKKAN DATA ISI APA ADANYA (MENGANDUNG \n) KEDALAM TEXTAREA
+                document.getElementById('isiKarya').value = data.isi || '';
                 
                 fotoUrlInput.value = data.foto_url || '';
 
@@ -379,10 +354,7 @@
         const anggotaId = hiddenAnggotaId.value; 
         const kategori = document.getElementById('kategoriKarya').value.trim();
         const judul = document.getElementById('judulKarya').value.trim();
-        const rawIsi = document.getElementById('isiKarya').value;
-        
-        // Memformat naskah mentah: Enter 1 kali -> <br>, Enter 2 kali -> <p>...</p>
-        const isiFormatted = convertToParagraphs(rawIsi);
+        const rawIsi = document.getElementById('isiKarya').value; // Ambil nilai string mentah langsung dari textarea (\n asli)
         const finalFotoUrl = fotoUrlInput.value.trim() || null;
 
         if (!anggotaId || searchInput.value.trim().toUpperCase() !== selectedIdentitasValid.toUpperCase()) {
@@ -399,7 +371,7 @@
                 anggota_id: anggotaId,
                 kategori: kategori.toUpperCase(),
                 judul: judul,
-                isi: isiFormatted, 
+                isi: rawIsi, // SIMPAN LANGSUNG STR_MENTAH KE SUPABASE
                 foto_url: finalFotoUrl
             };
 

@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arsip Karya Santri | Perpustakaan Lubangsa</title>
+    <title>Akses Cepat | Perpustakaan Lubangsa</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --bg-page: transparent;
+            --bg-page: #070708;
             --bg-card: #111112;
             --text-primary: #f5f5f7;
             --text-secondary: #7e8280;
             --border-color: rgba(255, 255, 255, 0.06);
             --accent-color: #0a84ff;
-            --card-inner: #161618;
         }
 
         * { 
@@ -32,257 +31,102 @@
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
+
+        /* Kartu shortcut dengan efek scale up halus saat di-hover */
+        .shortcut-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         
-        .sharp-card { 
-            background: var(--bg-card); 
-            border: none !important; 
-            border-radius: 0px !important; 
-        }
-        
-        .sharp-input {
-            background: var(--card-inner); 
-            border: 1px solid var(--border-color); 
-            border-radius: 0px !important;
-            color: var(--text-primary); 
-        }
-        .sharp-input:focus { 
-            border-color: var(--accent-color); 
+        .shortcut-card:hover {
+            border-color: rgba(10, 132, 255, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .msn-grid {
-            display: grid;
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-            gap: 14px;
-        }
-        @media (min-width: 640px) { .msn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .msn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;  
+        /* Pembungkus preview iframe kecil */
+        .preview-window {
+            width: 100%;
+            height: 200px;
+            background: #161618;
+            border-radius: 10px;
             overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        .line-clamp-3 {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;  
-            overflow: hidden;
+        /* Overlay transparan agar klik di iframe tidak macet dan langsung memicu buka tab baru */
+        .click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+            background: transparent;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none; /* Menonaktifkan kontrol scroll internal di dalam preview */
         }
     </style>
 </head>
-<body class="p-4 md:p-6">
+<body class="flex flex-col items-center justify-center p-6">
 
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-5 border-b border-[var(--border-color)]">
-        <div>
-            <div class="flex items-center gap-1.5 text-[9px] font-extrabold text-[var(--accent-color)] tracking-widest uppercase mb-0.5">
-                <span class="inline-block w-1.5 h-1.5 rounded-none bg-[var(--accent-color)]"></span> Hub Kreatif Publik
+    <div class="w-full max-w-md mx-auto text-center">
+        
+        <header class="mb-8">
+            <div class="inline-flex items-center gap-1.5 text-[9px] font-extrabold text-[var(--accent-color)] tracking-widest uppercase mb-2">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent-color)]"></span> Pintasan Eksternal
             </div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white uppercase">
-                Arsip & Karya Santri
+            <h1 class="text-2xl font-extrabold tracking-tight text-white uppercase mb-1">
+                Akses Media Utama
             </h1>
-        </div>
-    </header>
+            <p class="text-xs text-[var(--text-secondary)]">Klik kartu untuk membuka situs web secara penuh di tab baru.</p>
+        </header>
 
-    <div class="sharp-card p-2.5 mb-5 flex flex-col sm:flex-row gap-2 bg-[#0a0a0b]">
-        <div class="relative flex-1">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
-            <input type="text" id="searchInp" placeholder="Cari judul naskah atau kata kunci topik..." class="w-full sharp-input font-bold text-xs pl-10 pr-3 py-3 uppercase tracking-wide placeholder-gray-600">
-        </div>
-        <select id="filterKategori" class="sharp-input font-bold text-xs px-3 py-3 cursor-pointer min-w-[160px] uppercase tracking-wide text-gray-400">
-            <option value="">Semua Rubrik</option>
-        </select>
-    </div>
-
-    <div id="karyaContainer" class="msn-grid"></div>
-
-    <div id="loadingIndicator" class="py-12 text-center text-[var(--text-secondary)] sharp-card mt-4 hidden">
-        <i class="fa-solid fa-circle-notch animate-spin text-[var(--accent-color)] text-sm mb-1"></i>
-        <p class="font-bold tracking-widest uppercase text-[8px]">Memuat Arsip...</p>
-    </div>
-    
-    <div id="emptyState" class="py-20 text-center text-[var(--text-secondary)] sharp-card mt-4 hidden">
-        <i class="fa-solid fa-newspaper text-2xl mb-2 text-neutral-800"></i>
-        <p class="text-xs font-bold tracking-wider uppercase text-neutral-500">Tidak ada naskah ditemukan</p>
-    </div>
-
-    <script type="module">
-        import { supabase } from './supa/supa.js';
-
-        const LIMIT = 9; 
-        let currentPage = 0;
-        let isLoading = false;
-        let hasMore = true;
-        let searchTimeout = null;
-        let isKategoriLoaded = false;
-
-        const karyaContainer = document.getElementById('karyaContainer');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const emptyState = document.getElementById('emptyState');
-        const searchInp = document.getElementById('searchInp');
-        const filterKategori = document.getElementById('filterKategori');
-
-        async function loadDynamicCategories() {
-            if (isKategoriLoaded) return;
-            try {
-                const { data, error } = await supabase
-                    .from('karya')
-                    .select('kategori');
-
-                if (error) throw error;
-
-                if (data) {
-                    const uniqueCategories = [...new Set(data.map(item => item.kategori?.toUpperCase().trim()))]
-                        .filter(Boolean)
-                        .sort();
-
-                    uniqueCategories.forEach(kategori => {
-                        const option = document.createElement('option');
-                        option.value = kategori;
-                        option.textContent = kategori;
-                        filterKategori.appendChild(option);
-                    });
-                    isKategoriLoaded = true;
-                }
-            } catch (err) {
-                console.error("Gagal memuat daftar rubrik:", err.message);
-            }
-        }
-
-        async function fetchKarya(reset = false) {
-            if (isLoading || (!hasMore && !reset)) return;
-            isLoading = true;
-            loadingIndicator.classList.remove('hidden');
+        <div class="shortcut-card p-4 text-left relative group" onclick="openTargetSite()">
             
-            if (reset) {
-                currentPage = 0;
-                hasMore = true;
-                karyaContainer.innerHTML = '';
-                emptyState.classList.add('hidden');
-            }
+            <div class="click-overlay"></div>
 
-            try {
-                const from = currentPage * LIMIT;
-                const to = from + LIMIT - 1;
+            <div class="preview-window mb-4">
+                <iframe src="https://lensaperpustakaanlubangsa.vercel.app/" scrolling="no"></iframe>
+            </div>
 
-                let query = supabase
-                    .from('karya')
-                    .select(`
-                        id, judul, isi, kategori, dibuat_pada, anggota_id,
-                        anggota (nama, kamar, organisasi)
-                    `, { count: 'exact' })
-                    .order('dibuat_pada', { ascending: false })
-                    .range(from, to);
-
-                const kategoriVal = filterKategori.value;
-                if (kategoriVal) query = query.eq('kategori', kategoriVal);
-
-                const searchVal = searchInp.value.trim();
-                if (searchVal) {
-                    query = query.or(`judul.ilike.%${searchVal}%,kategori.ilike.%${searchVal}%`);
-                }
-
-                const { data, error } = await query;
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    hasMore = false;
-                    if (reset) emptyState.classList.remove('hidden');
-                } else {
-                    if (data.length < LIMIT) hasMore = false;
-                    renderMsnCards(data);
-                    currentPage++;
-                }
-            } catch (err) {
-                console.error("Gagal memuat arsip:", err.message);
-            } finally {
-                isLoading = false;
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-
-        function renderMsnCards(karyaItems) {
-            const fragment = document.createDocumentFragment();
-
-            karyaItems.forEach(item => {
-                const profile = item.anggota || {};
-
-                const div = document.createElement('div');
-                div.className = 'sharp-card p-4 flex flex-col justify-between hover:bg-[#151517] border-none cursor-pointer group';
+            <div class="flex items-start justify-between gap-3 px-1">
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wide group-hover:text-[var(--accent-color)] transition-colors truncate">
+                        Lensa Perpustakaan Lubangsa
+                    </h3>
+                    <p class="text-[11px] text-[var(--text-secondary)] mt-0.5 truncate">
+                        https://lensaperpustakaanlubangsa.vercel.app/
+                    </p>
+                </div>
                 
-                div.onclick = () => {
-                    localStorage.setItem('selectedKaryaId', item.id);
-                    window.location.href = 'detail-karya-publik.html';
-                };
+                <div class="w-8 h-8 flex items-center justify-center bg-neutral-900 border border-neutral-800 text-gray-400 group-hover:text-white group-hover:border-blue-500/30 rounded-lg shrink-0 transition-colors">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </div>
+            </div>
 
-                const tglPublish = item.dibuat_pada ? new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
-                    day: 'numeric', month: 'short', year: 'numeric'
-                }) : '-';
+        </div>
 
-                // Fallback UI Avatar menggunakan Huruf Inisial Pertama dari Nama Anggota
-                const inisialNama = profile.nama ? profile.nama.charAt(0).toUpperCase() : 'S';
-                const avatarHTML = `<div class="w-full h-full flex items-center justify-center bg-neutral-900 text-neutral-400 text-xs font-extrabold rounded-full">${inisialNama}</div>`;
+        <footer class="mt-8 border-t border-[var(--border-color)] pt-4 w-full">
+            <p class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest">Perpustakaan Lubangsa © 2026</p>
+        </footer>
 
-                const plainTextIsi = item.isi ? item.isi.replace(/<[^>]*>/g, '') : '';
-                const kategoriBadg = item.kategori ? item.kategori.toUpperCase() : 'RUBRIK';
+    </div>
 
-                div.innerHTML = `
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-bold text-neutral-600 uppercase tracking-tight">${tglPublish}</span>
-                        </div>
-
-                        <h3 class="text-xs font-bold text-white uppercase tracking-wide group-hover:text-[var(--accent-color)] mb-1.5 line-clamp-2 leading-snug">
-                            ${item.judul || 'UNTITLED'}
-                        </h3>
-
-                        <p class="text-[10px] text-[var(--text-secondary)] font-normal leading-relaxed mb-4 line-clamp-3 uppercase tracking-tight">
-                            ${plainTextIsi || 'Tidak ada deskripsi naskah.'}
-                        </p>
-                    </div>
-
-                    <div class="pt-3 border-t border-neutral-900/40 flex items-center justify-between mt-auto">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-8 h-8 bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 rounded-full">
-                                ${avatarHTML}
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-[9px] font-bold text-gray-300 truncate uppercase tracking-wider">${profile.nama || 'ANONIM'}</h4>
-                                <p class="text-[8px] font-semibold text-neutral-600 uppercase tracking-tight truncate mt-0.5">
-                                    ${(profile.kamar || '-').toUpperCase()} • ${(profile.organisasi || '-').toUpperCase()}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col items-end gap-0.5 shrink-0 pl-1">
-                            <span class="text-[8px] font-extrabold text-[var(--accent-color)] tracking-wider uppercase bg-blue-500/10 px-1.5 py-0.5 rounded-none">${kategoriBadg}</span>
-                        </div>
-                    </div>
-                `;
-
-                fragment.appendChild(div);
-            });
-            karyaContainer.appendChild(fragment);
+    <script>
+        // Fungsi eksekusi buka tab baru secara instan
+        function openTargetSite() {
+            window.open("https://lensaperpustakaanlubangsa.vercel.app/", "_blank", "noopener,noreferrer");
         }
-
-        window.addEventListener('scroll', () => {
-            if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 150) {
-                fetchKarya();
-            }
-        }, { passive: true });
-
-        searchInp.addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => fetchKarya(true), 350);
-        });
-
-        filterKategori.addEventListener('change', () => fetchKarya(true));
-
-        (async () => {
-            await loadDynamicCategories();
-            fetchKarya(true);
-        })();
     </script>
 </body>
 </html>

@@ -44,7 +44,7 @@
             line-height: 1.75;
             color: #d1d1d6;
         }
-        .article-body p { margin-bottom: 1.25rem; }
+        .article-body p { margin-bottom: 1.25rem; text-align: justify; }
         .article-body h2 { font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 1.75rem; margin-bottom: 0.75rem; text-transform: uppercase; }
         .article-body h3 { font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 1.5rem; margin-bottom: 0.5rem; text-transform: uppercase; }
         .article-body ul, .article-body ol { margin-left: 1.25rem; margin-bottom: 1.25rem; list-style-type: square; }
@@ -133,7 +133,6 @@
             }
 
             try {
-                // Kolom 'foto' dihapus dari klausa select sesuai dengan realita tabel anggota Anda
                 const { data, error } = await supabase
                     .from('karya')
                     .select(`
@@ -156,6 +155,27 @@
             }
         }
 
+        // Fungsi khusus mengubah raw \n, \n\n, atau lebih menjadi struktur HTML Paragraf <p>
+        function parseNewlinesToParagraphs(rawText) {
+            if (!rawText) return '<p class="text-neutral-600">Naskah kosong.</p>';
+            
+            // 1. Bersihkan spasi kosong di awal/akhir string naskah
+            let cleanText = rawText.trim();
+            
+            // 2. Pecah teks berdasarkan baris baru beruntun (\n\n, \n\n\n, dst) maupun \r\n (Windows)
+            // Regex /[\r\n]{2,}/ mendeteksi jika enter ditekan lebih dari 1 kali
+            const paragraphs = cleanText.split(/[\r\n]{2,}/);
+            
+            // 3. Proses setiap kumpulan teks menjadi tag <p>, dan ubah \n tunggal di dalam satu paragraf menjadi <br>
+            const processedHTML = paragraphs.map(pText => {
+                // Ubah \n tunggal (Shift+Enter / soft wrap) menjadi line break <br>
+                const internalLines = pText.replace(/[\r\n]/g, '<br>');
+                return `<p>${internalLines}</p>`;
+            }).join('');
+            
+            return processedHTML;
+        }
+
         function renderData(item) {
             const profile = item.anggota || {};
 
@@ -164,24 +184,20 @@
             
             document.getElementById('txtNama').textContent = (profile.nama || 'ANONIM').toUpperCase();
             
-            // Format info Kamar dan Organisasi kontributor
             const kamar = (profile.kamar || '-').toUpperCase();
             const organisasi = (profile.organisasi || '-').toUpperCase();
             document.getElementById('txtSubInfo').textContent = `KAMAR ${kamar} • ORG: ${organisasi}`;
             
-            // Format waktu terbit
             document.getElementById('txtTanggal').textContent = item.dibuat_pada ? new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
                 day: 'numeric', month: 'long', year: 'numeric'
             }) : '-';
 
-            // Menghasilkan inisial nama secara otomatis untuk wadah avatar
             const boxAvatar = document.getElementById('boxAvatar');
             boxAvatar.textContent = profile.nama ? profile.nama.trim().charAt(0).toUpperCase() : 'S';
 
-            // Render isi naskah
-            document.getElementById('txtIsi').innerHTML = item.isi || '<p class="text-neutral-600">Naskah kosong.</p>';
+            // PEMBARUAN: Memproses teks naskah sebelum disuntikkan ke elemen HTML #txtIsi
+            document.getElementById('txtIsi').innerHTML = parseNewlinesToParagraphs(item.isi);
 
-            // Tombol edit mengarah ke berkas form-karya.html
             document.getElementById('btnEditDirect').onclick = () => {
                 window.location.href = 'form-karya.html';
             };
