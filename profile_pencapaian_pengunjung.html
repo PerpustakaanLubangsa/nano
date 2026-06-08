@@ -13,15 +13,15 @@
         :root { --bg: #f8f9fa; --text: #202124; --accent: #1a73e8; --border: #dadce0; --chart-grid: #eeeeee; }
         @media (prefers-color-scheme: dark) { :root { --bg: #060608; --text: #e8eaed; --accent: #3b82f6; --border: #1e293b; --chart-grid: #1e293b; } }
         body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-        .glass-card { background: transparent; border: none; border-radius: 20px; }
-        .stat-box { background: transparent; border: none; border-radius: 12px; padding: 12px; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 20px; backdrop-filter: blur(8px); }
+        @media (prefers-color-scheme: light) { .glass-card { background: #ffffff; } }
         #mainContent { opacity: 0; transform: translateY(15px); transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
         #mainContent.reveal-active { opacity: 1; transform: translateY(0); }
         .rank-animated { animation: floatGame 3.5s ease-in-out infinite; will-change: transform; }
         @keyframes floatGame { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
         .rank-shoot-shake { animation: shootRecoil 0.2s ease-out both !important; }
         @keyframes shootRecoil { 0% { transform: scale(1); } 15% { transform: scale(0.85) translateY(4px); } 30% { transform: scale(1.05) translateY(-2px); } 100% { transform: scale(1); } }
-        .avatar-frame { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; border: 3px solid var(--bg); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        .avatar-frame { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; border: 3px solid var(--border); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
         * { scrollbar-width: none; } *::-webkit-scrollbar { display: none; }
         #gameLoader { position: fixed; inset: 0; z-index: 999; background: #030712; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s ease; }
         .cyber-bar-container { width: 280px; height: 4px; background: #1f2937; border-radius: 10px; overflow: hidden; }
@@ -29,9 +29,9 @@
         #epicRankIntro { position: fixed; inset: 0; z-index: 998; background: radial-gradient(circle at center, rgba(10,11,18,0.99) 0%, rgba(3,7,18,1) 100%); display: none; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.3s ease; }
         .epic-stamp { animation: gamePopImpact 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; transform: scale(0.2); opacity: 0; will-change: transform, opacity; }
         .epic-text-pop { animation: gameTextSpread 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; opacity: 0; letter-spacing: 0.1em; will-change: transform, opacity; }
-        .aura-ray { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); animation: spinAura 15s linear infinite; pointer-events: none; z-index: -1; }
+        .aura-ray { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%); animation: spinAura 15s linear infinite; pointer-events: none; z-index: -1; }
         @keyframes spinAura { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes gamePopImpact { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes gamePopImpact { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes gameTextSpread { 0% { opacity: 0; transform: translateY(10px); letter-spacing: 0.1em; } 100% { opacity: 1; transform: translateY(0); letter-spacing: 0.2em; } }
         .fly-to-position { position: fixed !important; z-index: 1000 !important; transform-origin: top left; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease; will-change: transform, opacity; }
         .screen-shake { animation: shakeImpact 0.3s cubic-bezier(.36,.07,.19,.97) both; will-change: transform; }
@@ -61,12 +61,12 @@
 
 <div id="epicRankIntro">
     <div class="aura-ray"></div>
-    <div class="text-center space-y-5 relative">
-        <p class="text-[10px] text-blue-400 font-black tracking-[0.5em] uppercase opacity-90 animate-pulse">RANK ACQUIRED</p>
-        <div class="w-64 h-64 flex items-center justify-center relative">
-            <img id="mIntroRankImg" src="" class="w-56 h-56 object-contain epic-stamp" alt="Rank">
+    <div class="text-center space-y-6 relative flex flex-col items-center justify-center w-full max-w-4xl px-4">
+        <p class="text-[11px] md:text-xs text-blue-400 font-black tracking-[0.5em] uppercase opacity-90 animate-pulse">RANK ACQUIRED</p>
+        <div class="w-[85vw] h-[55vh] max-w-2xl max-h-[60vh] flex items-center justify-center relative">
+            <img id="mIntroRankImg" src="" class="w-full h-full object-contain epic-stamp" alt="Rank">
         </div>
-        <h1 id="mIntroRankLabel" class="text-white text-3xl font-black uppercase italic epic-text-pop text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">---</h1>
+        <h1 id="mIntroRankLabel" class="text-white text-3xl md:text-5xl font-black uppercase italic epic-text-pop text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 py-2">---</h1>
     </div>
 </div>
 
@@ -82,14 +82,14 @@
     </div>
 
     <div id="profileTargetCard" class="glass-card p-8 flex flex-col items-center text-center gap-5 relative overflow-hidden">
-        <div id="rankBadgeAnchor" class="w-40 h-40 flex items-center justify-center relative">
+        <div id="rankBadgeAnchor" class="w-60 h-60 md:w-72 md:h-72 flex items-center justify-center relative">
             <div id="impactFlash" class="impact-flash"></div>
-            <img id="mRankImg" src="" onclick="this.classList.add('rank-shoot-shake'); setTimeout(()=>this.classList.remove('rank-shoot-shake'), 200);" class="w-40 h-40 rank-animated object-contain opacity-0 transition-opacity duration-300 cursor-pointer" alt="Badge">
+            <img id="mRankImg" src="" onclick="this.classList.add('rank-shoot-shake'); setTimeout(()=>this.classList.remove('rank-shoot-shake'), 200);" class="w-full h-full rank-animated object-contain opacity-0 transition-opacity duration-300 cursor-pointer" alt="Badge">
         </div>
         <div id="mRankLabel" class="stagger-hide w-fit px-5 py-1.5 rounded-full border border-[var(--accent)] text-[var(--accent)] text-[10px] font-black tracking-widest uppercase bg-blue-500/5">---</div>
         <div id="mProfileContainer" class="stagger-hide flex flex-col items-center justify-center gap-4 mt-2 w-full max-w-sm md:max-w-md mx-auto">
             <div class="flex flex-row items-center justify-center gap-4 w-full">
-                <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.src='image/profile/profile.jpg'">
+                <img id="mAvatar" src="image/profile/profile.jpg" class="avatar-frame flex-shrink-0" onerror="this.onerror=null; this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Snowy';">
                 <div class="min-w-0 text-left flex-1 overflow-hidden">
                     <div id="mNamaWrapper" class="marquee-container">
                         <h2 id="mNama" class="text-xl md:text-2xl font-extrabold uppercase leading-tight text-left">---</h2>
@@ -158,26 +158,29 @@
 
     function preloadAssets(urls, onProgress) {
         let loaded = 0;
-        if (urls.length === 0) return onProgress(100);
-        urls.forEach(url => {
+        const validUrls = urls.filter(url => url && url.trim() !== '');
+        if (validUrls.length === 0) return onProgress(100);
+        
+        validUrls.forEach(url => {
             const img = new Image();
-            img.onload = img.onerror = () => { onProgress(Math.round((++loaded / urls.length) * 100)); };
+            img.onload = img.onerror = () => { 
+                onProgress(Math.round((++loaded / validUrls.length) * 100)); 
+            };
             img.src = url;
         });
     }
 
-    // Mengambil data murni profil langsung dari tabel 'anggota'
     async function fetchDatabaseData() {
         const stored = JSON.parse(sessionStorage.getItem('last_guest')) || JSON.parse(localStorage.getItem('selectedUser'));
         if (!stored) { window.location.href = 'form.html'; return null; }
         
         const targetId = String(stored.id || stored.id_anggota || stored.nis).trim();
 
-        // Hanya menyeleksi kolom data mentah yang ada di skema tabel 'anggota' Anda
+        // FIXED: Memperbaiki penulisan query .or() Supabase (menghapus double quotes internal)
         const { data: profile, error } = await supabase
             .from('anggota')
             .select('id, nis, nama, jenjang, organisasi, kamar, rank, total_kunjungan, total_baca, total_pinjam, poin_tambahan, total_poin, avatar_rank')
-            .or(`id.eq."${targetId}",nis.eq."${targetId}"`)
+            .or(`id.eq.${targetId},nis.eq.${targetId}`)
             .maybeSingle();
 
         if (error || !profile) {
@@ -232,10 +235,8 @@
 
         document.getElementById('mNIS').innerText = `ID: ${u.nis || u.id || '---'}`;
         document.getElementById('mOrgInfo').innerText = `${u.organisasi || '-'} / Kmr: ${u.kamar || '-'}`;
-        document.getElementById('mAvatar').src = 'image/profile/profile.jpg';
         document.getElementById('mRankLabel').innerText = (u.rank || 'WARRIOR').toUpperCase();
         
-        // Render Poin & Data Statistik dari tabel utama 'anggota'
         document.getElementById('mTotalPoin').innerText = u.total_poin || 0;
         document.getElementById('mPoinTambahan').innerText = `+${u.poin_tambahan || 0}`;
         document.getElementById('mTotalKunjungan').innerText = u.total_kunjungan || 0;
@@ -266,7 +267,7 @@
     function bindScrollTrigger(containerId, triggerId, observerRef, callback) {
         if (observerRef) observerRef.disconnect();
         const trigger = document.getElementById(triggerId);
-        if (!trigger) return new IntersectionObserver(() => {});
+        if (!trigger) return null;
         
         const obs = new IntersectionObserver((entries) => { if (entries[0].isIntersecting) callback(); }, { root: document.getElementById(containerId), threshold: 1.0 });
         obs.observe(trigger);
@@ -408,11 +409,11 @@
         });
     }
 
-    // Listener Realtime disesuaikan untuk mendeteksi perubahan langsung di tabel 'anggota'
     function setupRealtimeListener() {
         if (!currentUserId) return;
         supabase
             .channel('realtime_profile_changes')
+            // FIXED: Memperbaiki format filter realtime listener Supabase (id=eq.VALUE)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'anggota', filter: `id=eq.${currentUserId}` }, async () => {
                 const updatePayload = await fetchDatabaseData();
                 if (updatePayload) {
