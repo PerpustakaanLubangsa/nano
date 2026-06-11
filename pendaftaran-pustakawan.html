@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Status Pendaftaran</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #2d3748;
+            
+            /* Status Colors */
+            --color-open: #10b981;
+            --color-open-hover: #059669;
+            --color-close: #ef4444;
+            --color-close-hover: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .header icon {
+            font-size: 48px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        /* Status Badge */
+        .status-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border-radius: 100px;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .status-loading {
+            background: #2d3748;
+            color: var(--text-muted);
+        }
+
+        .status-buka {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-open);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-tutup {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-close);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Action Buttons */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-open {
+            background: var(--color-open);
+            color: white;
+        }
+        .btn-open:not(:disabled):hover {
+            background: var(--color-open-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-close {
+            background: var(--color-close);
+            color: white;
+        }
+        .btn-close:not(:disabled):hover {
+            background: var(--color-close-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2d3748;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease;
+            z-index: 9999;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="icon"><i class="fa-solid fa-sliders"></i></div>
+        <h1>Kontrol Pendaftaran</h1>
+        <p class="subtitle">Atur akses pembukaan formulir pendaftaran anggota</p>
+    </div>
+
+    <div id="statusBadge" class="status-box status-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span id="statusText">Memuat...</span>
+    </div>
+
+    <div class="btn-group">
+        <button id="btnOpen" class="btn btn-open" disabled>
+            <i class="fa-solid fa-door-open"></i> Buka Pendaftaran
+        </button>
+        <button id="btnClose" class="btn btn-close" disabled>
+            <i class="fa-solid fa-door-closed"></i> Tutup Pendaftaran
+        </button>
+    </div>
+</div>
+
+<div id="toast" class="toast">Status berhasil diperbarui!</div>
+
+<script type="module">
+    // Mengarah ke file konfigurasi Supabase yang Anda miliki sebelumnya
+    import { supabase } from './supa/supa.js';
+
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const btnOpen = document.getElementById('btnOpen');
+    const btnClose = document.getElementById('btnClose');
+    const toast = document.getElementById('toast');
+
+    // 1. Fungsi Mengambil Status Saat Ini dari Supabase
+    async function fetchStatus() {
+        try {
+            const { data, error } = await supabase
+                .from('status_pendaftaran')
+                .select('dibuka')
+                .eq('id', 1)
+                .single();
+
+            if (error) throw error;
+
+            if (data) {
+                updateUI(data.dibuka);
+            }
+        } catch (err) {
+            console.error('Gagal mengambil status:', err.message);
+            showToast('Gagal memuat status database');
+        }
+    }
+
+    // 2. Fungsi Mengubah Tampilan UI Berdasarkan Status
+    function updateUI(isOpened) {
+        statusBadge.className = 'status-box ' + (isOpened ? 'status-buka' : 'status-tutup');
+        statusText.innerHTML = isOpened ? '<i class="fa-solid fa-circle-check"></i> DIbuka' : '<i class="fa-solid fa-circle-xmark"></i> DItutup';
+        
+        // Atur interaksi tombol pasca-load data
+        btnOpen.disabled = isOpened;   // Jika sudah dibuka, tombol buka mati
+        btnClose.disabled = !isOpened; // Jika sedang ditutup, tombol tutup mati
+    }
+
+    // 3. Fungsi Mengubah Status di Tabel Supabase (Hanya Update ID = 1)
+    async function setStatus(targetStatus) {
+        // Matikan sementara tombol saat proses transendensi data berlangsung
+        btnOpen.disabled = true;
+        btnClose.disabled = true;
+        statusText.innerText = 'Memperbarui...';
+
+        try {
+            const { error } = await supabase
+                .from('status_pendaftaran')
+                .update({ dibuka: targetStatus })
+                .eq('id', 1);
+
+            if (error) throw error;
+
+            updateUI(targetStatus);
+            showToast(targetStatus ? 'Pendaftaran berhasil DIBUKA!' : 'Pendaftaran berhasil DITUTUP!');
+        } catch (err) {
+            console.error('Gagal memperbarui status:', err.message);
+            showToast('Gagal mengubah status pendaftaran');
+            fetchStatus(); // Kembalikan kondisi UI asli jika error terjadi
+        }
+    }
+
+    // 4. Toast Notification Controller
+    function showToast(message) {
+        toast.innerText = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Event Listeners pada Tombol Aksi
+    btnOpen.onclick = () => setStatus(true);
+    btnClose.onclick = () => setStatus(false);
+
+    // Jalankan pengecekan status saat halaman pertama kali dimuat
+    fetchStatus();
+</script>
+
+</body>
+</html>

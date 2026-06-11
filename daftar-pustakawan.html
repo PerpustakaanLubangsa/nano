@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ketentuan Pendaftaran Pustakawan - Perpustakaan Lubangsa</title>
+    <link rel="icon" type="image/png" href="image/logo/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #0a0a0a;
+            --bg-card: #141414;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --border-color: #262626;
+            --radius-card: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(0,0,0,0) 70%);
+            top: 10%;
+            left: 10%;
+            z-index: 0;
+        }
+
+        /* --- BARIS ATAS: NAVIGASI & LOGO SEJAJAR --- */
+        .top-navbar {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+            right: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .btn-floating-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-floating-back:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #404040;
+            color: var(--text-main);
+        }
+
+        .logo-frame {
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 50%;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .logo-img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* --- CONTAINER UTAMA --- */
+        .terms-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            max-width: 750px;
+            width: 100%;
+            padding: 56px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            position: relative;
+            z-index: 1;
+            margin-top: 60px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .step-indicator {
+            font-size: 12px;
+            color: var(--accent-green);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            display: block;
+            text-align: center;
+        }
+
+        /* --- CARD KETENTUAN (PUTIH KONTRASTING) --- */
+        .terms-step-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 48px 40px;
+            margin-bottom: 40px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            animation: focusIn 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes focusIn {
+            from { opacity: 0; transform: scale(0.98); filter: blur(4px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+
+        .terms-step-box i {
+            color: #059669;
+            font-size: 36px;
+        }
+
+        .terms-text {
+            font-size: 22px;
+            line-height: 1.6;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+
+        /* --- GRUP TOMBOL --- */
+        .btn-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            border: none;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tombol Sebelumnya */
+        .btn-back {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: #404040;
+            color: var(--text-main);
+        }
+
+        /* Tombol Pikirkan Lagi */
+        .btn-neutral {
+            background: rgba(239, 68, 68, 0.06);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .btn-neutral:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #f87171;
+        }
+
+        /* Tombol Lanjut */
+        .btn-next {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .btn-next:hover {
+            background: #e5e5e5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+        }
+
+        /* Tombol Buka Formulir */
+        .btn-next.finish-step {
+            background: var(--accent-green);
+            color: #ffffff;
+        }
+        .btn-next.finish-step:hover {
+            background: var(--accent-green-hover);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Responsif Mobile */
+        @media (max-width: 650px) {
+            body {
+                padding-top: 110px;
+                align-items: flex-start;
+            }
+            .top-navbar {
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                gap: 12px;
+            }
+            .btn-floating-back {
+                flex: 1;
+                justify-content: center;
+                padding: 10px;
+                font-size: 13px;
+            }
+            .logo-frame {
+                width: 42px;
+                height: 42px;
+            }
+            .terms-container {
+                padding: 32px 24px;
+                margin-top: 20px;
+            }
+            .terms-step-box {
+                padding: 32px 20px;
+                min-height: 240px;
+            }
+            .terms-text {
+                font-size: 18px;
+            }
+            .btn-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .btn {
+                width: 100%;
+                padding: 14px;
+            }
+            #btnPrev { order: 2; }
+            #btnThink { order: 3; }
+            #btnAction { order: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-navbar">
+    <a href="index.html" class="btn-floating-back">
+        <i class="fa-solid fa-arrow-left"></i> KEMBALI
+    </a>
+    <div class="logo-frame">
+        <img src="image/logo/logo2.png" class="logo-img" alt="Logo">
+    </div>
+</div>
+
+<div class="terms-container">
+    <div class="header">
+        </div>
+
+    <span class="step-indicator" id="stepIndicator">KETENTUAN 1 dari 5</span>
+    
+    <div class="terms-step-box">
+        <i class="fa-solid fa-gavel"></i>
+        <p class="terms-text" id="termsContent">Memuat ketentuan...</p>
+    </div>
+
+    <div class="btn-group">
+        <button id="btnPrev" class="btn btn-back" style="visibility: hidden;">
+            <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+        </button>
+        
+        <a href="index.html" id="btnThink" class="btn btn-neutral">
+            Saya Pikirkan Lagi
+        </a>
+        
+        <button id="btnAction" class="btn btn-next">
+            Saya Bersedia, Lanjut <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    const listKetentuan = [
+        "Merupakan santri aktif Pondok Pesantren Annuqayah Daerah Lubangsa.",
+        "Tidak sedang terikat di lembaga lain atau memegang jabatan strategis (seperti pengurus harian, dsb.) demi menjaga fokus integritas kerja.",
+        "Sanggup mengabdi sepenuhnya serta bersedia menetap di lingkungan Perpustakaan Lubangsa selama masa kepengurusan.",
+        "Tidak memiliki rekam jejak pelanggaran berat di pesantren, atau menyatakan komitmen penuh untuk memperbaiki diri jika pernah melakukan kekeliruan.",
+        "Menyatakan sadar, siap, dan berkomitmen penuh untuk memikul tanggung jawab sebagai Pustakawan Perpustakaan Lubangsa."
+    ];
+    let currentStep = 0;
+
+    const stepIndicator = document.getElementById('stepIndicator');
+    const termsContent = document.getElementById('termsContent');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnAction = document.getElementById('btnAction');
+
+    function updateWizard() {
+        // 1. Update Teks Ketentuan & Nomor Step
+        stepIndicator.innerText = `KETENTUAN ${currentStep + 1} dari ${listKetentuan.length}`;
+        termsContent.innerText = listKetentuan[currentStep];
+
+        // 2. Mengatur Visibilitas Tombol 'Sebelumnya'
+        if (currentStep === 0) {
+            btnPrev.style.visibility = 'hidden';
+        } else {
+            btnPrev.style.visibility = 'visible';
+        }
+
+        // 3. Mengubah Gaya & Teks Tombol Aksi di Step Terakhir
+        if (currentStep === listKetentuan.length - 1) {
+            btnAction.innerHTML = 'Buka Formulir Pendaftaran <i class="fa-solid fa-arrow-right"></i>';
+            btnAction.classList.add('finish-step');
+        } else {
+            btnAction.innerHTML = 'Saya Bersedia, Lanjut <i class="fa-solid fa-chevron-right"></i>';
+            btnAction.classList.remove('finish-step');
+        }
+
+        // Jalankan animasi transisi ulang
+        const box = document.querySelector('.terms-step-box');
+        box.style.animation = 'none';
+        box.offsetHeight; /* Trigger reflow */
+        box.style.animation = 'focusIn 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+    }
+
+    // Event handler klik tombol Lanjut
+    btnAction.addEventListener('click', function() {
+        if (currentStep < listKetentuan.length - 1) {
+            currentStep++;
+            updateWizard();
+        } else {
+            window.location.href = 'formulir-pustakawan.html';
+        }
+    });
+
+    // Event handler klik tombol Sebelumnya
+    btnPrev.addEventListener('click', function() {
+        if (currentStep > 0) {
+            currentStep--;
+            updateWizard();
+        }
+    });
+
+    // Inisialisasi tampilan awal
+    updateWizard();
+</script>
+
+</body>
+</html>

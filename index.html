@@ -136,8 +136,35 @@
         }
         .btn-dual:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
 
+        /* Tombol khusus Daftar Pustakawan dengan animasi berdenyut */
+        .btn-daftar {
+            background: var(--accent-green);
+            color: white;
+            animation: pulse-green 2s infinite linear;
+        }
+        .btn-daftar:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
         .btn-login { background: var(--accent-blue); color: white; }
         .btn-login:hover { background: var(--accent-blue-hover); transform: translateY(-1px); }
+
+        /* KEYFRAMES ANIMASI BERDENYUT */
+        @keyframes pulse-green {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1.03);
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
 
         /* --- HERO NO MARGIN --- */
         .hero-slider { 
@@ -220,7 +247,7 @@
             transition: box-shadow 0.2s, border-color 0.2s;
         }
         .search-wrapper:focus-within {
-            shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
             border-color: var(--accent-blue);
         }
 
@@ -306,6 +333,76 @@
             background: var(--bg-card);
         }
         
+        /* --- CUSTOM NOTICE MODAL --- */
+        .notice-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+        .notice-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .notice-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            max-width: 500px;
+            width: 100%;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .notice-modal-overlay.active .notice-card {
+            transform: scale(1);
+        }
+        .notice-icon {
+            font-size: 40px;
+            color: #f59e0b;
+            margin-bottom: 16px;
+        }
+        .notice-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 24px;
+        }
+        .notice-url {
+            display: block;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px dashed var(--border-color);
+            margin: 12px 0;
+            font-weight: 600;
+            color: var(--accent-blue);
+            user-select: all;
+        }
+        .btn-close-notice {
+            background: var(--accent-blue);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-close-notice:hover {
+            background: var(--accent-blue-hover);
+        }
+
         html.modal-open, body.modal-open {
             overflow: hidden !important;
             height: 100vh !important;
@@ -331,10 +428,15 @@
             <span class="brand-text">Perpustakaan PP. Annuqayah Daerah Lubangsa</span>
         </a>
         <div class="header-actions">
-            <a href="https://lensaperpustakaanlubangsa.vercel.app" target="_blank" class="btn-action btn-dual" title="Karya Santri">
+            <a href="daftar-pustakawan.html" id="btnDaftarPustakawan" class="btn-action btn-daftar hidden" title="Daftar Pustakawan">
+                <i class="fa-solid fa-id-card-clip"></i>
+                <span class="btn-text">Daftar Pustakawan</span>
+            </a>
+
+            <div class="btn-action btn-dual" onclick="openNoticeModal()" title="Karya Santri">
                 <i class="fa-solid fa-book-open"></i>
                 <span class="btn-text">Karya Santri</span>
-            </a>
+            </div>
             
             <div class="btn-action btn-dual" onclick="window.location.href='form.html'" title="Catat Kunjungan">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -384,6 +486,20 @@
     <iframe id="detailIframe" class="modal-iframe" src="about:blank"></iframe>
 </div>
 
+<div id="noticeModal" class="notice-modal-overlay" onclick="closeNoticeModal(event)">
+    <div class="notice-card" onclick="event.stopPropagation()">
+        <div class="notice-icon">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <p class="notice-text">
+            Mohon maaf, komputer ini hanya untuk pencarian buku dan catat kunjungan saja. Untuk melihat karya santri silakan cari di browser menggunakan url:
+            <span class="notice-url">lensaperpustakaanlubangsa.vercel.app</span>
+            di komputer lain seperti rental Lubangsa. Terima Kasih & mohon maaf. URL bisa dicatat.
+        </p>
+        <button class="btn-close-notice" onclick="closeNoticeModal()">Mengerti</button>
+    </div>
+</div>
+
 <script type="module">
     import { supabase as supaCatalog } from './supa/supa.js';
 
@@ -392,6 +508,25 @@
 
     const header = document.getElementById('mainHeader');
     const skeletonContainer = document.getElementById('skeletonContainer');
+
+    /* --- CHECK STATUS PENDAFTARAN REALTIME --- */
+    async function checkRegistrationStatus() {
+        try {
+            const { data, error } = await supaCatalog
+                .from('status_pendaftaran')
+                .select('dibuka')
+                .eq('id', 1)
+                .single();
+            
+            if (error) throw error;
+
+            if (data && data.dibuka) {
+                document.getElementById('btnDaftarPustakawan').classList.remove('hidden');
+            }
+        } catch (err) {
+            console.error("Gagal memeriksa status pendaftaran:", err.message);
+        }
+    }
 
     /* --- SETUP SKELETON ON LOAD --- */
     for(let i=0; i<4; i++) {
@@ -531,6 +666,7 @@
 
     document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); };
 
+    checkRegistrationStatus();
     loadFilters();
     fetchBooks();
 
@@ -569,6 +705,25 @@
         document.body.style.top = '';
         window.scrollTo(0, lastScrollTop);
         iframe.src = 'about:blank';
+    };
+
+    /* --- LOGIKA BARU: PEMBERITAHUAN KARYA SANTRI MODAL --- */
+    window.openNoticeModal = function() {
+        lastScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const noticeModal = document.getElementById('noticeModal');
+        noticeModal.classList.add('active');
+        document.documentElement.classList.add('modal-open');
+        document.body.classList.add('modal-open');
+        document.body.style.top = `-${lastScrollTop}px`;
+    };
+
+    window.closeNoticeModal = function() {
+        const noticeModal = document.getElementById('noticeModal');
+        noticeModal.classList.remove('active');
+        document.documentElement.classList.remove('modal-open');
+        document.body.classList.remove('modal-open');
+        document.body.style.top = '';
+        window.scrollTo(0, lastScrollTop);
     };
 </script>
 
