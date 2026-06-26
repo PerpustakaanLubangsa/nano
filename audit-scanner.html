@@ -97,15 +97,16 @@
             <table class="excel-table">
                 <thead>
                     <tr>
-                        <th width="80">Rak</th>
+                        <th width="100">Rak</th>
                         <th>Judul Buku</th>
-                        <th width="200">Penulis</th>
-                        <th width="150">Barcode</th>
+                        <th width="180">Penulis</th>
+                        <th width="120">Barcode</th>
+                        <th width="120">Status Audit</th>
                     </tr>
                 </thead>
                 <tbody id="auditTable">
                     <tr id="emptyMsg">
-                        <td colspan="4" class="p-20 text-center text-zinc-700 italic font-bold uppercase tracking-widest text-xs">
+                        <td colspan="5" class="p-20 text-center text-zinc-700 italic font-bold uppercase tracking-widest text-xs">
                             Siap melakukan pemindaian...
                         </td>
                     </tr>
@@ -120,7 +121,6 @@
 
     const inputField = document.getElementById('scanInput');
     const statusIndicator = document.getElementById('statusIndicator');
-    const adminName = sessionStorage.getItem('adminUser');
     let scannedLogs = [];
     let typingTimer;
 
@@ -156,51 +156,73 @@
         const tbody = document.getElementById('auditTable');
         if (scannedLogs.length === 0) return;
 
-        tbody.innerHTML = scannedLogs.map((log, index) => `
-            <tr class="${(isNew && index === 0) ? 'impact-row' : ''}">
-                <td class="font-mono text-blue-500 font-bold">${log.lokasi_rak || '-'}</td>
-                <td class="font-bold uppercase text-[11px] tracking-tight leading-tight">${log.judul_buku}</td>
-                <td class="text-zinc-500 text-[11px] truncate max-w-[200px]">${log.penulis || '-'}</td>
-                <td class="font-mono text-zinc-400 text-xs">${log.kode_barcode}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = scannedLogs.map((log, index) => {
+            const judul = log.biblio ? log.biblio.judul : 'Tidak Diketahui';
+            const penulis = log.biblio ? log.biblio.penulis : '-';
+            
+            return `
+                <tr class="${(isNew && index === 0) ? 'impact-row' : ''}">
+                    <td class="font-mono text-blue-500 font-bold">${log.lokasi_rak || '-'}</td>
+                    <td class="font-bold uppercase text-[11px] tracking-tight leading-tight">${judul}</td>
+                    <td class="text-zinc-500 text-[11px] truncate max-w-[180px]">${penulis || '-'}</td>
+                    <td class="font-mono text-zinc-400 text-xs">${log.kode}</td>
+                    <td class="text-xs font-bold uppercase ${log.status_audit === 'tersedia' ? 'text-green-500' : 'text-yellow-500'}">${log.status_audit}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     /**
-     * Memproses Barcode menggunakan RPC Supabase
+     * Memproses Barcode Murni Tanpa RPC
      */
     async function processBarcode() {
         const barcode = inputField.value.trim().toUpperCase();
         if (!barcode || barcode.length < 3) return;
         
-        // Reset input segera setelah dibaca
         inputField.value = '';
         
-        // Memanggil fungsi RPC di Database
-        const { data, error } = await supabase.rpc('proses_audit_scan', {
-            barcode_input: barcode,
-            p_device_id: window.navigator.userAgent.substring(0, 50) // Ambil info device singkat
-        });
+        // 1. Cek dulu apakah data eksemplar dengan kode tersebut ada
+        const { data: currentBook, error: checkError } = await supabase
+            .from('eksemplar')
+            .select('kode, status_audit, biblio(judul)')
+            .eq('kode', barcode)
+            .maybeSingle();
 
-        if (error) {
-            showToast("Kesalahan sistem: " + error.message, "red");
+        if (checkError) {
+            showToast("Kesalahan sistem: " + checkError.message, "red");
             return;
         }
 
-        if (data.success) {
-            // Jika berhasil, tambahkan data terbaru ke daftar
-            scannedLogs.unshift(data.data);
-            
-            // Batasi tampilan hanya 25 data terbaru untuk performa
-            if (scannedLogs.length > 25) scannedLogs.pop();
-            
-            renderTable(true);
-            showToast("Berhasil: " + data.data.judul_buku, "blue");
-        } else {
-            // Jika gagal (Barcode tidak ada atau sudah di-scan sebelumnya)
-            const color = data.message.includes('sudah') ? 'yellow' : 'red';
-            showToast(data.message, color);
+        if (!currentBook) {
+            showToast(`Barcode ${barcode} tidak terdaftar!`, "red");
+            return;
         }
+
+        // Cek jika status_audit sudah bernilai 'tersedia'
+        if (currentBook.status_audit === 'tersedia') {
+            showToast(`Buku "${currentBook.biblio?.judul || barcode}" sudah di-scan sebelumnya!`, "yellow");
+            return;
+        }
+
+        // 2. Update status_audit menjadi 'tersedia' dan ambil data relasi terbarunya
+        const { data: updatedData, error: updateError } = await supabase
+            .from('eksemplar')
+            .update({ status_audit: 'tersedia' })
+            .eq('kode', barcode)
+            .select('*, biblio(judul, penulis)')
+            .single();
+
+        if (updateError) {
+            showToast("Gagal update data: " + updateError.message, "red");
+            return;
+        }
+
+        // 3. Masukkan data ke antrean tabel frontend
+        scannedLogs.unshift(updatedData);
+        if (scannedLogs.length > 25) scannedLogs.pop();
+        
+        renderTable(true);
+        showToast("Berhasil: " + (updatedData.biblio?.judul || barcode), "blue");
     }
 
     // Event Listeners
@@ -209,22 +231,21 @@
         if (e.key === 'Enter') {
             processBarcode();
         } else {
-            // Fitur auto-scan: proses otomatis jika user berhenti mengetik selama 400ms
             typingTimer = setTimeout(processBarcode, 400);
         }
     });
 
-    // Selalu pastikan input fokus jika user mengklik di mana saja di layar
     document.addEventListener('click', () => inputField.focus());
 
-    // Inisialisasi saat halaman dimuat
+    // Inisialisasi data saat halaman pertama dimuat
     window.onload = async () => {
         inputField.focus();
         
-        // Ambil riwayat audit terbaru secara global
+        // Mengambil daftar buku yang status_audit-nya 'tersedia' saat ini untuk riwayat awal
         const { data: history, error } = await supabase
-            .from('log_audit')
-            .select('*')
+            .from('eksemplar')
+            .select('*, biblio(judul, penulis)')
+            .eq('status_audit', 'tersedia')
             .order('created_at', { ascending: false })
             .limit(15);
             
@@ -233,7 +254,6 @@
             renderTable();
         }
         
-        // Tandai status sistem aktif (hijau)
         statusIndicator.classList.replace('bg-zinc-700', 'bg-green-500');
     };
 </script>

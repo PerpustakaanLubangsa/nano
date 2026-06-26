@@ -3,125 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Item Belum Scan | Perpustakaan Lubangsa</title>
+    <title>Data Belum Audit / Hilang | Perpustakaan Lubangsa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-dark: #000000; --bg-card: #0a0a0a; --border-color: #1a1a1a; --google-red: #ff453a; --text-main: #e3e3e3; --text-muted: #9aa0a6; }
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; }
-        .stat-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; }
-        .shelf-section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; margin-bottom: 2rem; overflow: hidden; }
-        .shelf-banner { background: #161618; padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .excel-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .excel-table th { background: #0d0d0d; color: var(--text-muted); text-align: left; padding: 12px 16px; font-size: 10px; text-transform: uppercase; }
-        .excel-table td { padding: 12px 16px; border-bottom: 1px solid #111; }
-        @media print { .no-print { display: none !important; } body { background: white; color: black; } .shelf-section { border: 1px solid #ddd; page-break-inside: avoid; } .excel-table td { color: black !important; } }
+        :root { --bg-dark: #000000; --bg-card: #0a0a0a; --border-color: #1a1a1a; --text-main: #e3e3e3; --text-muted: #9aa0a6; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* Container Header Utama yang bisa sembunyi/muncul */
+        .smart-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background-color: var(--bg-dark);
+            padding: 24px 24px 16px 24px;
+            transition: transform 0.3s ease-in-out;
+            border-bottom: 1px solid #111;
+        }
+
+        /* Kelas CSS untuk menyembunyikan header utama saat scroll down */
+        .smart-header-hide {
+            transform: translateY(-100%);
+        }
+
+        .report-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; overflow: visible; }
+        .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        
+        /* Header Tabel Beku / Sticky */
+        .audit-table th { 
+            background: #161618; 
+            color: var(--text-muted); 
+            text-align: left; 
+            padding: 14px 16px; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            position: sticky; 
+            /* Dikontrol dinamis lewat JavaScript */
+            top: 110px; 
+            z-index: 40;
+            border-bottom: 1px solid var(--border-color);
+            transition: top 0.3s ease-in-out;
+        }
+        
+        .audit-table td { padding: 14px 16px; border-bottom: 1px solid #111; }
+        .audit-table tr:hover td { background: #0c0c0e; }
+        
+        .row-missing { opacity: 0.65; }
+        .status-badge { font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid currentColor; }
+        .badge-belum { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
     </style>
 </head>
-<body class="p-6">
+<body class="px-6 pb-6">
 
 <div class="max-w-5xl mx-auto">
-    <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 no-print">
-        <div>
-            <div class="flex items-center gap-3 mb-1">
-                <div class="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
-                </div>
-                <h1 class="text-2xl font-black tracking-tight uppercase">Belum Di-Scan</h1>
+    
+    <div id="mainHeader" class="smart-header max-w-5xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
+            <div>
+                <h1 class="text-2xl font-black tracking-tight uppercase text-red-500">Data Belum Audit</h1>
+                <p class="text-xs text-zinc-500 mt-0.5 font-semibold uppercase tracking-wider">
+                    Sistem Penelusuran Buku Hilang Lapangan
+                </p>
             </div>
-            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Daftar buku missing dalam audit</p>
-        </div>
-        <div class="flex gap-3">
-            <button onclick="window.print()" class="bg-zinc-800 border border-zinc-700 px-5 py-2 rounded-xl text-[10px] font-bold text-white hover:bg-zinc-700 transition-all uppercase">Cetak PDF</button>
-            <button onclick="loadMissingReport()" class="bg-red-600 px-6 py-2 rounded-xl text-[10px] font-bold text-white hover:bg-red-700 shadow-lg shadow-red-900/20 transition-all uppercase">Refresh</button>
-        </div>
-    </header>
+            
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-mono flex gap-3 whitespace-nowrap">
+                    <div>Hilang: <span id="totalBooksCount" class="text-red-500">0</span></div>
+                    <div class="text-zinc-700">|</div>
+                    <div>Dimuat: <span id="loadedBooksCount" class="text-blue-500">0</span></div>
+                </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 no-print">
-        <div class="stat-card">
-            <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Total Missing</p>
-            <h3 id="totalMissing" class="text-2xl font-black text-red-500 font-mono">0</h3>
-        </div>
-        <div class="stat-card">
-            <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Area Rak</p>
-            <h3 id="totalShelves" class="text-2xl font-black text-white font-mono">0</h3>
-        </div>
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Cari Rak, Barcode, atau Judul..." 
+                           class="w-full bg-[#0d0d0d] border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-all">
+                </div>
+            </div>
+        </header>
     </div>
 
-    <div id="reportContainer" class="space-y-6">
-        <div class="text-center p-20 text-zinc-800 font-bold uppercase tracking-widest text-xs animate-pulse">Menghubungkan Database...</div>
+    <div class="report-card shadow-2xl mt-[125px] md:mt-[110px]">
+        <table class="audit-table">
+            <thead>
+                <tr id="tableHeaderRow">
+                    <th width="60" class="text-center">#</th>
+                    <th width="140">Rak</th>
+                    <th>Judul Buku</th>
+                    <th width="180">Barcode</th>
+                    <th width="120" class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody id="auditTableBody">
+                </tbody>
+        </table>
+        
+        <div id="loadingIndicator" class="text-center p-6 text-zinc-500 font-bold uppercase tracking-widest text-[10px] hidden">
+            <i class="fa-solid fa-spinner animate-spin mr-2"></i> Memuat data selanjutnya...
+        </div>
+        <div id="emptyIndicator" class="text-center p-20 text-zinc-700 font-bold uppercase tracking-widest text-xs hidden">
+            Semua buku sudah diaudit! Tidak ada data hilang.
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { supabase } from './supa/supa.js';
 
-    async function loadMissingReport() {
-        const container = document.getElementById('reportContainer');
-        const { data, error } = await supabase.rpc('get_missing_audit');
+    const PAGE_SIZE = 30;
+    let currentPage = 0;
+    let hasMoreData = true;
+    let isLoading = false;
+    let globalIndex = 1;
+    let debounceTimer = null;
+    let currentSearchQuery = "";
 
-        if (error) {
-            container.innerHTML = `<div class="text-red-500 text-center p-20 uppercase font-bold">Error: ${error.message}</div>`;
-            return;
+    // Kontrol Scroll Naik/Turun untuk Header
+    let lastScrollTop = 0;
+    const mainHeader = document.getElementById('mainHeader');
+    const tableHeaders = document.querySelectorAll('.audit-table th');
+
+    window.addEventListener('scroll', () => {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        let headerHeight = mainHeader.offsetHeight;
+
+        if (scrollTop > lastScrollTop && scrollTop > 120) {
+            // Scroll Down -> Sembunyikan header utama, naikkan header tabel ke paling atas
+            mainHeader.classList.add('smart-header-hide');
+            tableHeaders.forEach(th => th.style.top = '0px');
+        } else {
+            // Scroll Up -> Munculkan kembali header utama, turunkan posisi beku header tabel
+            mainHeader.classList.remove('smart-header-hide');
+            tableHeaders.forEach(th => th.style.top = `${headerHeight}px`);
         }
-
-        const missingData = data || {};
-        const shelves = Object.keys(missingData).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
         
-        let grandTotal = 0;
-        shelves.forEach(s => grandTotal += missingData[s].length);
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
 
-        document.getElementById('totalMissing').innerText = grandTotal;
-        document.getElementById('totalShelves').innerText = shelves.length;
-
-        if (grandTotal === 0) {
-            container.innerHTML = `
-                <div class="text-center p-20 bg-zinc-900/20 rounded-3xl border border-dashed border-zinc-800">
-                    <i class="fa-solid fa-circle-check text-green-500 text-3xl mb-4"></i>
-                    <p class="text-zinc-500 font-bold uppercase tracking-widest text-xs">Semua koleksi lengkap di rak.</p>
-                </div>`;
-            return;
+        // Infinite Scroll Detector
+        if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 100) {
+            if (hasMoreData && !isLoading) {
+                currentPage++;
+                loadReportPage(currentPage);
+            }
         }
+    });
 
-        container.innerHTML = shelves.map(shelf => {
-            const items = missingData[shelf];
-            return `
-                <div class="shelf-section">
-                    <div class="shelf-banner">
-                        <h2 class="text-xs font-black text-white tracking-widest uppercase">RAK: ${shelf}</h2>
-                        <span class="text-red-500 text-[9px] font-black px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20">
-                            ${items.length} ITEM MISSING
-                        </span>
-                    </div>
-                    <table class="excel-table">
-                        <thead>
-                            <tr>
-                                <th width="50">NO</th>
-                                <th>JUDUL BUKU</th>
-                                <th width="150">BARCODE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map((item, i) => `
-                                <tr>
-                                    <td class="text-zinc-800 font-mono font-bold">${i+1}</td>
-                                    <td>
-                                        <div class="font-bold text-[11px] text-zinc-300 uppercase truncate max-w-[400px]">${item.judul}</div>
-                                        <div class="text-[9px] text-zinc-600 italic truncate max-w-[400px]">${item.penulis || '-'}</div>
-                                    </td>
-                                    <td class="font-mono text-[10px] font-bold text-red-500/70">${item.barcode}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }).join('');
+    // Menyesuaikan posisi top awal header tabel saat pertama kali dimuat
+    function adjustInitialHeaderTop() {
+        let headerHeight = mainHeader.offsetHeight;
+        tableHeaders.forEach(th => th.style.top = `${headerHeight}px`);
     }
 
-    window.loadMissingReport = loadMissingReport;
-    window.onload = loadMissingReport;
+    /**
+     * Memuat halaman data 'hilang' secara berurutan
+     */
+    async function loadReportPage(page) {
+        if (isLoading || !hasMoreData) return;
+        
+        isLoading = true;
+        const loadingBox = document.getElementById('loadingIndicator');
+        const emptyBox = document.getElementById('emptyIndicator');
+        const tbody = document.getElementById('auditTableBody');
+        
+        const totalBooksCount = document.getElementById('totalBooksCount');
+        const loadedBooksCount = document.getElementById('loadedBooksCount');
+        
+        if (page === 0) {
+            tbody.innerHTML = ''; 
+            globalIndex = 1;      
+        }
+        loadingBox.classList.remove('hidden');
+
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        let query = supabase
+            .from('eksemplar')
+            .select('kode, lokasi_rak, status_audit, biblio!inner(judul, penulis)', { count: 'exact' })
+            .eq('status_audit', 'hilang')
+            .order('lokasi_rak', { ascending: true })
+            .range(from, to);
+
+        if (currentSearchQuery.trim() !== "") {
+            const keyword = `%${currentSearchQuery}%`;
+            query = query.or(`lokasi_rak.ilike.${keyword},kode.ilike.${keyword},biblio.judul.ilike.${keyword}`);
+        }
+
+        const { data, error, count } = await query;
+
+        loadingBox.classList.add('hidden');
+        isLoading = false;
+
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-red-500 text-center p-10 font-bold">Error: ${error.message}</td></tr>`;
+            return;
+        }
+
+        totalBooksCount.innerText = (count || 0).toLocaleString('id-ID');
+
+        if (page === 0 && (!data || data.length === 0)) {
+            emptyBox.classList.remove('hidden');
+            loadedBooksCount.innerText = "0";
+            return;
+        } else {
+            emptyBox.classList.add('hidden');
+        }
+
+        if (data.length < PAGE_SIZE) {
+            hasMoreData = false; 
+        }
+
+        const rowsHtml = data.map((item) => {
+            const currentNumber = globalIndex++; 
+            
+            return `
+                <tr class="row-missing">
+                    <td class="text-zinc-600 font-mono text-[10px] text-center font-bold">${currentNumber}</td>
+                    <td class="font-mono text-zinc-400 font-bold uppercase text-[11px]">${item.lokasi_rak || 'TANPA RAK'}</td>
+                    <td>
+                        <div class="font-bold text-[11px] uppercase tracking-tight leading-tight">${item.biblio ? item.biblio.judul : 'Tidak Diketahui'}</div>
+                        <div class="text-[9px] text-zinc-500 italic mt-0.5">${(item.biblio && item.biblio.penulis) ? item.biblio.penulis : '-'}</div>
+                    </td>
+                    <td class="font-mono text-[11px] text-zinc-500">${item.kode}</td>
+                    <td class="text-center">
+                        <span class="status-badge badge-belum">
+                            HILANG
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.insertAdjacentHTML('beforeend', rowsHtml);
+        loadedBooksCount.innerText = (globalIndex - 1).toLocaleString('id-ID');
+        
+        adjustInitialHeaderTop();
+    }
+
+    /**
+     * Reset state untuk load data dari awal
+     */
+    function refreshReport() {
+        currentPage = 0;
+        hasMoreData = true;
+        loadReportPage(currentPage);
+    }
+
+    /**
+     * Debounce pencarian teks (delay 500ms)
+     */
+    function handleSearchInput(event) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            currentSearchQuery = event.target.value;
+            refreshReport();
+        }, 500);
+    }
+
+    // Jalankan event listener input pencarian
+    document.getElementById('searchInput').addEventListener('input', handleSearchInput);
+    
+    // Ambil data pertama kali saat halaman dibuka
+    window.onload = () => {
+        refreshReport();
+        window.addEventListener('resize', adjustInitialHeaderTop);
+    };
 </script>
 </body>
 </html>
