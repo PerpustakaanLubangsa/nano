@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Pendaftaran Pustakawan</title>
+    <link rel="icon" type="image/png" href="image/logo/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-red: #ef4444;
+            --accent-red-hover: #dc2626;
+            --border-color: #e2e8f0;
+            --radius-card: 12px;
+            --item-hover: #f1f5f9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            padding: 32px 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-title img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-outline {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: var(--item-hover);
+            border-color: #cbd5e1;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-info .num {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .stat-info .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Filter Controls */
+        .controls-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 9px 14px 9px 40px;
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-blue);
+            background: #fff;
+        }
+
+        .filter-select {
+            padding: 9px 14px;
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-main);
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        /* Table Area */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 14px 18px;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: var(--item-hover);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-seksi {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-jenjang {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .badge-status {
+            color: #10b981;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .btn-delete {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+
+        /* Toast & Modal */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+        .toast.success { background: #10b981; color: white; }
+        .toast.error { background: #ef4444; color: white; }
+
+        @media (max-width: 768px) {
+            body { padding: 16px 12px; }
+            .top-bar { flex-direction: column; align-items: flex-start; }
+            .action-btns { width: 100%; justify-content: space-between; }
+            .controls-card { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header / Top Bar -->
+    <div class="top-bar">
+        <div class="header-title">
+            <img src="image/logo/logo2.png" alt="Logo">
+            <div>
+                <h1>Data Pendaftar Pustakawan</h1>
+                <p>Perpustakaan Lubangsa — Manajemen & Data Pendaftaran</p>
+            </div>
+        </div>
+        <div class="action-btns">
+            <a href="index.html" class="btn btn-outline">
+                <i class="fa-solid fa-arrow-left"></i> Beranda
+            </a>
+            <button id="btnExportCSV" class="btn btn-success">
+                <i class="fa-solid fa-file-excel"></i> Ekspor CSV / Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Ringkasan Statistik -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-info">
+                <div class="num" id="statTotal">0</div>
+                <div class="label">Total Pendaftar</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fa-solid fa-database"></i></div>
+            <div class="stat-info">
+                <div class="num" id="statBasisData">0</div>
+                <div class="label">Basis Data & Inventaris</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fefce8; color:#ca8a04;"><i class="fa-solid fa-hand-holding-heart"></i></div>
+            <div class="stat-info">
+                <div class="num" id="statPelayanan">0</div>
+                <div class="label">Pelayanan Pustaka</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#faf5ff; color:#9333ea;"><i class="fa-solid fa-book-open-reader"></i></div>
+            <div class="stat-info">
+                <div class="num" id="statMinatBaca">0</div>
+                <div class="label">Minat Baca & Pengadaan</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Pencarian -->
+    <div class="controls-card">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="inputSearch" placeholder="Cari nama, NIS, atau kamar...">
+        </div>
+        <select id="filterSeksi" class="filter-select">
+            <option value="">Semua Seksi Kepengurusan</option>
+            <option value="Basis Data dan Inventaris">Basis Data dan Inventaris</option>
+            <option value="Pelayanan Pustaka">Pelayanan Pustaka</option>
+            <option value="Pengembangan Minat Baca">Pengembangan Minat Baca</option>
+            <option value="Pengadaan & Jaringan">Pengadaan & Jaringan</option>
+            <option value="Apa Saja / Terserah">Apa Saja / Terserah</option>
+        </select>
+    </div>
+
+    <!-- Tabel Data Pendaftar -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">No</th>
+                        <th>Nama Lengkap</th>
+                        <th>NIS</th>
+                        <th>Kamar</th>
+                        <th>Jenjang</th>
+                        <th>Seksi Dipilih</th>
+                        <th>Tanggal Daftar</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <p>Memuat data pendaftar...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toastNotification" class="toast"></div>
+
+<script type="module">
+    import { supabase } from './supa/supa.js';
+
+    const tableBody = document.getElementById('tableBody');
+    const inputSearch = document.getElementById('inputSearch');
+    const filterSeksi = document.getElementById('filterSeksi');
+    const btnExportCSV = document.getElementById('btnExportCSV');
+    const toast = document.getElementById('toastNotification');
+
+    // Element Statistik
+    const statTotal = document.getElementById('statTotal');
+    const statBasisData = document.getElementById('statBasisData');
+    const statPelayanan = document.getElementById('statPelayanan');
+    const statMinatBaca = document.getElementById('statMinatBaca');
+
+    let allPendaftaranData = [];
+
+    // --- LOAD DATA PENDAFTAR DENGAN RELASI JOIN TABEL ANGGOTA ---
+    async function loadDataPendaftaran() {
+        try {
+            const { data, error } = await supabase
+                .from('pendaftaran')
+                .select(`
+                    id_anggota,
+                    seksi,
+                    simpan,
+                    created_at,
+                    anggota (
+                        id,
+                        nama,
+                        nis,
+                        kamar,
+                        jenjang
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            allPendaftaranData = data || [];
+            updateStatistics(allPendaftaranData);
+            renderTable(allPendaftaranData);
+
+        } catch (err) {
+            console.error("Gagal mengambil data pendaftaran:", err.message);
+            showToast("Gagal memuat data: " + err.message, "error");
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>
+                        <p>Gagal memuat data dari server.</p>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // --- HITUNG DAN TAMPILKAN STATISTIK ---
+    function updateStatistics(data) {
+        statTotal.innerText = data.length;
+        
+        const countBasis = data.filter(d => d.seksi === 'Basis Data dan Inventaris').length;
+        const countPelayanan = data.filter(d => d.seksi === 'Pelayanan Pustaka').length;
+        const countLainnya = data.filter(d => 
+            d.seksi === 'Pengembangan Minat Baca' || 
+            d.seksi === 'Pengadaan & Jaringan' || 
+            d.seksi === 'Apa Saja / Terserah'
+        ).length;
+
+        statBasisData.innerText = countBasis;
+        statPelayanan.innerText = countPelayanan;
+        statMinatBaca.innerText = countLainnya;
+    }
+
+    // --- RENDER TABEL DATA ---
+    function renderTable(dataList) {
+        if (dataList.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <p>Belum ada data pendaftar yang cocok.</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = dataList.map((item, index) => {
+            const ag = item.anggota || {};
+            const dateStr = item.created_at 
+                ? new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
+                : '-';
+
+            return `
+                <tr>
+                    <td style="font-weight: 600; color: #94a3b8;">${index + 1}</td>
+                    <td><strong>${ag.nama || '-'}</strong></td>
+                    <td>${ag.nis || '-'}</td>
+                    <td>${ag.kamar || '-'}</td>
+                    <td><span class="badge-jenjang">${ag.jenjang || '-'}</span></td>
+                    <td><span class="badge-seksi">${item.seksi}</span></td>
+                    <td style="color: #64748b; font-size: 12px;">${dateStr}</td>
+                    <td>
+                        <span class="badge-status">
+                            <i class="fa-solid fa-circle-check"></i> Komit
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" data-id="${item.id_anggota}" data-nama="${ag.nama || 'Anggota'}">
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Event listener hapus data
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.onclick = () => handleDelete(btn.dataset.id, btn.dataset.nama);
+        });
+    }
+
+    // --- PROSES HAPUS PENDAFTARAN ---
+    async function handleDelete(idAnggota, nama) {
+        if (!confirm(`Apakah Anda yakin ingin menghapus pendaftaran atas nama "${nama}"?`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('pendaftaran')
+                .delete()
+                .eq('id_anggota', idAnggota);
+
+            if (error) throw error;
+
+            showToast(`Pendaftaran ${nama} berhasil dihapus!`, "success");
+            loadDataPendaftaran();
+        } catch (err) {
+            console.error("Gagal menghapus:", err.message);
+            showToast("Gagal menghapus data: " + err.message, "error");
+        }
+    }
+
+    // --- FITUR FILTER & SEARCH ---
+    function applyFilter() {
+        const query = inputSearch.value.toLowerCase().trim();
+        const selectedSeksi = filterSeksi.value;
+
+        const filtered = allPendaftaranData.filter(item => {
+            const ag = item.anggota || {};
+            const matchSearch = 
+                (ag.nama && ag.nama.toLowerCase().includes(query)) ||
+                (ag.nis && ag.nis.toLowerCase().includes(query)) ||
+                (ag.kamar && ag.kamar.toLowerCase().includes(query));
+
+            const matchSeksi = selectedSeksi === '' || item.seksi === selectedSeksi;
+
+            return matchSearch && matchSeksi;
+        });
+
+        renderTable(filtered);
+    }
+
+    inputSearch.addEventListener('input', applyFilter);
+    filterSeksi.addEventListener('change', applyFilter);
+
+    // --- FITUR EKSPOR KE CSV / EXCEL ---
+    btnExportCSV.addEventListener('click', () => {
+        if (allPendaftaranData.length === 0) {
+            showToast("Tidak ada data untuk diekspor!", "error");
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "No,Nama Lengkap,NIS,Kamar,Jenjang,Pilihan Seksi,Tanggal Pendaftaran\n";
+
+        allPendaftaranData.forEach((item, idx) => {
+            const ag = item.anggota || {};
+            const dateStr = item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : '';
+            
+            // Format teks bersih (menghindari error koma pada CSV)
+            const namaClean = `"${(ag.nama || '').replace(/"/g, '""')}"`;
+            const seksiClean = `"${(item.seksi || '').replace(/"/g, '""')}"`;
+
+            csvContent += `${idx + 1},${namaClean},${ag.nis || ''},${ag.kamar || ''},${ag.jenjang || ''},${seksiClean},${dateStr}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Pendaftaran_Pustakawan_Lubangsa_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // --- TOAST NOTIFICATION ---
+    function showToast(message, type) {
+        const icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-triangle-exclamation"></i>';
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+        toast.className = `toast show ${type}`;
+        
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 4000);
+    }
+
+    // Load data awal saat halaman dibuka
+    loadDataPendaftaran();
+</script>
+</body>
+</html>
