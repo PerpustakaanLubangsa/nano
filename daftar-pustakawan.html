@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ketentuan Pendaftaran Pustakawan - Perpustakaan Lubangsa</title>
+    <title>Formulir Pendaftaran Pustakawan - Perpustakaan Lubangsa</title>
     <link rel="icon" type="image/png" href="image/logo/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-body: #0a0a0a;
-            --bg-card: #141414;
-            --text-main: #f8fafc;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
             --text-muted: #64748b;
-            --accent-green: #10b981;
-            --accent-green-hover: #059669;
-            --border-color: #262626;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-red: #ef4444;
+            --accent-red-hover: #dc2626;
+            --border-color: #e2e8f0;
             --radius-card: 16px;
+            --input-bg: #ffffff;
+            --item-hover: #f1f5f9;
         }
 
         * {
@@ -30,71 +35,87 @@
             background: var(--bg-body);
             color: var(--text-main);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .split-container {
             display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .form-side {
+            flex: 1.1;
+            background: var(--bg-card);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            padding: 24px;
             position: relative;
-            overflow-x: hidden;
+            overflow-y: auto;
         }
 
-        /* Ambient Background */
-        body::before {
-            content: '';
+        .btn-form-back {
             position: absolute;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(0,0,0,0) 70%);
-            top: 10%;
-            left: 10%;
-            z-index: 0;
-        }
-
-        /* --- BARIS ATAS: NAVIGASI & LOGO SEJAJAR --- */
-        .top-navbar {
-            position: absolute;
-            top: 32px;
-            left: 32px;
-            right: 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .btn-floating-back {
+            top: 24px;
+            left: 24px;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 20px;
-            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 16px;
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: var(--text-muted);
+            color: var(--text-main);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s ease;
-            letter-spacing: 0.5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
-        .btn-floating-back:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #404040;
-            color: var(--text-main);
+        .btn-form-back:hover {
+            background: var(--item-hover);
+            border-color: #cbd5e1;
+            transform: translateX(-2px);
+        }
+
+        .preview-side {
+            flex: 0.9;
+            background: #f1f5f9;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .preview-side iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .form-content-wrapper {
+            width: 100%;
+            max-width: 520px;
+            margin: 60px auto 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
         }
 
         .logo-frame {
-            width: 48px;
-            height: 48px;
+            width: 56px;
+            height: 56px;
             background: #ffffff;
             border-radius: 50%;
-            padding: 5px;
+            padding: 2px;
+            margin: 0 auto 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
         .logo-img {
@@ -103,292 +124,588 @@
             object-fit: contain;
         }
 
-        /* --- CONTAINER UTAMA --- */
-        .terms-container {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-card);
-            max-width: 750px;
-            width: 100%;
-            padding: 56px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            position: relative;
-            z-index: 1;
-            margin-top: 60px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .step-indicator {
-            font-size: 12px;
-            color: var(--accent-green);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 16px;
-            display: block;
-            text-align: center;
-        }
-
-        /* --- CARD KETENTUAN (PUTIH KONTRASTING) --- */
-        .terms-step-box {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 48px 40px;
-            margin-bottom: 40px;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            gap: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-            animation: focusIn 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        @keyframes focusIn {
-            from { opacity: 0; transform: scale(0.98); filter: blur(4px); }
-            to { opacity: 1; transform: scale(1); filter: blur(0); }
-        }
-
-        .terms-step-box i {
-            color: #059669;
-            font-size: 36px;
-        }
-
-        .terms-text {
+        h1 {
             font-size: 22px;
-            line-height: 1.6;
             font-weight: 700;
             color: #0f172a;
-            letter-spacing: -0.3px;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
         }
 
-        /* --- GRUP TOMBOL --- */
-        .btn-group {
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
             display: flex;
-            gap: 16px;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+
+        .row {
+            display: flex;
+            gap: 14px;
+        }
+        
+        .row > div {
+            flex: 1;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
             align-items: center;
         }
 
-        .btn {
-            flex: 1;
-            padding: 16px;
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            color: #94a3b8;
+            font-size: 15px;
+            pointer-events: none;
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px 12px 44px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        select.form-control {
+            padding-left: 44px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(37, 99, 233, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #cbd5e1;
+        }
+
+        .form-control:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .drop-box {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .drop-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.1s ease;
+        }
+
+        .drop-item:last-child { border-bottom: none; }
+        .drop-item:hover, .drop-item.selected { background-color: var(--item-hover); }
+        .drop-item.selected { box-shadow: inset 4px 0 0 0 var(--accent-blue); }
+        .drop-item .main-text { font-size: 14px; font-weight: 600; color: var(--text-main); }
+        .drop-item .sub-text { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 20px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-group input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
+            accent-color: var(--accent-blue);
+        }
+
+        .checkbox-label {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        .info-registered-box {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            padding: 14px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #991b1b;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .info-registered-box i {
+            font-size: 18px;
+            color: #ef4444;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
             border-radius: 8px;
             font-family: inherit;
-            font-size: 15px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             transition: all 0.2s ease;
-            border: none;
-            letter-spacing: 0.5px;
         }
 
-        /* Tombol Sebelumnya */
-        .btn-back {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
+        .btn-submit:hover:not(:disabled) {
+            background: var(--accent-blue-hover);
         }
 
-        .btn-back:hover {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: #404040;
-            color: var(--text-main);
+        .btn-submit.btn-danger {
+            background: var(--accent-red);
+        }
+        .btn-submit.btn-danger:hover:not(:disabled) {
+            background: var(--accent-red-hover);
         }
 
-        /* Tombol Pikirkan Lagi */
-        .btn-neutral {
-            background: rgba(239, 68, 68, 0.06);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.15);
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .btn-neutral:hover {
-            background: rgba(239, 68, 68, 0.15);
-            border-color: #f87171;
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+        .toast.success { background: #10b981; color: white; }
+        .toast.error { background: #ef4444; color: white; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+            .split-container { flex-direction: column; height: auto; }
+            .form-side { padding: 32px 16px; overflow-y: visible; }
+            .form-content-wrapper { margin-top: 40px; }
+            .preview-side { height: 400px; border-left: none; border-top: 1px solid var(--border-color); }
         }
 
-        /* Tombol Lanjut */
-        .btn-next {
-            background: #ffffff;
-            color: #000000;
-        }
-
-        .btn-next:hover {
-            background: #e5e5e5;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
-        }
-
-        /* Tombol Buka Formulir */
-        .btn-next.finish-step {
-            background: var(--accent-green);
-            color: #ffffff;
-        }
-        .btn-next.finish-step:hover {
-            background: var(--accent-green-hover);
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Responsif Mobile */
-        @media (max-width: 650px) {
-            body {
-                padding-top: 110px;
-                align-items: flex-start;
-            }
-            .top-navbar {
-                top: 20px;
-                left: 20px;
-                right: 20px;
-                gap: 12px;
-            }
-            .btn-floating-back {
-                flex: 1;
-                justify-content: center;
-                padding: 10px;
-                font-size: 13px;
-            }
-            .logo-frame {
-                width: 42px;
-                height: 42px;
-            }
-            .terms-container {
-                padding: 32px 24px;
-                margin-top: 20px;
-            }
-            .terms-step-box {
-                padding: 32px 20px;
-                min-height: 240px;
-            }
-            .terms-text {
-                font-size: 18px;
-            }
-            .btn-group {
-                flex-direction: column;
-                gap: 12px;
-            }
-            .btn {
-                width: 100%;
-                padding: 14px;
-            }
-            #btnPrev { order: 2; }
-            #btnThink { order: 3; }
-            #btnAction { order: 1; }
+        @media (max-width: 550px) {
+            .row { flex-direction: column; gap: 0; }
         }
     </style>
 </head>
 <body>
 
-<div class="top-navbar">
-    <a href="index.html" class="btn-floating-back">
-        <i class="fa-solid fa-arrow-left"></i> KEMBALI
-    </a>
-    <div class="logo-frame">
-        <img src="image/logo/logo2.png" class="logo-img" alt="Logo">
-    </div>
-</div>
-
-<div class="terms-container">
-    <div class="header">
-        </div>
-
-    <span class="step-indicator" id="stepIndicator">KETENTUAN 1 dari 5</span>
-    
-    <div class="terms-step-box">
-        <i class="fa-solid fa-gavel"></i>
-        <p class="terms-text" id="termsContent">Memuat ketentuan...</p>
-    </div>
-
-    <div class="btn-group">
-        <button id="btnPrev" class="btn btn-back" style="visibility: hidden;">
-            <i class="fa-solid fa-chevron-left"></i> Sebelumnya
-        </button>
-        
-        <a href="index.html" id="btnThink" class="btn btn-neutral">
-            Saya Pikirkan Lagi
+<div class="split-container">
+    <div class="form-side">
+        <a href="index.html" class="btn-form-back">
+            <i class="fa-solid fa-arrow-left"></i> Beranda
         </a>
-        
-        <button id="btnAction" class="btn btn-next">
-            Saya Bersedia, Lanjut <i class="fa-solid fa-chevron-right"></i>
-        </button>
+
+        <div class="form-content-wrapper">
+            <div class="header">
+                <div class="logo-frame">
+                    <img src="image/logo/logo2.png" class="logo-img" alt="Logo">
+                </div>
+                <h1>Formulir Pustakawan</h1>
+                <p class="subtitle" id="formSubtitle">Cari nama Anda dan isi komitmen kepengurusan</p>
+            </div>
+
+            <form id="pendaftaranForm" autocomplete="off">
+                <input type="hidden" id="idAnggota" required>
+
+                <div class="form-group">
+                    <label for="inputNama">Nama Lengkap</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input 
+                            type="text" 
+                            id="inputNama" 
+                            class="form-control" 
+                            placeholder="Ketik nama atau NIS Anda..." 
+                            required
+                        >
+                    </div>
+                    <div id="dropNama" class="drop-box"></div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label for="inputKamar">Blok / Kamar</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-door-open"></i>
+                            <input 
+                                type="text" 
+                                id="inputKamar" 
+                                class="form-control" 
+                                placeholder="Otomatis..." 
+                                readonly
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="inputJenjang">Jenjang</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <select id="inputJenjang" class="form-control" disabled required>
+                                <option value="" disabled selected>Otomatis...</option>
+                                <option value="SLTP">SLTP</option>
+                                <option value="SLTA">SLTA</option>
+                                <option value="PT">PT</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inputSeksi">Pilihan Seksi Kepengurusan</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <select id="inputSeksi" class="form-control" required>
+                            <option value="" disabled selected>Pilih salah satu seksi...</option>
+                            <option value="Basis Data dan Inventaris">Basis Data dan Inventaris</option>
+                            <option value="Pelayanan Pustaka">Pelayanan Pustaka</option>
+                            <option value="Pengembangan Minat Baca">Pengembangan Minat Baca</option>
+                            <option value="Pengadaan & Jaringan">Pengadaan & Jaringan</option>
+                            <option value="Apa Saja / Terserah">Apa Saja / Terserah (Siap Ditempatkan Di Mana Saja)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label class="checkbox-group" id="checkboxContainer">
+                    <input type="checkbox" id="siapCheck" required>
+                    <span class="checkbox-label">
+                        Dengan menandai kotak ini, saya menyatakan <b>berkomitmen penuh secara sadar</b> untuk mengabdi sebagai Pustakawan Perpustakaan Lubangsa <b>minimal 1 (satu) tahun kepengurusan</b>, serta bersedia mengikuti seluruh regulasi, kode etik, dan kebijakan yang berlaku tanpa paksaan dari pihak mana pun.
+                    </span>
+                </label>
+
+                <div class="info-registered-box" id="infoRegisteredBox">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Anda sudah terdaftar sebagai calon Pustakawan Perpustakaan Lubangsa.</span>
+                </div>
+
+                <button type="submit" id="btnSubmit" class="btn-submit">
+                    <span id="btnText">Kirim Pendaftaran</span>
+                    <span id="btnSpinner" style="display: none;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="preview-side">
+        <iframe src="infoseksi.html" title="Informasi Seksi Kepengurusan"></iframe>
     </div>
 </div>
 
-<script>
-    const listKetentuan = [
-        "Merupakan santri aktif Pondok Pesantren Annuqayah Daerah Lubangsa.",
-        "Tidak sedang terikat di lembaga lain atau memegang jabatan strategis (seperti pengurus harian, dsb.) demi menjaga fokus integritas kerja.",
-        "Sanggup mengabdi sepenuhnya serta bersedia menetap di lingkungan Perpustakaan Lubangsa selama masa kepengurusan.",
-        "Tidak memiliki rekam jejak pelanggaran berat di pesantren, atau menyatakan komitmen penuh untuk memperbaiki diri jika pernah melakukan kekeliruan.",
-        "Menyatakan sadar, siap, dan berkomitmen penuh untuk memikul tanggung jawab sebagai Pustakawan Perpustakaan Lubangsa."
-    ];
-    let currentStep = 0;
+<div id="toastNotification" class="toast"></div>
 
-    const stepIndicator = document.getElementById('stepIndicator');
-    const termsContent = document.getElementById('termsContent');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnAction = document.getElementById('btnAction');
+<script type="module">
+    import { supabase } from './supa/supa.js';
 
-    function updateWizard() {
-        // 1. Update Teks Ketentuan & Nomor Step
-        stepIndicator.innerText = `KETENTUAN ${currentStep + 1} dari ${listKetentuan.length}`;
-        termsContent.innerText = listKetentuan[currentStep];
+    const form = document.getElementById('pendaftaranForm');
+    const inputNama = document.getElementById('inputNama');
+    const dropNama = document.getElementById('dropNama');
+    const idAnggotaInput = document.getElementById('idAnggota');
+    const inputKamar = document.getElementById('inputKamar');
+    const inputJenjang = document.getElementById('inputJenjang');
+    const inputSeksi = document.getElementById('inputSeksi');
+    const siapCheck = document.getElementById('siapCheck');
+    const checkboxContainer = document.getElementById('checkboxContainer');
+    const infoRegisteredBox = document.getElementById('infoRegisteredBox');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const toast = document.getElementById('toastNotification');
+    const formSubtitle = document.getElementById('formSubtitle');
 
-        // 2. Mengatur Visibilitas Tombol 'Sebelumnya'
-        if (currentStep === 0) {
-            btnPrev.style.visibility = 'hidden';
-        } else {
-            btnPrev.style.visibility = 'visible';
+    let selectedAnggotaData = null;
+    let currentFocus = -1;
+    let timer;
+    let isAlreadyRegistered = false;
+
+    // --- LOGIKA SMART SEARCH DROPDOWN NAMA ---
+    inputNama.addEventListener('input', () => {
+        resetFormOtomatis();
+        
+        const val = inputNama.value.trim();
+        if (val.length < 2) { 
+            dropNama.style.display = 'none'; 
+            return; 
         }
 
-        // 3. Mengubah Gaya & Teks Tombol Aksi di Step Terakhir
-        if (currentStep === listKetentuan.length - 1) {
-            btnAction.innerHTML = 'Buka Formulir Pendaftaran <i class="fa-solid fa-arrow-right"></i>';
-            btnAction.classList.add('finish-step');
-        } else {
-            btnAction.innerHTML = 'Saya Bersedia, Lanjut <i class="fa-solid fa-chevron-right"></i>';
-            btnAction.classList.remove('finish-step');
-        }
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('anggota')
+                    .select('*')
+                    .or(`nama.ilike.%${val}%,nis.ilike.%${val}%`)
+                    .limit(8);
 
-        // Jalankan animasi transisi ulang
-        const box = document.querySelector('.terms-step-box');
-        box.style.animation = 'none';
-        box.offsetHeight; /* Trigger reflow */
-        box.style.animation = 'focusIn 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                if (error) throw error;
+                renderSuggestions(data || []);
+            } catch (err) {
+                console.error("Gagal memuat rekomendasi nama:", err.message);
+            }
+        }, 300);
+    });
+
+    function renderSuggestions(data) {
+        if (data.length === 0) { 
+            dropNama.style.display = 'none'; 
+            return; 
+        }
+        currentFocus = -1;
+        
+        dropNama.innerHTML = data.map((item, i) => `
+            <div class="drop-item" data-idx="${i}">
+                <div class="main-text">${item.nama}</div>
+                <div class="sub-text">${item.nis || '-'} • Kamar: ${item.kamar || '-'} [${item.jenjang || '-'}]</div>
+            </div>
+        `).join('');
+
+        dropNama.querySelectorAll('.drop-item').forEach(el => {
+            el.onclick = async () => {
+                const selected = data[el.dataset.idx];
+                
+                inputNama.value = selected.nama;
+                idAnggotaInput.value = selected.id;
+                inputKamar.value = selected.kamar || '';
+                inputJenjang.value = selected.jenjang || '';
+                
+                selectedAnggotaData = selected;
+                dropNama.style.display = 'none';
+
+                // Cek status pendaftaran ke database
+                await checkRegistrationStatus(selected.id);
+            };
+        });
+        dropNama.style.display = 'block';
     }
 
-    // Event handler klik tombol Lanjut
-    btnAction.addEventListener('click', function() {
-        if (currentStep < listKetentuan.length - 1) {
-            currentStep++;
-            updateWizard();
-        } else {
-            window.location.href = 'formulir-pustakawan.html';
+    // --- FUNGSI CEK STATUS PENDAFTARAN ---
+    async function checkRegistrationStatus(idAnggota) {
+        try {
+            const { data, error } = await supabase
+                .from('pendaftaran')
+                .select('*')
+                .eq('id_anggota', idAnggota)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data) {
+                // JIKA SUDAH DAFTAR
+                isAlreadyRegistered = true;
+                inputSeksi.value = data.seksi;
+                inputSeksi.disabled = true;
+                
+                checkboxContainer.style.display = 'none';
+                infoRegisteredBox.style.display = 'flex';
+                siapCheck.required = false; 
+                
+                btnSubmit.classList.add('btn-danger');
+                btnText.innerText = 'Batalkan Pendaftaran Saya';
+                formSubtitle.innerHTML = '✨ Status: <span style="color:#ef4444; font-weight:700;">Sudah Terdaftar</span>';
+            } else {
+                // JIKA BELUM DAFTAR
+                setFormToRegisterMode();
+            }
+        } catch (err) {
+            console.error("Gagal mengecek status pendaftaran:", err.message);
+        }
+    }
+
+    function setFormToRegisterMode() {
+        isAlreadyRegistered = false;
+        inputSeksi.disabled = false;
+        
+        checkboxContainer.style.display = 'flex';
+        infoRegisteredBox.style.display = 'none';
+        siapCheck.required = true;
+        siapCheck.checked = false;
+        
+        btnSubmit.classList.remove('btn-danger');
+        btnText.innerText = 'Kirim Pendaftaran';
+        formSubtitle.innerText = 'Cari nama Anda dan isi komitmen kepengurusan';
+    }
+
+    inputNama.addEventListener('keydown', (e) => {
+        const items = dropNama.querySelectorAll('.drop-item');
+        if (items.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+            currentFocus++;
+            addActive(items);
+        } else if (e.key === "ArrowUp") {
+            currentFocus--;
+            addActive(items);
+        } else if (e.key === "Enter") {
+            if (currentFocus > -1) {
+                e.preventDefault();
+                items[currentFocus].click();
+            }
         }
     });
 
-    // Event handler klik tombol Sebelumnya
-    btnPrev.addEventListener('click', function() {
-        if (currentStep > 0) {
-            currentStep--;
-            updateWizard();
+    function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("selected");
+        items[currentFocus].scrollIntoView({ block: "nearest" });
+    }
+
+    function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+            items[i].classList.remove("selected");
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!inputNama.contains(e.target) && !dropNama.contains(e.target)) {
+            dropNama.style.display = 'none';
         }
     });
 
-    // Inisialisasi tampilan awal
-    updateWizard();
+    function resetFormOtomatis() {
+        selectedAnggotaData = null;
+        idAnggotaInput.value = '';
+        inputKamar.value = '';
+        inputJenjang.value = '';
+        setFormToRegisterMode();
+    }
+
+    // --- PROSES SUBMIT (DOUBLE MODE: DAFTAR / BATAL) ---
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (!selectedAnggotaData) {
+            showToast('Harap pilih Nama Anda dari daftar pencarian!', 'error');
+            return;
+        }
+
+        const idAnggotaValue = idAnggotaInput.value.trim();
+
+        btnSubmit.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'inline-flex';
+
+        try {
+            if (isAlreadyRegistered) {
+                // Aksi: BATALKAN PENDAFTARAN (DELETE DATA)
+                const { error } = await supabase
+                    .from('pendaftaran')
+                    .delete()
+                    .eq('id_anggota', idAnggotaValue);
+
+                if (error) throw error;
+
+                showToast('Pendaftaran Anda berhasil dibatalkan!', 'success');
+                
+                form.reset();
+                resetFormOtomatis();
+            } else {
+                // Aksi: KIRIM PENDAFTARAN BARU (INSERT DATA)
+                const seksiValue = inputSeksi.value;
+                const isSiap = siapCheck.checked;
+
+                const { error } = await supabase
+                    .from('pendaftaran')
+                    .insert([
+                        { 
+                            id_anggota: idAnggotaValue, 
+                            seksi: seksiValue,
+                            simpan: isSiap 
+                        }
+                    ]);
+
+                if (error) throw error;
+
+                showToast('Pendaftaran Anda berhasil dikirim!', 'success');
+                await checkRegistrationStatus(idAnggotaValue);
+            }
+
+        } catch (err) {
+            console.error('Proses gagal:', err.message);
+            showToast('Gagal memproses: ' + err.message, 'error');
+        } finally {
+            btnSubmit.disabled = false;
+            btnText.style.display = 'inline-block';
+            btnSpinner.style.display = 'none';
+        }
+    });
+
+    function showToast(message, type) {
+        const icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-triangle-exclamation"></i>';
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+        toast.className = `toast show ${type}`;
+        
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 4000);
+    }
 </script>
-
 </body>
 </html>

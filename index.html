@@ -508,23 +508,50 @@
 
     const header = document.getElementById('mainHeader');
     const skeletonContainer = document.getElementById('skeletonContainer');
+    const btnDaftar = document.getElementById('btnDaftarPustakawan');
 
-    /* --- CHECK STATUS PENDAFTARAN REALTIME --- */
-    async function checkRegistrationStatus() {
-        try {
-            const { data, error } = await supaCatalog
-                .from('status_pendaftaran')
-                .select('dibuka')
-                .eq('id', 1)
-                .single();
-            
-            if (error) throw error;
+    /* --- LOGIKA REALTIME STATUS PENDAFTARAN --- */
+    function initRegistrationRealtime() {
+        // 1. Fetch data awal saat pertama kali dimuat
+        supaCatalog
+            .from('status_pendaftaran')
+            .select('dibuka')
+            .eq('id', 1)
+            .single()
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error("Gagal memeriksa status pendaftaran:", error.message);
+                    return;
+                }
+                toggleRegisterButton(data?.dibuka);
+            });
 
-            if (data && data.dibuka) {
-                document.getElementById('btnDaftarPustakawan').classList.remove('hidden');
-            }
-        } catch (err) {
-            console.error("Gagal memeriksa status pendaftaran:", err.message);
+        // 2. Subscribe perubahan data secara Realtime
+        supaCatalog
+            .channel('public:status_pendaftaran')
+            .on(
+                'postgres_changes', 
+                { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'status_pendaftaran',
+                    filter: 'id=eq.1' 
+                }, 
+                (payload) => {
+                    if (payload.new) {
+                        toggleRegisterButton(payload.new.dibuka);
+                    }
+                }
+            )
+            .subscribe();
+    }
+
+    // Helper function untuk memanipulasi class hidden tombol
+    function toggleRegisterButton(isOpened) {
+        if (isOpened) {
+            btnDaftar.classList.remove('hidden');
+        } else {
+            btnDaftar.classList.add('hidden');
         }
     }
 
@@ -666,7 +693,8 @@
 
     document.getElementById('searchInput').onkeydown = (e) => { if(e.key === 'Enter') window.resetAndFetch(); };
 
-    checkRegistrationStatus();
+    // Panggil fungsi inisialisasi realtime di sini
+    initRegistrationRealtime();
     loadFilters();
     fetchBooks();
 
